@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="76d70c52-0a79-461d-890f-a3f24b8003e2" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/scripts/reset-project.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/_layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/_layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/explore.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/index.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/animated-icon.module.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/animated-icon.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/animated-icon.web.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app-tabs.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/app-tabs.web.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/external-link.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/hint-row.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/themed-text.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/themed-view.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/collapsible.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/web-badge.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/constants/theme.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/global.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hooks/use-color-scheme.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hooks/use-color-scheme.web.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hooks/use-theme.ts" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 7,
+  "fromUser": false
+}]]></component>
+  <component name="ProjectId" id="3GRt6j27ljR7QiFKUh7QlU2cx0R" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/Users/gideonakinlotan/WebstormProjects/gokid",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.general",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-WS-261.25134.101" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="76d70c52-0a79-461d-890f-a3f24b8003e2" name="Changes" comment="" />
+      <created>1782422178479</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1782422178479</updated>
+      <workItem from="1783946036941" duration="3587000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
