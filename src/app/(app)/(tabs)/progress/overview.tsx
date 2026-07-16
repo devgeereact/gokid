@@ -179,9 +179,15 @@ export default function ProgressOverview() {
           <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
         </Pressable>
         <Text className="flex-1 text-center font-text text-h3 font-bold text-ink">Progress Overview</Text>
-        <View className="h-11 w-11 items-center justify-center">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Learning calendar"
+          className="h-11 w-11 items-center justify-center active:opacity-60"
+          hitSlop={8}
+          onPress={() => router.push("/progress/calendar")}
+        >
           <SymbolView name="calendar" size={24} tintColor={colors.ink} weight="regular" />
-        </View>
+        </Pressable>
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
@@ -192,10 +198,17 @@ export default function ProgressOverview() {
             <Text className="font-text text-h3 font-bold text-ink">{child?.name ?? "Amara"}</Text>
             <Text className="font-text text-body text-text-secondary">{yearLabel(child?.yearGroup ?? "Y3")}</Text>
           </View>
-          <View className="flex-row items-center gap-2 rounded-full border border-border bg-white px-4 py-2">
+          {/* The reference draws a period dropdown; the calendar is where a period is actually
+              chosen, so the pill opens it rather than growing a second, parallel picker. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Change period"
+            className="flex-row items-center gap-2 rounded-full border border-border bg-white px-4 py-2 active:opacity-70"
+            onPress={() => router.push({ pathname: "/progress/calendar", params: { period: "week" } })}
+          >
             <Text className="font-text text-body font-semibold text-ink">This week</Text>
             <SymbolView name="chevron.down" size={14} tintColor={colors["text-secondary"]} weight="semibold" />
-          </View>
+          </Pressable>
         </View>
 
         {/* Summary stat tiles */}

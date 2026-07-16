@@ -4,9 +4,13 @@ import { ClerkProvider } from "@clerk/expo"
 import { tokenCache } from "@clerk/expo/token-cache"
 import * as Sentry from "@sentry/react-native"
 import { isRunningInExpoGo } from "expo"
-import { Stack, useNavigationContainerRef } from "expo-router"
+import { type ErrorBoundaryProps, Stack, useNavigationContainerRef } from "expo-router"
+import { StatusBar } from "expo-status-bar"
 import { useEffect } from "react"
 import { SafeAreaProvider } from "react-native-safe-area-context"
+
+import { EmptyState } from "@/components/empty-state"
+import { SafeAreaView } from "@/components/styled"
 
 // Time-to-display and native frame tracking need native modules Expo Go doesn't ship.
 const navigationIntegration = Sentry.reactNavigationIntegration({
@@ -27,6 +31,33 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
 
 if (!publishableKey) {
   throw new Error("Missing EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY. Add it to .env (Clerk Dashboard → API keys).")
+}
+
+/**
+ * App-wide error screen (MVP → Essential System States → "Error handling"). expo-router renders this
+ * instead of the red box when a render throws anywhere below the root. The throw is reported to
+ * Sentry first — AGENTS.md forbids swallowing errors — then `retry` remounts the failed segment.
+ * No design reference covers it; it reuses the shared EmptyState.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    Sentry.captureException(error, { tags: { flow: "render" } })
+  }, [error])
+
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView className="flex-1 items-center justify-center bg-background px-6">
+        <StatusBar style="dark" />
+        <EmptyState
+          symbol="exclamationmark.triangle"
+          title="Something went wrong"
+          body={__DEV__ ? error.message : "That screen didn't load. We've logged it — try again."}
+          actionLabel="Try again"
+          onAction={() => void retry()}
+        />
+      </SafeAreaView>
+    </SafeAreaProvider>
+  )
 }
 
 function RootLayout() {

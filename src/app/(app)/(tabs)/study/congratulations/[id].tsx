@@ -204,6 +204,31 @@ export default function Congratulations() {
           </Pressable>
         </Card>
 
+        {/* Certificate earned — the award this completion unlocked */}
+        <Card>
+          <Text className="mb-4 font-text text-h3 font-bold text-ink">You&apos;ve earned a certificate</Text>
+          <View className="flex-row items-center">
+            <View className="h-16 w-16 items-center justify-center rounded-lg bg-cert-paper">
+              <SymbolView name="rosette" size={40} tintColor={colors.cert.seal} weight="semibold" />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="font-text text-body-lg font-bold text-ink">Gold certificate</Text>
+              <Text className="mt-1 font-text text-body text-text-secondary">
+                For completing {set.title}. Save it, print it, or share it.
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="View certificate"
+            className="mt-4 h-14 flex-row items-center justify-center gap-2 rounded-full border border-primary bg-white active:opacity-70"
+            onPress={() => router.push({ pathname: "/certificate/[id]", params: { id: set.id } })}
+          >
+            <Text className="font-text text-body-lg font-bold text-primary">View certificate</Text>
+            <SymbolView name="arrow.right" size={18} tintColor={colors.primary} weight="bold" />
+          </Pressable>
+        </Card>
+
         {/* Never stop learning banner */}
         <View className="mt-4 flex-row items-center rounded-2xl bg-gamify-green-wash p-4">
           <View className="h-11 w-11 items-center justify-center rounded-full bg-gamify-green">

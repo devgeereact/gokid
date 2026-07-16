@@ -22,6 +22,10 @@ export type QuizQuestion = {
   answer: number
   /** Optional illustration shown above the prompt (e.g. base-10 blocks). */
   illustration?: number
+  /** Why the correct answer is correct — shown on the Incorrect Answers review. */
+  explanation?: string
+  /** Curriculum topic this question tests — the review's per-question chip. */
+  topic?: string
 }
 
 /** Mastery split for the set-detail bar — three percentages that sum to 100. */
@@ -818,6 +822,215 @@ const RAW_EXTRA: RawSet[] = [
     mastered: ["Explaining how characteristics are inherited from parents", "Recognising adaptations that help survival", "Understanding how fossils provide evidence for evolution"],
     revisit: ["Linking adaptation to evolution over time", "Explaining why offspring vary from their parents"],
   },
+  // ---- Subject Hub shelf (design/gokid-screens.md §4) ----
+  // The hubs cover ten subjects; the shelf above only covered four, so History, Computing, Art,
+  // Music, Languages and RE had no sets to recommend. One Year 3 set each — Year 3 is the demo
+  // household's year (Amara), so every hub's "Recommended sets" fills and its set → flashcards →
+  // quiz → results flow runs. Thumbnails reuse the nearest registry art (see IMG).
+  {
+    id: "y3-roman-britain",
+    title: "The Romans in Britain",
+    subject: "History",
+    topic: "Ancient Rome",
+    yearGroup: "Year 3",
+    yearCode: "Y3",
+    description: "Year 3 • History • Ancient Rome — the Roman invasion of Britain, what the Romans built and why they left.",
+    thumbKey: "scales",
+    heroKey: "scales",
+    status: "learning",
+    statusLabel: "Learning",
+    cardsTotal: 15,
+    cardsDone: 5,
+    minutes: 12,
+    mastery: { learning: 50, getting: 32, mastered: 18 },
+    cards: [
+      { id: "y3-rb-c1", question: "Which Roman emperor successfully invaded Britain?", answer: "Claudius, in AD 43." },
+      { id: "y3-rb-c2", question: "What did the Romans build to move armies quickly?", answer: "Long straight roads, many still followed by roads today." },
+      { id: "y3-rb-c3", question: "Who was Boudicca?", answer: "The queen of the Iceni tribe who led a rebellion against the Romans." },
+      { id: "y3-rb-c4", question: "What was Hadrian's Wall for?", answer: "To guard the northern edge of Roman Britain, built across the country on Hadrian's orders." },
+      { id: "y3-rb-c5", question: "Why did the Romans leave Britain?", answer: "Around AD 410 the army was needed to defend Rome itself." },
+      { id: "y3-rb-c6", question: "What is a Roman villa?", answer: "A large country house with heated floors, mosaics and its own farm." },
+    ],
+    quiz: [
+      { id: "y3-rb-q1", prompt: "In which year did Claudius invade Britain?", options: ["AD 43", "AD 410", "55 BC", "AD 1066"], answer: 0 },
+      { id: "y3-rb-q2", prompt: "Hadrian's Wall was built to...", options: ["carry water to cities", "guard the north of Roman Britain", "hold back the sea", "mark a Roman road"], answer: 1 },
+      { id: "y3-rb-q3", prompt: "Boudicca was the queen of which tribe?", options: ["The Saxons", "The Iceni", "The Vikings", "The Picts"], answer: 1 },
+      { id: "y3-rb-q4", prompt: "Roman roads were famously...", options: ["winding", "straight", "underground", "made of wood"], answer: 1 },
+      { id: "y3-rb-q5", prompt: "Why did the Romans leave Britain around AD 410?", options: ["They ran out of food", "The army was needed to defend Rome", "The weather was too cold", "Boudicca defeated them"], answer: 1 },
+    ],
+    mastered: ["Knowing Claudius invaded in AD 43", "Recognising Roman roads and villas", "Naming Boudicca and the Iceni"],
+    revisit: ["The purpose of Hadrian's Wall", "Why the Romans left Britain"],
+  },
+  {
+    id: "y3-algorithms",
+    title: "Algorithms and Debugging",
+    subject: "Computing",
+    topic: "Algorithms",
+    yearGroup: "Year 3",
+    yearCode: "Y3",
+    description: "Year 3 • Computing • Algorithms — write clear step-by-step instructions and find the bug when they go wrong.",
+    thumbKey: "cube",
+    heroKey: "cube",
+    status: "getting",
+    statusLabel: "Getting it",
+    cardsTotal: 14,
+    cardsDone: 6,
+    minutes: 10,
+    mastery: { learning: 35, getting: 45, mastered: 20 },
+    cards: [
+      { id: "y3-al-c1", question: "What is an algorithm?", answer: "A precise list of steps, in order, that solves a problem or finishes a task." },
+      { id: "y3-al-c2", question: "What is a bug?", answer: "A mistake in a program that makes it do the wrong thing." },
+      { id: "y3-al-c3", question: "What does debugging mean?", answer: "Finding a bug and fixing it, usually by testing one step at a time." },
+      { id: "y3-al-c4", question: "Why does the order of steps matter?", answer: "A computer follows steps exactly in order, so swapping two steps changes the result." },
+      { id: "y3-al-c5", question: "What is a loop?", answer: "An instruction that repeats a group of steps, so you don't write them out again." },
+      { id: "y3-al-c6", question: "What is a sequence?", answer: "Steps carried out one after another, in the order they are written." },
+    ],
+    quiz: [
+      { id: "y3-al-q1", prompt: "An algorithm is best described as...", options: ["a type of computer", "a list of steps in order", "a picture on screen", "a broken program"], answer: 1 },
+      { id: "y3-al-q2", prompt: "Fixing a mistake in a program is called...", options: ["looping", "debugging", "saving", "printing"], answer: 1 },
+      { id: "y3-al-q3", prompt: "Which is a loop?", options: ["Repeat 4 times: move forward", "Move forward once", "Stop the program", "Save the file"], answer: 0 },
+      { id: "y3-al-q4", prompt: "Why must steps be in the right order?", options: ["It looks tidier", "The computer follows them exactly as written", "It uses less battery", "It makes the screen brighter"], answer: 1 },
+      { id: "y3-al-q5", prompt: "A bug in a program means...", options: ["an insect got inside", "the program does the wrong thing", "the program is finished", "the computer is off"], answer: 1 },
+    ],
+    mastered: ["Writing steps in a clear order", "Knowing what an algorithm is", "Spotting a repeated step as a loop"],
+    revisit: ["Testing a program one step at a time", "Explaining what debugging means"],
+  },
+  {
+    id: "y3-colour-mixing",
+    title: "Colour and the Colour Wheel",
+    subject: "Art",
+    topic: "Colour and painting",
+    yearGroup: "Year 3",
+    yearCode: "Y3",
+    description: "Year 3 • Art • Colour and painting — primary and secondary colours, mixing them, and warm versus cool.",
+    thumbKey: "geo2",
+    heroKey: "geo2",
+    status: "getting",
+    statusLabel: "Getting it",
+    cardsTotal: 12,
+    cardsDone: 7,
+    minutes: 9,
+    mastery: { learning: 25, getting: 45, mastered: 30 },
+    cards: [
+      { id: "y3-cm-c1", question: "What are the three primary colours?", answer: "Red, yellow and blue — they cannot be mixed from other colours." },
+      { id: "y3-cm-c2", question: "What do you get if you mix red and yellow?", answer: "Orange." },
+      { id: "y3-cm-c3", question: "What do you get if you mix blue and yellow?", answer: "Green." },
+      { id: "y3-cm-c4", question: "What is a secondary colour?", answer: "A colour mixed from two primaries — orange, green or purple." },
+      { id: "y3-cm-c5", question: "What is a tint?", answer: "A colour with white added, which makes it lighter." },
+      { id: "y3-cm-c6", question: "Which colours are called warm?", answer: "Reds, oranges and yellows — the colours of fire and sunlight." },
+    ],
+    quiz: [
+      { id: "y3-cm-q1", prompt: "Which of these is a primary colour?", options: ["Green", "Orange", "Blue", "Purple"], answer: 2 },
+      { id: "y3-cm-q2", prompt: "Red + blue makes...", options: ["Green", "Purple", "Brown", "Orange"], answer: 1 },
+      { id: "y3-cm-q3", prompt: "Blue + yellow makes...", options: ["Green", "Grey", "Pink", "Orange"], answer: 0 },
+      { id: "y3-cm-q4", prompt: "Adding white to a colour makes a...", options: ["shade", "tint", "primary", "outline"], answer: 1 },
+      { id: "y3-cm-q5", prompt: "Which set of colours is warm?", options: ["Blue, green, violet", "Red, orange, yellow", "Black, white, grey", "Green, blue, brown"], answer: 1 },
+    ],
+    mastered: ["Naming the three primary colours", "Mixing secondary colours", "Telling warm colours from cool"],
+    revisit: ["Tints and shades", "Where secondary colours sit on the wheel"],
+  },
+  {
+    id: "y3-pulse-rhythm",
+    title: "Pulse, Rhythm and Pitch",
+    subject: "Music",
+    topic: "Pulse and rhythm",
+    yearGroup: "Year 3",
+    yearCode: "Y3",
+    description: "Year 3 • Music • Pulse and rhythm — keep a steady beat, clap rhythms and hear high from low.",
+    thumbKey: "astro",
+    heroKey: "astro",
+    status: "learning",
+    statusLabel: "Learning",
+    cardsTotal: 12,
+    cardsDone: 4,
+    minutes: 9,
+    mastery: { learning: 50, getting: 30, mastered: 20 },
+    cards: [
+      { id: "y3-pr-c1", question: "What is the pulse in music?", answer: "The steady beat you can tap along to, like a heartbeat." },
+      { id: "y3-pr-c2", question: "What is rhythm?", answer: "The pattern of long and short sounds played over the pulse." },
+      { id: "y3-pr-c3", question: "What does pitch mean?", answer: "How high or low a sound is." },
+      { id: "y3-pr-c4", question: "What does tempo mean?", answer: "How fast or slow the music goes." },
+      { id: "y3-pr-c5", question: "What does dynamics mean?", answer: "How loud or quiet the music is." },
+      { id: "y3-pr-c6", question: "What is a crotchet worth?", answer: "One beat." },
+    ],
+    quiz: [
+      { id: "y3-pr-q1", prompt: "The steady beat in music is called the...", options: ["rhythm", "pulse", "pitch", "tempo"], answer: 1 },
+      { id: "y3-pr-q2", prompt: "Pitch tells you...", options: ["how fast the music is", "how loud the music is", "how high or low a sound is", "how long a note lasts"], answer: 2 },
+      { id: "y3-pr-q3", prompt: "Tempo means...", options: ["how fast or slow", "how loud or quiet", "high or low", "long or short"], answer: 0 },
+      { id: "y3-pr-q4", prompt: "A crotchet lasts for...", options: ["half a beat", "one beat", "two beats", "four beats"], answer: 1 },
+      { id: "y3-pr-q5", prompt: "Dynamics in music describes...", options: ["speed", "volume", "pitch", "rhythm"], answer: 1 },
+    ],
+    mastered: ["Keeping a steady pulse", "Telling pulse from rhythm", "Hearing high and low pitch"],
+    revisit: ["Note values on the stave", "Naming tempo and dynamics"],
+  },
+  {
+    id: "y3-french-greetings",
+    title: "French Greetings and Numbers",
+    subject: "Languages",
+    topic: "Greetings and introductions",
+    yearGroup: "Year 3",
+    yearCode: "Y3",
+    description: "Year 3 • Languages • Greetings and introductions — say hello, give your name and count in French.",
+    thumbKey: "geo",
+    heroKey: "geo",
+    status: "getting",
+    statusLabel: "Getting it",
+    cardsTotal: 14,
+    cardsDone: 8,
+    minutes: 10,
+    mastery: { learning: 25, getting: 40, mastered: 35 },
+    cards: [
+      { id: "y3-fg-c1", question: "How do you say hello in French?", answer: "Bonjour." },
+      { id: "y3-fg-c2", question: "How do you say goodbye in French?", answer: "Au revoir." },
+      { id: "y3-fg-c3", question: "How do you say 'my name is Amara'?", answer: "Je m'appelle Amara." },
+      { id: "y3-fg-c4", question: "How do you ask 'how are you?' in French?", answer: "Ça va ?" },
+      { id: "y3-fg-c5", question: "Count from one to five in French.", answer: "Un, deux, trois, quatre, cinq." },
+      { id: "y3-fg-c6", question: "How do you say thank you in French?", answer: "Merci." },
+    ],
+    quiz: [
+      { id: "y3-fg-q1", prompt: "What does 'bonjour' mean?", options: ["Goodbye", "Hello", "Thank you", "Please"], answer: 1 },
+      { id: "y3-fg-q2", prompt: "How do you say 'my name is' in French?", options: ["Je m'appelle", "Au revoir", "Ça va", "Merci"], answer: 0 },
+      { id: "y3-fg-q3", prompt: "Which French word means 'three'?", options: ["deux", "trois", "quatre", "cinq"], answer: 1 },
+      { id: "y3-fg-q4", prompt: "'Merci' means...", options: ["Sorry", "Hello", "Thank you", "Yes"], answer: 2 },
+      { id: "y3-fg-q5", prompt: "Which one means 'goodbye'?", options: ["Bonjour", "Au revoir", "Ça va", "Un"], answer: 1 },
+    ],
+    mastered: ["Saying bonjour and au revoir", "Giving your name in French", "Counting to five"],
+    revisit: ["Numbers past ten", "Asking how someone is"],
+  },
+  {
+    id: "y3-festivals",
+    title: "Festivals and Celebrations",
+    subject: "Religious Education",
+    topic: "Festivals and celebrations",
+    yearGroup: "Year 3",
+    yearCode: "Y3",
+    description: "Year 3 • Religious Education • Festivals and celebrations — what major festivals mark and how people celebrate them.",
+    thumbKey: "scales",
+    heroKey: "scales",
+    status: "getting",
+    statusLabel: "Getting it",
+    cardsTotal: 13,
+    cardsDone: 6,
+    minutes: 10,
+    mastery: { learning: 30, getting: 45, mastered: 25 },
+    cards: [
+      { id: "y3-fe-c1", question: "What does Diwali celebrate?", answer: "The festival of lights — good winning over evil. Hindus, Sikhs and Jains celebrate it." },
+      { id: "y3-fe-c2", question: "What is Eid al-Fitr?", answer: "The Muslim festival marking the end of Ramadan, a month of fasting." },
+      { id: "y3-fe-c3", question: "What do Christians celebrate at Easter?", answer: "The resurrection of Jesus." },
+      { id: "y3-fe-c4", question: "What is Hanukkah?", answer: "The Jewish festival of lights, when a menorah is lit over eight nights." },
+      { id: "y3-fe-c5", question: "What is Vaisakhi?", answer: "A Sikh festival celebrating the founding of the Khalsa." },
+      { id: "y3-fe-c6", question: "What is Wesak?", answer: "The Buddhist festival marking the birth, enlightenment and death of the Buddha." },
+    ],
+    quiz: [
+      { id: "y3-fe-q1", prompt: "Diwali is known as the festival of...", options: ["water", "lights", "harvest", "snow"], answer: 1 },
+      { id: "y3-fe-q2", prompt: "Eid al-Fitr marks the end of...", options: ["Ramadan", "Lent", "Hanukkah", "Vaisakhi"], answer: 0 },
+      { id: "y3-fe-q3", prompt: "A menorah is lit during...", options: ["Easter", "Wesak", "Hanukkah", "Diwali"], answer: 2 },
+      { id: "y3-fe-q4", prompt: "Vaisakhi is celebrated by...", options: ["Sikhs", "Buddhists", "Christians", "Muslims"], answer: 0 },
+      { id: "y3-fe-q5", prompt: "Wesak remembers the life of...", options: ["Jesus", "the Buddha", "Guru Nanak", "Moses"], answer: 1 },
+    ],
+    mastered: ["Naming what Diwali celebrates", "Linking Eid al-Fitr to Ramadan", "Knowing Easter is a Christian festival"],
+    revisit: ["Vaisakhi and the Khalsa", "What a menorah is used for"],
+  },
 ]
 
 export const STUDY_SETS: StudySet[] = [...CORE_SETS, ...RAW_EXTRA.map(resolve)]
@@ -834,3 +1047,122 @@ export function getStudySetsForYear(yearCode: string | undefined): StudySet[] {
 
 /** The set the "Continue" card resumes — the one with cards in progress. */
 export const CONTINUE_SET = STUDY_SETS[0]
+
+/** Pre-quiz summary shown on the Quiz Instructions screen. */
+export type QuizBrief = {
+  questions: number
+  /** Estimated minutes to finish, rounded up. */
+  minutes: number
+  difficulty: "Easy" | "Steady" | "Tricky"
+  /** Curriculum topics the questions draw on — the "What it covers" chips. */
+  topics: string[]
+  /** Art for the pre-quiz hero — the quiz's own illustration where it has one. */
+  illustration: number
+  /** True when `illustration` is the quiz's own art (drawn on the peach quiz wash). */
+  illustrated: boolean
+}
+
+/**
+ * Derives the quiz brief from a set. Demo sets carry no authored difficulty or per-question topic,
+ * so both are inferred from data the set already has: mastery (a set the child has mastered reads
+ * Easy; one they are still learning reads Tricky) and the `mastered` / `revisit` topic lists that
+ * the results screen uses. When the content API lands these become authored fields.
+ */
+export function quizBrief(set: StudySet): QuizBrief {
+  const questions = set.quiz.length
+  // ~45s per question, floor of 1 minute — matches the pace of the demo MCQs.
+  const minutes = Math.max(1, Math.ceil((questions * 45) / 60))
+  const difficulty = set.mastery.mastered >= 50 ? "Easy" : set.mastery.learning >= 40 ? "Tricky" : "Steady"
+  const topics = [...new Set([...set.mastered, ...set.revisit])].slice(0, 6)
+  // The blocks art is drawn on the peach quiz wash, so it seams into the instructions hero; a set
+  // whose quiz carries no illustration falls back to its own hero (a white-background thumbnail).
+  const art = set.quiz.find((q) => q.illustration)?.illustration
+  return {
+    questions,
+    minutes,
+    difficulty,
+    topics,
+    illustration: art ?? set.hero,
+    illustrated: art !== undefined,
+  }
+}
+
+/** One question as replayed on the Incorrect Answers review. */
+export type QuizReviewRow = {
+  question: QuizQuestion
+  /** 1-based position in the quiz — the review's "Question 3" label. */
+  number: number
+  /** Index into `question.options` the child picked, or null if they ran out / skipped. */
+  picked: number | null
+  correct: boolean
+  /** What the child answered, ready to render ("Skipped" when they picked nothing). */
+  pickedLabel: string
+  correctLabel: string
+  explanation: string
+  topic: string
+}
+
+export type QuizAttempt = {
+  rows: QuizReviewRow[]
+  /** Only the rows the child got wrong — what the review screen lists. */
+  wrong: QuizReviewRow[]
+  total: number
+  correct: number
+  /** Whole-percent accuracy. */
+  accuracy: number
+}
+
+/**
+ * Replays an attempt against a set's quiz. `answers` is the option index the child picked per
+ * question, in order; -1 or a missing entry reads as skipped, so a partial attempt still reviews.
+ *
+ * Demo seam: `explanation` and `topic` are optional on `QuizQuestion` and no demo set authors them
+ * yet, so both fall back to values derived from data the set already carries — every set therefore
+ * renders a complete review today, and authoring the fields later needs no screen change.
+ */
+export function quizAttempt(set: StudySet, answers: number[]): QuizAttempt {
+  const revisit = set.revisit.length > 0 ? set.revisit : [set.topic]
+
+  const rows: QuizReviewRow[] = set.quiz.map((question, i) => {
+    const raw = answers[i]
+    const picked = raw === undefined || raw < 0 || raw >= question.options.length ? null : raw
+    const correctLabel = question.options[question.answer]
+    return {
+      question,
+      number: i + 1,
+      picked,
+      correct: picked === question.answer,
+      pickedLabel: picked === null ? "Skipped" : question.options[picked],
+      correctLabel,
+      explanation:
+        question.explanation ??
+        `“${correctLabel}” is the answer. Look back at the ${set.topic.toLowerCase()} cards in ${set.title} — the same idea comes up there.`,
+      // No per-question topic tags on the demo sets; cycle the set's revisit list so each wrong
+      // answer still names a strand to go back to.
+      topic: question.topic ?? revisit[i % revisit.length],
+    }
+  })
+
+  const correct = rows.filter((r) => r.correct).length
+  return {
+    rows,
+    wrong: rows.filter((r) => !r.correct),
+    total: rows.length,
+    correct,
+    accuracy: rows.length === 0 ? 0 : Math.round((correct / rows.length) * 100),
+  }
+}
+
+/** Serialises picked-option indices for the `answers` route param ("2,0,-1,3"). */
+export function encodeAnswers(answers: (number | null)[]): string {
+  return answers.map((a) => (a === null ? -1 : a)).join(",")
+}
+
+/** Parses the `answers` route param. Non-numeric junk reads as skipped, never throws. */
+export function decodeAnswers(param: string | undefined): number[] {
+  if (!param) return []
+  return param.split(",").map((s) => {
+    const n = Number(s)
+    return Number.isFinite(n) ? n : -1
+  })
+}

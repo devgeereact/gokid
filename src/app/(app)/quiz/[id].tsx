@@ -6,7 +6,7 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { getStudySet, type QuizQuestion } from "@/lib/study"
+import { encodeAnswers, getStudySet, type QuizQuestion } from "@/lib/study"
 
 /**
  * Quiz question (design/GoKid-quiz-screen.png, screen 8). One MCQ at a time: pick A–D, "Check
@@ -88,6 +88,8 @@ export default function Quiz() {
   const [selected, setSelected] = useState<number | null>(null)
   const [checked, setChecked] = useState(false)
   const [score, setScore] = useState(0)
+  // Every pick, in question order — replayed by the Incorrect Answers review.
+  const [answers, setAnswers] = useState<number[]>([])
 
   if (!set) return <Redirect href="/home" />
 
@@ -106,12 +108,21 @@ export default function Quiz() {
     if (!checked) {
       if (selected === null) return
       if (selected === q.answer) setScore((s) => s + 1)
+      setAnswers((a) => {
+        const next = [...a]
+        next[index] = selected
+        return next
+      })
       setChecked(true)
       return
     }
-    // Advance — or finish → results.
+    // Advance — or finish → results. `score` / `answers` are read after the check re-render, so
+    // this question's pick is already in them.
     if (index + 1 >= total) {
-      router.replace({ pathname: "/result/[id]", params: { id: setId, score: String(score) } })
+      router.replace({
+        pathname: "/result/[id]",
+        params: { id: setId, score: String(score), answers: encodeAnswers(answers) },
+      })
       return
     }
     setIndex(index + 1)

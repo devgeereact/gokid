@@ -125,7 +125,7 @@ export default function LessonDetail() {
           accessibilityRole="button"
           accessibilityLabel="Take the quiz"
           className="mt-3 h-14 items-center justify-center rounded-full border border-border bg-white active:opacity-70"
-          onPress={() => router.push({ pathname: "/quiz/[id]", params: { id: set.id } })}
+          onPress={() => router.push({ pathname: "/quiz/instructions/[id]", params: { id: set.id } })}
         >
           <Text className="font-text text-body-lg font-bold text-ink">Take the quiz</Text>
         </Pressable>

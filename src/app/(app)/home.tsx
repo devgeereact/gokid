@@ -4,9 +4,11 @@ import { SymbolView } from "expo-symbols"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { ChildAvatar } from "@/components/child-avatar"
+import { EmptyState } from "@/components/empty-state"
 import { RoundedHeading } from "@/components/rounded-heading"
-import { Image, SafeAreaView } from "@/components/styled"
+import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { setActiveChild } from "@/lib/active-child"
 import { type Child, DEFAULT_AVATAR, useChildren } from "@/lib/children"
 
 /**
@@ -14,13 +16,40 @@ import { type Child, DEFAULT_AVATAR, useChildren } from "@/lib/children"
  * Lists the parent's children (from useChildren — the demo store is Clerk metadata) and the
  * entry point to add another, then reaches "Parent settings".
  *
- * A child on the fox/elephant preset gets the full-bleed illustration + matching wash from the
- * design. Any other picture (emoji or an uploaded photo) shows in the round ChildAvatar instead.
+ * Two deliberate deviations from the reference, both requested:
+ *
+ * 1. **A wash per child, not per preset.** The reference draws exactly two children and gives each
+ *    its own tint. Keying the tint off the *picture* (fox → cream, elephant → lavender) only works
+ *    for those two: a third child, or two children on emoji, collided on one fallback wash. The
+ *    tint is now keyed off the child's identity, so every card in a household differs.
+ * 2. **The avatar is a centred disc, not full-bleed art.** The reference bleeds the animal off the
+ *    card's left edge, cropped. Cropping a head-and-chest bust to a card-height column reads as a
+ *    zoomed-in face, and it only ever applied to the two preset animals — emoji and photo children
+ *    got a different layout entirely. One centred, uncropped disc treats every avatar kind alike.
  */
-const BLEED = {
-  fox: { wash: "bg-card-rufus", art: require("../../../assets/images/gokid-cut-fox.png") },
-  elephant: { wash: "bg-card-amara", art: require("../../../assets/images/gokid-cut-elephant.png") },
-} as const
+
+// Ordered so adjacent cards contrast: the two sampled reference tints lead, then the mixed ones
+// alternate cool/warm rather than running through neighbouring hues.
+const WASHES = [
+  "bg-card-wash-lavender",
+  "bg-card-wash-cream",
+  "bg-card-wash-mint",
+  "bg-card-wash-blush",
+  "bg-card-wash-sky",
+  "bg-card-wash-peach",
+  "bg-card-wash-sage",
+] as const
+
+/**
+ * Pick a child's wash. Keyed on the id, not the list index, so a card keeps its colour when a
+ * sibling above it is deleted — the tint is part of how a child recognises their own card, and
+ * it must not shuffle. Seven washes for seven year groups; an eighth child wraps and repeats.
+ */
+function washFor(id: string) {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return WASHES[hash % WASHES.length]
+}
 
 function yearLabel(yearGroup: string) {
   return yearGroup === "Rec" ? "Reception" : `Year ${yearGroup.slice(1)}`
@@ -29,33 +58,28 @@ function yearLabel(yearGroup: string) {
 function ChildCard({ child }: { child: Child }) {
   // Children added before the avatar field existed have no `avatar` — fall back to the default.
   const avatar = child.avatar ?? DEFAULT_AVATAR
-  const bleed =
-    avatar.kind === "preset" && (avatar.value === "fox" || avatar.value === "elephant")
-      ? BLEED[avatar.value]
-      : null
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${child.name}, ${yearLabel(child.yearGroup)}`}
-      className={`mb-5 h-card flex-row items-center overflow-hidden rounded-card active:opacity-90 ${
-        bleed ? bleed.wash : "bg-card-amara"
-      }`}
-      onPress={() => router.push({ pathname: "/study", params: { id: child.id } })}
+      className={`mb-5 h-card flex-row items-center overflow-hidden rounded-card px-5 active:opacity-90 ${washFor(
+        child.id
+      )}`}
+      onPress={() => {
+        // Everything downstream (schedule, history, progress) is keyed on the child who was picked.
+        setActiveChild(child.id)
+        router.push({ pathname: "/study", params: { id: child.id } })
+      }}
     >
-      {bleed ? (
-        <Image
-          accessibilityIgnoresInvertColors
-          className="h-card w-[54%]"
-          contentFit="cover"
-          contentPosition="top"
-          source={bleed.art}
-        />
-      ) : (
-        <View className="w-[46%] items-center">
-          <ChildAvatar avatar={avatar} className="h-24 w-24" />
-        </View>
-      )}
+      {/* `contain` so the whole animal sits in the disc — at 120pt a cover-crop reads as a zoom.
+          Transparent, so the art sits straight on the card wash the way the reference draws it: the
+          preset cutouts and emoji both have their own silhouette, and a filled disc behind them
+          reads as a hole punched in the tint. An uploaded photo is rectangular and still gets the
+          circle, because the component clips it. */}
+      <View className="w-[46%] items-center justify-center">
+        <ChildAvatar avatar={avatar} className="h-30 w-30 bg-transparent" fit="contain" />
+      </View>
       <View className="flex-1 items-center">
         <Text className="font-text text-h2 font-bold text-ink">{child.name}</Text>
         <Text className="mt-1 font-text text-field text-text-secondary">
@@ -100,9 +124,17 @@ export default function Home() {
         contentContainerClassName="pb-4"
         showsVerticalScrollIndicator={false}
       >
-        {children.map((child) => (
-          <ChildCard key={child.id} child={child} />
-        ))}
+        {/* No children yet — the first-run state. The dashed tile below is still the action, so the
+            empty state explains rather than duplicating the CTA. */}
+        {children.length === 0 ? (
+          <EmptyState
+            symbol="person.badge.plus"
+            title="No one here yet"
+            body="Add your first child and GoKid will build sets for their year group."
+          />
+        ) : (
+          children.map((child) => <ChildCard key={child.id} child={child} />)
+        )}
 
         {/* Add a child — dashed tile with a mint plus-disc. */}
         <Pressable

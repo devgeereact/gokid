@@ -33,7 +33,7 @@ function Chip({ label, tone }: { label: string; tone: "mastered" | "revisit" }) 
 }
 
 export default function Result() {
-  const { id, score } = useLocalSearchParams<{ id: string; score?: string }>()
+  const { id, score, answers } = useLocalSearchParams<{ id: string; score?: string; answers?: string }>()
   const { user } = useUser()
   const { children } = useChildren()
   const set = getStudySet(id)
@@ -97,6 +97,26 @@ export default function Result() {
           </View>
           <Text className="font-text text-body text-text-secondary">We&apos;ll bring these back soon.</Text>
         </View>
+
+        {correct < total ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="See what you missed"
+            className="mt-4 h-14 flex-row items-center justify-center rounded-full border border-border bg-white active:opacity-70"
+            onPress={() =>
+              router.push({ pathname: "/quiz/review/[id]", params: { id: set.id, answers: answers ?? "" } })
+            }
+          >
+            <Text className="font-text text-body-lg font-bold text-primary">See what you missed</Text>
+            <SymbolView
+              name="arrow.right"
+              size={16}
+              tintColor={colors.primary}
+              weight="bold"
+              style={{ marginLeft: 8 }}
+            />
+          </Pressable>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"

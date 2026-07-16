@@ -24,6 +24,10 @@ module.exports = {
       // 49pt instead of 56 and `px-12` at 42 instead of 48. Pinning px makes the design
       // system's grid mean what it says.
       spacing: {
+        // Learning Calendar year grid. 31 day-swatches across one card row leave no room for the
+        // grid's 4pt step — 2pt is the widest gutter that still fits a 31-day month. INFERRED;
+        // below the design system's smallest step, and used nowhere else.
+        0.5: "2px",
         1: "4px",
         2: "8px",
         3: "12px",
@@ -47,6 +51,13 @@ module.exports = {
         // Add-a-child fields. Text input measures 52pt tall on the reference; not on the
         // 8pt grid (48/56 bracket it), so pinned as an inferred step.
         13: "52px",
+        // Children-manager rows. A 44pt avatar plus 14pt of breathing room top and bottom —
+        // taller than the 56pt account rows on design/GoKid-parentcontent-screen.png because
+        // those carry a 24pt symbol, not a face. Inferred; no reference covers this screen.
+        18: "72px",
+        // Who's-studying avatar disc. Fills the 166pt card with 23pt of wash above and below.
+        // Inferred: the reference bleeds its art off the card edge and so sets no disc size.
+        30: "120px",
       },
 
       // 02. TYPOGRAPHY — size / line-height pairs
@@ -71,13 +82,37 @@ module.exports = {
         // Body Large (17/24) is too small and H3 (22/28) too large.
         field: ["20px", "24px"],
 
+        // Stat-tile label ("Time spent", "Cards studied", …). Measured ~11/14 off
+        // design/GoKid-sectionsummary-screen.png — below the design system's Caption (13/18),
+        // which is the smallest step it defines. Inferred: at 13px the two-word labels wrap and
+        // the tile values stop baseline-aligning across the row.
+        tile: ["11px", "14px"],
+
         // Emoji avatar glyph, sized to fill the add-a-child ring (~160pt) with padding.
         // Inferred — no design-system equivalent for an emoji face.
         avatar: ["64px", "72px"],
+        // The rest of the emoji-glyph ladder. ChildAvatar measures its disc and picks the step
+        // that leaves the glyph ~60-70% of the disc's width — an emoji is text, so unlike the
+        // preset art it cannot scale with its container. Inferred, same as `avatar` above.
+        "avatar-md": ["44px", "48px"],
+      },
+
+      // 02. TYPOGRAPHY — tracking
+      // Certificate Earned eyebrow ("CERTIFICATE OF ACHIEVEMENT") and seal ribbon ("GOLD"). INFERRED:
+      // the design system sets no letter-spacing, but the certificate on
+      // design/GoKid-congratulations-screen.png letterspaces its "WELL DONE!" caps. These are the two
+      // steps that reproduce it — wider on the long eyebrow, tighter inside the ribbon pill.
+      letterSpacing: {
+        eyebrow: "2px",
+        ribbon: "1px",
       },
 
       // 04. RADIUS
       borderRadius: {
+        // Learning Calendar heat swatches — the year grid's 8pt day cells and the legend's 12pt
+        // chips. INFERRED: the design system's smallest radius is `sm` (8px), which on a 12pt box
+        // is a circle. 3px keeps them reading as squares at that size.
+        xs: "3px",
         sm: "8px",
         md: "12px",
         lg: "16px",
