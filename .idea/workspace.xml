@@ -5,26 +5,95 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="76d70c52-0a79-461d-890f-a3f24b8003e2" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/scripts/reset-project.js" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-backend-api/SKILL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-backend-api/evals/evals.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-backend-api/scripts/api-specs-context.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-backend-api/scripts/execute-request.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-backend-api/scripts/extract-endpoint-detail.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-backend-api/scripts/extract-tag-endpoints.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-backend-api/scripts/extract-tags.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-cli/SKILL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-cli/references/agent-mode.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-cli/references/auth.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-cli/references/recipes.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-custom-ui/SKILL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-custom-ui/core-2/custom-sign-in.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-custom-ui/core-2/custom-sign-up.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-custom-ui/core-3/custom-sign-in.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-custom-ui/core-3/custom-sign-up.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-custom-ui/core-3/show-component.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-expo/SKILL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-expo/evals/evals.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-expo/references/custom-flows.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-expo/references/prebuilt-components.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-expo/references/protected-routes.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-expo/references/recipes.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-expo/references/setup.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-expo/references/sso-and-native-auth.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-setup/SKILL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk-setup/evals/evals.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.agents/skills/clerk/SKILL.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.claude/skills/clerk" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.claude/skills/clerk-backend-api" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.claude/skills/clerk-cli" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.claude/skills/clerk-custom-ui" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.claude/skills/clerk-expo" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.claude/skills/clerk-setup" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/gokid-auth-hero.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/gokid-child-avatar.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/gokid-lion.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/images/gokid-wordmark.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/babel.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/SPLASH-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/SPLASH-2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/SPLASH-log.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/addchild-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/addchild-2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/addchild-3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/addchild-4.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/addchild-log.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/auth-1.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/auth-2.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/auth-3.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/auth-4.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/auth-5.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/auth-6.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/auth-log.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/.loop/compare.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/GoKid-addchild-screen.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/GoKid-app-ui.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/GoKid-auth-screen.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/GoKid-design-system.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/GoKid-splash-screen.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/GoKid-studydashboard-screen.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/GoKid-whoisstudying-screen.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/design/LOOP-PROMPT.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/eslint.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/global.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/metro.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/nativewind-env.d.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/skills-lock.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(app)/_layout.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(app)/add-child.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(app)/home.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(auth)/_layout.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/(auth)/sign-in.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/google-mark.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/rounded-heading.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/splash.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/components/styled.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/design/tokens.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tailwind.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AGENTS.md" beforeDir="false" afterPath="$PROJECT_DIR$/AGENTS.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.json" beforeDir="false" afterPath="$PROJECT_DIR$/app.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/_layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/_layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/explore.tsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/animated-icon.module.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/animated-icon.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/animated-icon.web.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app-tabs.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/app-tabs.web.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/external-link.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/hint-row.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/themed-text.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/themed-view.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ui/collapsible.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/web-badge.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/constants/theme.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/global.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hooks/use-color-scheme.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hooks/use-color-scheme.web.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hooks/use-theme.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,6 +103,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "devgeereact"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/devgeereact/gokids.git",
+    "accountId": "0eabbbb7-83df-4463-a5ef-3a263cf105bf"
+  }
+}]]></component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 7,
   "fromUser": false
@@ -78,11 +159,22 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1782422178479</updated>
-      <workItem from="1783946036941" duration="3587000" />
+      <workItem from="1783946036941" duration="7960000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>
