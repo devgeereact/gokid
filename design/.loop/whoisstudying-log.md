@@ -130,3 +130,40 @@ Amara/Rufus by design; style is what's matched.
   `h-card` (166px), `px-6` gutter, hero size 34 (= H1), name = H2 bold, year = field (20).
 - Animal art cropped from the reference PNG (`gokid-child-amara.png`, `gokid-child-rufus.png`).
 - Demo children (Amara/Rufus) hardcoded.
+
+## Iter 8 — requested deviation from the reference
+
+Reverses iters 5-7 above. Those tightened the cutouts and bled the animal to the card edges
+(`contentFit="cover" contentPosition="top"`) *specifically to match* the reference's Rufus card.
+On request ("avatar should be in the middle and not too zoomed in"), the art is now a centred,
+uncropped 120pt disc (`fit="contain"`, `bg-transparent`) — the whole animal, no bleed.
+
+Screenshot: `design/.loop/home-cards-4.png`. The cover-crop of a head-and-chest bust into a
+card-height column is what read as a zoom; `contain` removes it. Kept transparent so the art sits
+straight on the wash, as the reference does — a filled disc (`home-cards-3.png`) read as a hole
+punched in the tint.
+
+**Note the trade-off:** the reference's animals are large and bleed off the card edge. A contained
+disc cannot do that. This is a deliberate, requested departure — the card no longer matches
+`design/GoKid-whoisstudying-screen.png` on art treatment.
+
+### Per-child washes
+
+The wash was keyed off the *picture* (`fox` → cream, `elephant` → lavender, everything else → one
+`bg-card-amara` fallback). Two emoji children got identical cards. Now keyed off the child's id via
+a hash, drawing from seven `card.wash.*` tints — one per year group, so a full Rec→Y6 household has
+no collisions. Hashed on the id, not the list index, so a card keeps its colour when a sibling above
+it is deleted.
+
+**Inferred:** `card.wash.lavender`/`cream` are the two sampled reference tints under neutral names;
+`mint`/`sky`/`blush`/`peach`/`sage` are hand-mixed to the same recipe (very pale, ~L*94 on the cream
+page) and were **not** sampled from any reference. New spacing token `30: "120px"` (disc).
+
+### Emoji glyph sizing (component-wide fix)
+
+`ChildAvatar` hard-coded its emoji glyph at 64px — sized for the 160pt add-child ring. Every smaller
+disc clipped the face: the study-dashboard greeting (56pt), parent chip (44pt), progress overview
+(56pt), session summary (64pt), children manager (44pt). The component now measures its own disc
+(`onLayout`) and picks a glyph step from `GLYPH_STEPS`. Callers set the disc and nothing else, so no
+caller can get it wrong. Verified on the study dashboard: `design/.loop/avatar-fit-1.png`.
+Add-child ring is unchanged (still the 64px top step).

@@ -2,7 +2,9 @@
 
 Paste the block below into `/loop`. Swap `<SCREEN>` and `<REF>` per screen.
 
-Screens available:
+## Screens with a design reference
+
+Every screen below has a mockup PNG to match pixel-for-pixel. All 23 are built.
 
 | `<SCREEN>` | `<REF>` |
 |---|---|
@@ -35,6 +37,26 @@ Screens available:
 | app shell (tabs) | `design/GoKid-app-ui.png` |
 | tokens only | `design/GoKid-design-system.png` |
 
+## Screens with NO design reference
+
+`design/mvp1.md` requires these; no mockup was ever drawn for them. They are built, and their layout
+is **inferred** from the nearest referenced screen (the "closest ref" column) plus the tokens in
+`design/GoKid-design-system.png`. Run the loop against the closest ref for surface/type/radius
+fidelity only — do **not** try to make them identical to it.
+
+| `<SCREEN>` | route | closest ref (inferred from) | log |
+|---|---|---|---|
+| intro | `/intro` | `design/GoKid-auth-screen.png` (hero + heading + subtitle stack) | `design/.loop/intro-log.md` |
+| settings | `/settings` | `design/GoKid-parentcontent-screen.png` (account rows) | `design/.loop/settings-log.md` |
+| history | `/progress/history` | `design/GoKid-progress-screen.png` ("Coming back soon" card) | `design/.loop/history-log.md` |
+| notfound | any bad route | `design/GoKid-design-system.png` (tokens only) | `design/.loop/systemstates-log.md` |
+| errorboundary | thrown render | `design/GoKid-design-system.png` (tokens only) | `design/.loop/systemstates-log.md` |
+| emptystate | `/study`, `/home`, `/progress/history` when empty | `design/GoKid-design-system.png` (tokens only) | `design/.loop/systemstates-log.md` |
+| skeleton | `/study` while Clerk loads | `design/GoKid-studydashboard-screen.png` (row geometry) | `design/.loop/systemstates-log.md` |
+| offlinebanner | `/study` with no connection | `design/GoKid-offlinesync-screen.png` | `design/.loop/systemstates-log.md` |
+| subjecthub | `/subject/<slug>` (10 subjects) | `design/GoKid-subjectprogress-screen.png` (cards, ring, strand rows, focus card) | `design/.loop/subjecthub-log.md` |
+| sessionpaused | `/flashcard/paused` | `design/GoKid-sectionsummary-screen.png` (stat tiles) + `design/GoKid-flashcard-screen.png` (header, CTAs) | `design/.loop/sessionpaused-log.md` |
+| quizinstructions | `/quiz/instructions/<setId>` | `design/GoKid-quiz-screen.png` (peach illustration wash, option-card rows) + `design/GoKid-sectionsummary-screen.png` (stat tiles) | `design/.loop/quizinstructions-log.md` |
 
 ## The prompt
 

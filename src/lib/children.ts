@@ -104,5 +104,20 @@ export function useChildren() {
     [user, children]
   )
 
-  return { children, addChild, updateChild, removeChild }
+  /**
+   * Replace the child list with DEMO_CHILDREN — one profile per year group, so every set in
+   * src/lib/study.ts is reachable without typing seven forms. Reached from the children manager;
+   * destructive, so callers confirm first.
+   */
+  const seedDemoChildren = useCallback(async () => {
+    if (!user) throw new Error("seedDemoChildren called before the user loaded")
+    try {
+      await user.update({ unsafeMetadata: { ...user.unsafeMetadata, children: DEMO_CHILDREN } })
+    } catch (error) {
+      Sentry.captureException(error, { tags: { flow: "seed-demo-children" } })
+      throw error
+    }
+  }, [user])
+
+  return { children, addChild, updateChild, removeChild, seedDemoChildren }
 }

@@ -6,6 +6,9 @@ import Svg, { Circle } from "react-native-svg"
 
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { useActiveChildId } from "@/lib/active-child"
+import { dueLabel, useProgress } from "@/lib/reviews"
+import { getStudySet } from "@/lib/study"
 
 /**
  * Progress (child-facing) — the Progress tab (design/GoKid-progress-screen.png, screen 10). Overall
@@ -89,6 +92,22 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 export default function Progress() {
+  const childId = useActiveChildId() ?? "demo-amara"
+  const { upcoming } = useProgress(childId)
+
+  // Once the child has rated cards, the queue is real: their two soonest-due cards replace the demo
+  // rows. Before that the reference's example rows stand in.
+  const coming = upcoming.length
+    ? upcoming.slice(0, 2).map((c) => {
+        const set = getStudySet(c.setId)
+        return {
+          title: set?.cards.find((card) => card.id === c.cardId)?.question ?? set?.title ?? "Review card",
+          sub: `We'll check this again ${dueLabel(c.dueAt).toLowerCase()}`,
+          icon: set?.thumb ?? COMING[0].icon,
+        }
+      })
+    : COMING
+
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
       <StatusBar style="dark" />
@@ -154,7 +173,7 @@ export default function Progress() {
         {/* Coming back soon */}
         <Card>
           <Text className="mb-4 font-text text-h3 font-bold text-ink">Coming back soon</Text>
-          {COMING.map((c) => (
+          {coming.map((c) => (
             <View key={c.title} className="mb-4 flex-row items-center last:mb-0">
               <Image
                 accessibilityIgnoresInvertColors
@@ -190,11 +209,29 @@ export default function Progress() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Achievements"
-          className="mb-2 mt-3 h-14 flex-row items-center justify-center gap-2 rounded-full border border-border bg-white active:opacity-70"
+          className="mt-3 h-14 flex-row items-center justify-center gap-2 rounded-full border border-border bg-white active:opacity-70"
           onPress={() => router.push("/progress/achievements")}
         >
           <SymbolView name="trophy" size={20} tintColor={colors.ink} weight="regular" />
           <Text className="font-text text-body-lg font-bold text-ink">Achievements</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Learning calendar"
+          className="mt-3 h-14 flex-row items-center justify-center gap-2 rounded-full border border-border bg-white active:opacity-70"
+          onPress={() => router.push("/progress/calendar")}
+        >
+          <SymbolView name="calendar" size={20} tintColor={colors.ink} weight="regular" />
+          <Text className="font-text text-body-lg font-bold text-ink">Learning calendar</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Study history"
+          className="mb-2 mt-3 h-14 flex-row items-center justify-center gap-2 rounded-full border border-border bg-white active:opacity-70"
+          onPress={() => router.push("/progress/history")}
+        >
+          <SymbolView name="clock.arrow.circlepath" size={20} tintColor={colors.ink} weight="regular" />
+          <Text className="font-text text-body-lg font-bold text-ink">Study history</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

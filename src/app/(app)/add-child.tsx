@@ -1,3 +1,4 @@
+import { useAuth } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
 import { router, useLocalSearchParams } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
@@ -219,12 +220,26 @@ type OpenSheet = "month" | "year" | null
 
 export default function AddChild() {
   const { addChild, updateChild, removeChild, children } = useChildren()
+  const { signOut } = useAuth()
 
   // Same screen serves add and edit. With an `id` param it edits that child (prefilled form,
   // "Save changes", delete option); without one it adds a new child.
   const { id } = useLocalSearchParams<{ id?: string }>()
   const existing = children.find((c) => c.id === id)
   const editing = !!existing
+
+  // Onboarding: signed in, first child not created yet. The back control is deliberately hidden
+  // here (a child is required to proceed), which leaves a parent who signed in with the wrong
+  // Apple ID with no way forward and no way out. Sign out is that escape hatch — the only reason
+  // it appears on this screen and not on the other child-facing ones.
+  const onboarding = !editing && children.length === 0
+
+  function confirmSignOut() {
+    Alert.alert("Sign out?", "You'll need to sign back in with Apple or Google.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Sign out", style: "destructive", onPress: () => void signOut() },
+    ])
+  }
 
   // Leave the form back to who's-studying. Prefer popping the pushed screen; if there is no
   // history (reached fresh — e.g. a deep link) fall back to replacing into home so a parent
@@ -302,10 +317,11 @@ export default function AddChild() {
       <StatusBar style="dark" />
 
       {/* Header: centred title with the back control pinned to the left edge. Shown whenever the
-          parent already has a child (they can return to who's-studying to pick a different one);
-          hidden only during first-child onboarding, where a child is required to proceed. The
-          button renders after the heading so its tap zone sits above the full-width centred title
-          rather than under it. */}
+          parent already has a child (they can return to who's-studying to pick a different one).
+          During first-child onboarding a child is required to proceed, so back is replaced by Sign
+          out on the right — the parent still needs one way off this screen. The button renders
+          after the heading so its tap zone sits above the full-width centred title rather than
+          under it. */}
       <View className="mt-10 h-9 justify-center">
         <RoundedHeading
           color={colors.ink}
@@ -315,7 +331,17 @@ export default function AddChild() {
         >
           {editing ? "Edit child" : "Add a child"}
         </RoundedHeading>
-        {editing || children.length > 0 ? (
+        {onboarding ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+            className="absolute right-0 h-9 justify-center active:opacity-60"
+            hitSlop={8}
+            onPress={confirmSignOut}
+          >
+            <Text className="font-text text-body-lg font-semibold text-text-secondary">Sign out</Text>
+          </Pressable>
+        ) : (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Go back"
@@ -325,7 +351,7 @@ export default function AddChild() {
           >
             <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="medium" />
           </Pressable>
-        ) : null}
+        )}
       </View>
 
       {/* Avatar. The lavender ring holds the chosen picture; the camera badge opens the

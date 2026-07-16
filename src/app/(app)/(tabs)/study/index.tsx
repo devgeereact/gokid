@@ -1,14 +1,20 @@
+import { useUser } from "@clerk/expo"
 import { router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { SymbolView } from "expo-symbols"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { ChildAvatar } from "@/components/child-avatar"
+import { EmptyState } from "@/components/empty-state"
+import { OfflineBanner } from "@/components/offline-banner"
+import { SetListSkeleton } from "@/components/skeleton"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/children"
+import { currentTerm } from "@/lib/curriculum"
 import { timeGreeting } from "@/lib/greeting"
-import { CONTINUE_SET, STUDY_SETS, type StudySet } from "@/lib/study"
+import { CONTINUE_SET, getStudySetsForYear, STUDY_SETS, type StudySet } from "@/lib/study"
+import { type Subject, SUBJECTS } from "@/lib/subjects"
 
 /**
  * Study dashboard — "Home / Study Sets" (design/GoKid-studydashboard-screen.png, screen 5).
@@ -51,13 +57,44 @@ function LessonCard({ set }: { set: StudySet }) {
   )
 }
 
+/**
+ * Subject tile — the wireframe's "Subject Categories" shelf (design/flow-wireframe.md: HOME →
+ * Subject Categories → Set Detail). Opens that subject's hub.
+ */
+function SubjectTile({ subject }: { subject: Subject }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={subject.name}
+      className="mr-3 w-28 items-center rounded-lg border border-border bg-study-lesson p-3 active:opacity-80"
+      onPress={() => router.push({ pathname: "/subject/[subject]", params: { subject: subject.slug } })}
+    >
+      <View className={`h-12 w-12 items-center justify-center rounded-full ${subject.wash}`}>
+        {subject.art ? (
+          <Image accessibilityIgnoresInvertColors className="h-9 w-9" contentFit="contain" source={subject.art} />
+        ) : (
+          <SymbolView name={subject.symbol} size={20} tintColor={subject.ink} weight="semibold" />
+        )}
+      </View>
+      <Text numberOfLines={1} className="mt-2 font-text text-caption font-semibold text-ink">
+        {subject.short}
+      </Text>
+    </Pressable>
+  )
+}
+
 export default function Study() {
   const { id } = useLocalSearchParams<{ id?: string }>()
+  const { isLoaded } = useUser()
   const { children } = useChildren()
   // The child tapped on "Who's studying?" (fall back to the first child if reached directly).
   const child = children.find((c) => c.id === id) ?? children[0]
   const childName = child?.name ?? "there"
   const avatar = child?.avatar ?? DEFAULT_AVATAR
+
+  // Sets are curriculum-mapped by year group, so the dashboard only offers what matches the child.
+  // Reached without a child (deep link, no profiles yet) → show the full shelf rather than nothing.
+  const sets = child ? getStudySetsForYear(child.yearGroup) : STUDY_SETS
 
   const cont = CONTINUE_SET
 
@@ -65,18 +102,30 @@ export default function Study() {
     <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
       <StatusBar style="dark" />
 
-      {/* Header — back to "Who's studying?" (switch child) · notifications */}
+      {/* Header — back to "Who's studying?" (switch child) · notifications.
+          Navigates rather than `router.back()`: this is a tab root, so there is nothing to pop
+          whenever the study stack is already at its root (a deep link, or the set-result →
+          congratulations `replace` chain) and the chevron would be a dead button. */}
       <View className="mt-1 h-11 flex-row items-center justify-between">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Choose a different child"
           className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
           hitSlop={8}
-          onPress={() => router.back()}
+          onPress={() => router.navigate("/home")}
         >
           <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
         </Pressable>
         <View className="flex-row items-center">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Search sets"
+            className="h-11 w-11 items-center justify-center active:opacity-60"
+            hitSlop={8}
+            onPress={() => router.push("/search")}
+          >
+            <SymbolView name="magnifyingglass" size={24} tintColor={colors.ink} weight="regular" />
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Downloaded sets"
@@ -99,6 +148,9 @@ export default function Study() {
         </View>
       </View>
 
+      {/* Connectivity — shows only when the connection drops, and again briefly on recovery. */}
+      <OfflineBanner />
+
       <ScrollView
         className="mt-2 flex-1"
         contentContainerClassName="pb-6"
@@ -111,8 +163,12 @@ export default function Study() {
             <Text numberOfLines={1} className="font-text text-h2 font-bold text-ink">
               {timeGreeting()}, {childName}
             </Text>
+            {/* The term is computed, not the literal "Autumn term" the mockup happens to show — that
+                is example copy in a static PNG (the design system's capsule reads "Year 3 · Autumn
+                term" too). The Curriculum Browser derives its own capsule from the date, and two
+                screens one tap apart must not disagree about what term it is. */}
             <Text className="mt-1 font-text text-body-lg text-text-secondary">
-              {child ? `${yearLabel(child.yearGroup)} • Autumn term` : "Autumn term"}
+              {child ? `${yearLabel(child.yearGroup)} • ${currentTerm()}` : currentTerm()}
             </Text>
           </View>
         </View>
@@ -152,11 +208,50 @@ export default function Study() {
           </Pressable>
         </View>
 
+        {/* Subjects — one hub per subject (design/gokid-screens.md §4). The "Curriculum" link is the
+            dashboard's way into the Curriculum Browser (§5 / §21): the tiles answer "take me to
+            Maths", the browser answers "what does this year actually cover". It opens on the active
+            child's year, so it lands where this dashboard already is. */}
+        <View className="mb-4 mt-8 flex-row items-center justify-between">
+          <Text className="font-text text-h3 font-bold text-ink">Subjects</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Browse the curriculum"
+            className="active:opacity-60"
+            hitSlop={8}
+            onPress={() =>
+              router.push({ pathname: "/curriculum", params: child ? { year: child.yearGroup } : {} })
+            }
+          >
+            <Text className="font-text text-body font-bold text-primary">Curriculum</Text>
+          </Pressable>
+        </View>
+        <ScrollView
+          horizontal
+          className="-mx-1"
+          contentContainerClassName="px-1"
+          showsHorizontalScrollIndicator={false}
+        >
+          {SUBJECTS.map((subject) => (
+            <SubjectTile key={subject.slug} subject={subject} />
+          ))}
+        </ScrollView>
+
         {/* Ready for you */}
         <Text className="mb-4 mt-8 font-text text-h3 font-bold text-ink">Ready for you</Text>
-        {STUDY_SETS.map((set) => (
-          <LessonCard key={set.id} set={set} />
-        ))}
+        {!isLoaded ? (
+          <SetListSkeleton count={3} />
+        ) : sets.length === 0 ? (
+          <EmptyState
+            symbol="tray"
+            title="No sets for this year yet"
+            body="We're still writing sets for this year group. New ones land every week."
+            actionLabel="Browse everything"
+            onAction={() => router.push("/search")}
+          />
+        ) : (
+          sets.map((set) => <LessonCard key={set.id} set={set} />)
+        )}
       </ScrollView>
     </SafeAreaView>
   )
