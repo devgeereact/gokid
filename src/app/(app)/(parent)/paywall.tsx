@@ -12,9 +12,20 @@ import { colors } from "@/design/tokens"
  * Monthly / Annual price toggle (Annual pre-selected — "Best value"), and a free-trial CTA. Prices
  * are demo copy; no real billing is wired (StoreKit/RevenueCat lands later). The "13. Paywall" title
  * is a mockup annotation — dropped.
+ *
+ * The benefits are deliberately claims that are true of the app as built. The mockup sold "Unlimited
+ * AI-generated sets" (there is no AI), "More than one child" (already free and uncapped) and "Full
+ * progress history" (uncapped for everyone) — two of those are things a parent would be paying for
+ * and not receiving. Until the entitlement layer exists (Batch J), the screen must not advertise a
+ * feature the product does not have or already gives away. These three describe the real product:
+ * the full curriculum, the spaced-repetition engine, and an ad-free experience.
  */
 
-const BENEFITS = ["Unlimited AI-generated sets", "More than one child", "Full progress history"]
+const BENEFITS = [
+  "The full UK curriculum, Reception to Year 6",
+  "Spaced repetition, so learning sticks",
+  "Every subject, and no ads — ever",
+]
 
 function Benefit({ label }: { label: string }) {
   return (
@@ -76,7 +87,7 @@ export default function Paywall() {
             accessibilityIgnoresInvertColors
             className="absolute right-0 top-0 h-72 w-[62%]"
             contentFit="contain"
-            source={require("../../../assets/images/gokid-paywall-hero.png")}
+            source={require("../../../../assets/images/gokid-paywall-hero.png")}
           />
           <Pressable
             accessibilityRole="button"
@@ -97,7 +108,13 @@ export default function Paywall() {
             <Benefit key={b} label={b} />
           ))}
 
-          <View className="mt-4 flex-row gap-4">
+          {/* Marked as planned, not offered. These figures are not products in App Store Connect and
+              nothing here can charge — presenting them as live prices next to a working-looking
+              button is how a parent ends up believing they have subscribed. */}
+          <Text className="mb-2 mt-6 font-text text-caption font-semibold uppercase text-text-secondary">
+            Planned pricing
+          </Text>
+          <View className="flex-row gap-4">
             <PriceCard
               plan="Monthly"
               price="£6.49"
@@ -115,18 +132,32 @@ export default function Paywall() {
             />
           </View>
 
+          {/* Was a "Start free trial" button wired to `router.back()` — a control labelled as
+              enrolling a parent in a paid trial that silently did nothing, above a promise to remind
+              them before it renewed. There is no billing SDK and no product to buy, so the screen now
+              says so and offers no action it cannot perform. */}
+          <View className="mt-6 rounded-2xl border border-border bg-white p-4">
+            <View className="flex-row items-center">
+              <SymbolView name="clock" size={18} tintColor={colors.primary} weight="semibold" />
+              <Text className="ml-3 flex-1 font-text text-body-lg font-bold text-ink">
+                Not available yet
+              </Text>
+            </View>
+            <Text className="mt-2 font-text text-body text-text-secondary">
+              GoKid can’t take payments yet, so there is nothing to subscribe to and nothing has been
+              charged. Everything in the app today is free to use. When plans go live you’ll see the
+              final price and terms here before anything happens.
+            </Text>
+          </View>
+
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Start free trial"
-            className="mt-6 h-14 items-center justify-center rounded-full bg-primary active:opacity-90"
+            accessibilityLabel="Back to the parent area"
+            className="mt-4 h-14 items-center justify-center rounded-full border border-border bg-white active:opacity-70"
             onPress={() => router.back()}
           >
-            <Text className="font-text text-body-lg font-bold text-white">Start free trial</Text>
+            <Text className="font-text text-body-lg font-bold text-ink">Keep using GoKid free</Text>
           </Pressable>
-
-          <Text className="mt-5 px-4 text-center font-text text-body-lg text-text-secondary">
-            Cancel any time. We&apos;ll remind you before it renews.
-          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>

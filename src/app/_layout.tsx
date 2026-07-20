@@ -19,7 +19,12 @@ const navigationIntegration = Sentry.reactNavigationIntegration({
 
 Sentry.init({
   dsn: "https://8896f7f4e49830ef03edcb5831e6bcde@o4511713747271680.ingest.de.sentry.io/4511733550547024",
-  sendDefaultPii: true,
+  // Off by design. GoKid is used by children, and `sendDefaultPii` attaches IP addresses and user
+  // identifiers to every event — data that should not leave a child's device without a deliberate
+  // decision (UK GDPR / the Children's Code). Errors are still tagged with a `flow` for triage; if a
+  // parent-scoped identifier is ever needed for support, attach a hashed parent id explicitly rather
+  // than turning this blanket flag back on.
+  sendDefaultPii: false,
   tracesSampleRate: __DEV__ ? 1.0 : 0.2,
   integrations: [navigationIntegration],
   enableNativeFramesTracking: !isRunningInExpoGo(),

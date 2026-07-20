@@ -6,8 +6,25 @@
 // `src/lib/study.ts` owns the set itself (title / subject / year group); this module only carries
 // what the certificate adds on top — the award line, the objectives it attests, the stats it was
 // earned with, and the issue date.
+//
+// Certificates are the one keepsake design/gokid-screens.md §9 asks for, and they survive that
+// brief's ban on streaks and leaderboards because nothing about them is comparative or perishable:
+// a certificate attests curriculum objectives the child met, it is theirs permanently, and no
+// amount of not-studying takes it back. Stats printed on it are therefore learning facts —
+// "Objectives met", not "Points earned".
 
 import { getStudySet } from "./study"
+
+/**
+ * Today, formatted "16 July 2026". A certificate is earned when the child finishes the set, so its
+ * issue date is the day it is generated, not a literal typed into the data (the mockup shipped
+ * "16 July 2026" on every certificate — a child finishing a set the next day got yesterday's date).
+ * The clock read lives here, inside an imported helper, the same way `dueLabel` in reviews.ts does,
+ * so it stays out of the component body the React Compiler treats as pure.
+ */
+function issuedToday() {
+  return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+}
 
 export type CertificateObjective = {
   /** National Curriculum objective the child demonstrated. */
@@ -59,16 +76,18 @@ const CERTIFICATES: Record<string, Certificate> = {
       { label: "Accuracy", value: "90%" },
       { label: "Cards studied", value: "20" },
       { label: "Time spent", value: "24m" },
-      { label: "Points earned", value: "120" },
+      { label: "Objectives met", value: "4" },
     ],
     encouragement: "You stuck with it and it paid off. Print this one and put it on the fridge!",
   },
 }
 
-/** The certificate for a completed set. Falls back to a derived one for sets without demo copy. */
+/** The certificate for a completed set. Falls back to a derived one for sets without demo copy.
+ *  The issue date is always today — a certificate is dated the day it is earned, never a fixed
+ *  literal (see `issuedToday`). */
 export function getCertificate(setId: string): Certificate | undefined {
   const known = CERTIFICATES[setId]
-  if (known) return known
+  if (known) return { ...known, issued: issuedToday() }
 
   const set = getStudySet(setId)
   if (!set) return undefined
@@ -77,14 +96,14 @@ export function getCertificate(setId: string): Certificate | undefined {
     setId: set.id,
     award: set.title,
     tier: "Gold",
-    issued: "16 July 2026",
-    reference: `GK-2026-0716-${set.id.slice(0, 8).toUpperCase()}`,
+    issued: issuedToday(),
+    reference: `GK-${set.id.slice(0, 8).toUpperCase()}`,
     objectives: set.mastered.map((title) => ({ title, strand: set.topic })),
     stats: [
       { label: "Accuracy", value: "90%" },
       { label: "Cards studied", value: String(set.cardsTotal) },
       { label: "Time spent", value: `${set.minutes}m` },
-      { label: "Points earned", value: "120" },
+      { label: "Objectives met", value: String(set.mastered.length) },
     ],
     encouragement: "You stuck with it and it paid off. Print this one and put it on the fridge!",
   }

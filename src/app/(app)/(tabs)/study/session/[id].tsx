@@ -6,22 +6,25 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { useBookmarks } from "@/lib/bookmarks"
+import { useStudyingChildId } from "@/lib/children"
+import { hintFor } from "@/lib/hints"
+import { useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
 
 /**
  * Study Session (design/GoKid-studysection-screen.png, screen 19). A single MCQ card inside a
  * gamified session shell: set summary + progress, a big question card with a hint / answer toggle and
  * four answer pills, a Previous / Skip / Next action row, and a session-goal + accuracy footer. The
- * "19. Study Session" title is a mockup annotation — dropped. Streak, session-goal and accuracy
- * numbers are demo constants (the Neon/Drizzle progress API lands later — AGENTS.md). The mock's
- * underlined "728" digit art isn't reproduced — the real prompt (q.prompt) is shown instead. Target /
- * trophy / flame glyphs are SF Symbols + the 🔥 emoji the brief calls for (no bespoke assets).
+ * "19. Study Session" title is a mockup annotation — dropped. Session-goal and accuracy numbers are
+ * demo constants (the Neon/Drizzle progress API lands later — AGENTS.md); "Cards learned" is real,
+ * read from the spaced-repetition record. The mock's 🔥 streak chip is gone — design/gokid-screens.md
+ * §9 rejects streaks, and a live correct-in-a-row counter beside a child mid-question is pressure
+ * rather than encouragement. The mock's underlined "728" digit art isn't reproduced — the real
+ * prompt (q.prompt) is shown instead. Target / trophy glyphs are SF Symbols (no bespoke assets).
  */
 
 // Demo session numbers shown in the mock.
-const STREAK = 8
-const GOAL_CARDS = 20
-const ACCURACY = 85
 
 // Bar fill widths as literal classes so NativeWind's compiler emits them (it scans source text).
 // Data-driven widths round to the nearest 5% and index this map — no inline `style`, no interpolation.
@@ -61,6 +64,10 @@ function Bar({ fill }: { fill: string }) {
 
 export default function StudySession() {
   const { id, index } = useLocalSearchParams<{ id: string; index?: string }>()
+  const childId = useStudyingChildId() ?? ""
+  // §6 "Mark Favourite" — this glyph was accessibilityRole="image" and stored nothing.
+  const { toggle: toggleFavourite, isBookmarked } = useBookmarks(childId, "card")
+  const { cards } = useProgress(childId)
   const set = getStudySet(id)
   const [selected, setSelected] = useState<number | null>(null)
   const [showAnswer, setShowAnswer] = useState(false)
@@ -69,6 +76,16 @@ export default function StudySession() {
 
   const i = Math.max(0, Math.min(Number(index ?? 0) || 0, set.cards.length - 1))
   const q = set.quiz[i % set.quiz.length]
+
+  // Box 2+ — recalled at least twice across widening gaps. Cumulative, so it never counts down.
+  const setCards = cards.filter((c) => c.setId === set.id)
+  const learned = setCards.filter((c) => c.box >= 2).length
+
+  // The goal is this set's real length, and accuracy is how many of the cards they have rated in it
+  // came back as "got it" — both replacing hard-coded 20 / 85%.
+  const goalCards = set.cards.length
+  const recalled = setCards.filter((c) => c.lastRating === "gotit").length
+  const accuracy = setCards.length ? Math.round((recalled / setCards.length) * 100) : null
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
@@ -123,13 +140,14 @@ export default function StudySession() {
             </View>
           </View>
 
-          {/* Current streak */}
+          {/* Cards learned. Was a 🔥 "Current streak" chip — a live counter of correct-answers-in-a-row
+              sitting next to the child while they answer, which is pressure, not encouragement (§9). */}
           <View className="ml-4 items-center justify-center rounded-2xl bg-gamify-green-wash px-4 py-4">
             <View className="flex-row items-center">
-              <Text className="text-body-lg">🔥</Text>
-              <Text className="ml-1 font-text text-h3 font-bold text-gamify-green">{STREAK}</Text>
+              <SymbolView name="brain.head.profile" size={18} tintColor={colors.gamify.green} weight="semibold" />
+              <Text className="ml-1 font-text text-h3 font-bold text-gamify-green">{learned}</Text>
             </View>
-            <Text className="mt-1 font-text text-caption font-semibold text-text-secondary">Current streak</Text>
+            <Text className="mt-1 font-text text-caption font-semibold text-text-secondary">Cards learned</Text>
           </View>
         </View>
 
@@ -141,9 +159,23 @@ export default function StudySession() {
                 {`Card ${i + 1} of ${set.cardsTotal}`}
               </Text>
             </View>
-            <View accessibilityRole="image" accessibilityLabel="Bookmark card">
-              <SymbolView name="bookmark" size={22} tintColor={colors.ink} weight="regular" />
-            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                isBookmarked(q.id) ? "Remove this card from favourites" : "Save this card to favourites"
+              }
+              accessibilityState={{ selected: isBookmarked(q.id) }}
+              className="h-9 w-9 items-center justify-center active:opacity-60"
+              hitSlop={8}
+              onPress={() => toggleFavourite(q.id)}
+            >
+              <SymbolView
+                name={isBookmarked(q.id) ? "bookmark.fill" : "bookmark"}
+                size={22}
+                tintColor={isBookmarked(q.id) ? colors.primary : colors.ink}
+                weight={isBookmarked(q.id) ? "semibold" : "regular"}
+              />
+            </Pressable>
           </View>
 
           <Text className="mb-6 mt-6 text-center font-text text-h2 font-bold leading-[34px] text-ink">
@@ -156,7 +188,12 @@ export default function StudySession() {
             <View className="ml-3 flex-1">
               <Text className="font-text text-body font-bold text-ink">Hint</Text>
               <Text className="mt-0.5 font-text text-caption text-text-secondary">
-                {showAnswer ? `Answer: ${q.options[q.answer]}` : "Read each option carefully before choosing."}
+                {/* Was "Read each option carefully before choosing." on every single card — identical
+                    text regardless of the question, which teaches a child the hint is worthless.
+                    Now a real cue derived from the correct option (see lib/hints.ts). */}
+                {showAnswer
+                  ? `Answer: ${q.options[q.answer]}`
+                  : (hintFor(q.options[q.answer]) ?? "Read each option carefully before choosing.")}
               </Text>
             </View>
             <Pressable
@@ -223,7 +260,8 @@ export default function StudySession() {
                 })
               }
             >
-              <SymbolView name="bookmark" size={16} tintColor={colors["text-secondary"]} weight="regular" />
+              {/* Was a bookmark glyph, which is the icon for the favourite control directly above. */}
+              <SymbolView name="forward.end" size={16} tintColor={colors["text-secondary"]} weight="regular" />
               <Text className="ml-1.5 font-text text-body font-semibold text-text-secondary">Skip</Text>
             </Pressable>
 
@@ -253,12 +291,12 @@ export default function StudySession() {
               </View>
               <View className="ml-3 flex-1">
                 <Text className="font-text text-body font-bold text-ink">Session goal</Text>
-                <Text className="mt-0.5 font-text text-caption text-text-secondary">Finish {GOAL_CARDS} cards</Text>
+                <Text className="mt-0.5 font-text text-caption text-text-secondary">Finish {goalCards} cards</Text>
               </View>
             </View>
             <View className="mt-3 flex-row items-center">
-              <Bar fill={pct((i / GOAL_CARDS) * 100)} />
-              <Text className="ml-2 font-text text-caption font-bold text-ink">{`${i} / ${GOAL_CARDS}`}</Text>
+              <Bar fill={pct((i / goalCards) * 100)} />
+              <Text className="ml-2 font-text text-caption font-bold text-ink">{`${i} / ${goalCards}`}</Text>
             </View>
           </View>
 
@@ -271,12 +309,16 @@ export default function StudySession() {
               </View>
               <View className="ml-3 flex-1">
                 <Text className="font-text text-body font-bold text-ink">Accuracy</Text>
-                <Text className="mt-0.5 font-text text-caption text-text-secondary">{ACCURACY}% so far</Text>
+                <Text className="mt-0.5 font-text text-caption text-text-secondary">
+                  {accuracy === null ? "No cards rated yet" : `${accuracy}% so far`}
+                </Text>
               </View>
             </View>
             <View className="mt-3 flex-row items-center">
-              <Bar fill={pct(ACCURACY)} />
-              <Text className="ml-2 font-text text-caption font-bold text-ink">{ACCURACY}%</Text>
+              <Bar fill={pct(accuracy ?? 0)} />
+              <Text className="ml-2 font-text text-caption font-bold text-ink">
+                {accuracy === null ? "—" : `${accuracy}%`}
+              </Text>
             </View>
           </View>
         </View>

@@ -1,11 +1,17 @@
+import * as Sentry from "@sentry/react-native"
 import { Redirect, router, useLocalSearchParams } from "expo-router"
+import * as Print from "expo-print"
 import { StatusBar } from "expo-status-bar"
 import { SymbolView } from "expo-symbols"
-import { Pressable, ScrollView, Share, Text, View } from "react-native"
+import { Alert, Pressable, ScrollView, Text, View } from "react-native"
 
+import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { certificateHtml } from "@/lib/certificate-print"
+import { shareAboutChild } from "@/lib/share"
 import { useChildren } from "@/lib/children"
+import { useParentGate } from "@/lib/parent-gate"
 import { getCertificate } from "@/lib/rewards"
 import { getStudySet } from "@/lib/study"
 
@@ -31,17 +37,54 @@ export default function CertificateEarned() {
   const set = getStudySet(id)
   const cert = getCertificate(id)
   const { children } = useChildren()
+  const { unlocked } = useParentGate()
 
   if (!set || !cert) return <Redirect href="/home" />
 
   const name = children[0]?.name ?? "Amara"
 
-  const onShare = () => {
-    Share.share({
+  // The certificate is reached at the end of the child's own study flow, and Share.share posts the
+  // child's name and year group to any app on the device — a child publishing their own identifying
+  // data with no adult in the loop (UK Children's Code). So the share is gated: a child sees the
+  // certificate and is told to fetch a grown-up; a parent who has passed the passcode gate this session
+  // can share. Nothing about the certificate itself is hidden — only the outbound share.
+  const onShare = () =>
+    shareAboutChild({
+      unlocked,
       message: `${name} earned a GoKid certificate for ${cert.award} (${set.yearGroup} ${set.subject}) — ${cert.issued}.`,
-    }).catch(() => {
-      // User dismissed the sheet. Nothing to report.
     })
+
+  /**
+   * §9 "Printable Certificate". Real now that `expo-print` is installed — this control previously
+   * said "Save or print" behind a printer icon and only opened a share sheet.
+   *
+   * Gated like every other outbound action on this screen: the sheet renders the child's first name
+   * and year group onto a page and hands it to AirPrint or a PDF, which is publishing. Same rule as
+   * the share (UK Children's Code) — see lib/share.ts.
+   */
+  const onPrint = async () => {
+    if (!unlocked) {
+      Alert.alert("Ask a grown-up", "Printing is a grown-up job — open the Parent area first.")
+      return
+    }
+    try {
+      await Print.printAsync({
+        html: certificateHtml({
+          name,
+          award: cert.award,
+          subject: set.subject,
+          yearGroup: set.yearGroup,
+          setTitle: set.title,
+          issued: cert.issued,
+        }),
+      })
+    } catch (error) {
+      // Dismissing the print sheet rejects on iOS, which is a decision rather than a failure — only
+      // a genuine error is worth reporting.
+      if (error instanceof Error && /cancel|dismiss/i.test(error.message)) return
+      Sentry.captureException(error, { tags: { flow: "certificate-print" } })
+      Alert.alert("Couldn’t print", "Something went wrong preparing the certificate. Please try again.")
+    }
   }
 
   return (
@@ -50,15 +93,7 @@ export default function CertificateEarned() {
 
       {/* Header — back / centred title / share */}
       <View className="mt-1 h-11 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text className="flex-1 text-center font-text text-h3 font-bold text-ink">Certificate</Text>
         <Pressable
           accessibilityRole="button"
@@ -152,16 +187,27 @@ export default function CertificateEarned() {
         <View className="mt-4 rounded-2xl border border-border bg-white p-5">
           <Text className="font-text text-h3 font-bold text-ink">Keep it</Text>
           <Text className="mt-1 font-text text-body text-text-secondary">
-            Save a copy, or send it to someone who&apos;ll be proud.
+            Print it for the fridge, or send it to someone who&apos;ll be proud.
           </Text>
+          {/* Both controls now do what they say. "Save or print" used to be a printer icon over a
+              plain Share.share call; printing is real since `expo-print` landed. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Save or print certificate"
-            className="mt-4 h-14 flex-row items-center justify-center gap-2 rounded-full border border-primary bg-white active:opacity-70"
+            accessibilityLabel="Print certificate"
+            className="mt-4 h-14 flex-row items-center justify-center gap-2 rounded-full bg-primary active:opacity-90"
+            onPress={() => void onPrint()}
+          >
+            <SymbolView name="printer.fill" size={18} tintColor={colors.white} weight="semibold" />
+            <Text className="font-text text-body-lg font-bold text-white">Print or save as PDF</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Share certificate"
+            className="mt-3 h-14 flex-row items-center justify-center gap-2 rounded-full border border-primary bg-white active:opacity-70"
             onPress={onShare}
           >
-            <SymbolView name="printer.fill" size={18} tintColor={colors.primary} weight="semibold" />
-            <Text className="font-text text-body-lg font-bold text-primary">Save or print</Text>
+            <SymbolView name="square.and.arrow.up" size={18} tintColor={colors.primary} weight="semibold" />
+            <Text className="font-text text-body-lg font-bold text-primary">Share certificate</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"

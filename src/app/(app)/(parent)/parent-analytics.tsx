@@ -6,11 +6,13 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from "react-native-svg"
 
 import { ChildAvatar } from "@/components/child-avatar"
+import { EmptyState } from "@/components/empty-state"
 import { ProgressRing } from "@/components/progress-ring"
+import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { type AreaRow, analyticsFor, duration, type Insight, type Period } from "@/lib/analytics"
-import { DEMO_CHILDREN, useChildren, yearLabel } from "@/lib/children"
+import { type AreaRow, duration, type Insight, type Period, useAnalytics } from "@/lib/analytics"
+import { useChildren, yearLabel } from "@/lib/children"
 
 /**
  * Parent Analytics (design/gokid-screens.md §10 → Analytics). One screen carrying all eight items
@@ -253,9 +255,9 @@ function AreaList({ rows, tone }: { rows: AreaRow[]; tone: "strong" | "weak" }) 
 
 export default function ParentAnalytics() {
   const { children } = useChildren()
-  // The parent area is reachable before anyone has added a child; the demo roster keeps every
-  // section populated rather than showing an empty report. Same fallback the study flow uses.
-  const roster = children.length ? children : DEMO_CHILDREN
+  // The parent's real roster. There is no demo fallback: a parent with no children should be told
+  // so, not shown a fabricated family's report.
+  const roster = children
   const [childId, setChildId] = useState(roster[0]?.id)
 
   // Period lives in the route, not in `useState`, so the monthly report is a linkable thing —
@@ -265,31 +267,23 @@ export default function ParentAnalytics() {
   const period: Period = periodParam === "month" ? "month" : "week"
 
   const child = roster.find((c) => c.id === childId) ?? roster[0]
-  const data = analyticsFor(child, period)
+  const data = useAnalytics(child, period)
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
       <StatusBar style="dark" />
 
-      {/* Header. A pushed route behind the maths gate — it gets no tab bar, so the chevron is the
+      {/* Header. A pushed route behind the passcode gate — it gets no tab bar, so the chevron is the
           only way back, as on parent-content. */}
       <View className="flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text className="flex-1 text-center font-text text-h3 font-bold text-ink">Analytics</Text>
         {/* Balances the chevron so the title centres on the screen, not on the space beside it. */}
         <View className="h-11 w-11" />
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="pb-10 pt-2" showsVerticalScrollIndicator={false}>
-        {/* Child switching (§10 → Child Management). Horizontal — a full demo roster is seven. */}
+        {/* Child switching (§10 → Child Management). Horizontal — households can have several. */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 pr-5">
           {roster.map((c) => {
             const on = c.id === child?.id
@@ -333,6 +327,16 @@ export default function ParentAnalytics() {
           ))}
         </View>
 
+        {!data.hasData ? (
+          <EmptyState
+            symbol="chart.bar.doc.horizontal"
+            title="Nothing to report yet"
+            body={`Once ${child?.name ?? "your child"} studies, this report fills in — study time, accuracy, curriculum coverage and where they're strongest.`}
+            actionLabel="Go to study"
+            onAction={() => router.push("/study")}
+          />
+        ) : (
+          <>
         {/* Weekly / Monthly Summary */}
         <View className="mt-4 flex-row gap-3">
           <Tile
@@ -436,25 +440,31 @@ export default function ParentAnalytics() {
           <AreaList rows={data.weak} tone="weak" />
         </Card>
 
-        {/* AI Insights. Copy is templated off the same demo figures the charts draw, so an insight
-            can never contradict the chart above it. The real generator is an Inngest job (AGENTS.md). */}
-        <Card>
-          <View className="mb-4 flex-row items-center gap-2">
-            <SymbolView name="sparkles" size={20} tintColor={colors.gamify.purple} weight="semibold" />
-            <Text className="flex-1 font-text text-h3 font-bold text-ink">AI insights</Text>
-          </View>
-          {data.insights.map((insight) => (
-            <View key={insight.title} className={`mb-3 rounded-lg p-4 last:mb-0 ${TONE[insight.tone].wash}`}>
-              <View className="flex-row items-center gap-2">
-                <View className={`h-7 w-7 items-center justify-center rounded-full ${TONE[insight.tone].disc}`}>
-                  <SymbolView name={insight.icon} size={14} tintColor={colors.white} weight="semibold" />
-                </View>
-                <Text className="flex-1 font-text text-body-lg font-bold text-ink">{insight.title}</Text>
-              </View>
-              <Text className="mt-2 font-text text-body text-text-secondary">{insight.body}</Text>
+        {/* Insights. Each sentence is generated from the same real figures the charts draw, so an
+            insight can never contradict the chart above it, and none appears without data behind it.
+            Not labelled "AI" — nothing here is generated by a model. An Inngest-backed generator is
+            the future step (AGENTS.md). */}
+        {data.insights.length > 0 ? (
+          <Card>
+            <View className="mb-4 flex-row items-center gap-2">
+              <SymbolView name="sparkles" size={20} tintColor={colors.gamify.purple} weight="semibold" />
+              <Text className="flex-1 font-text text-h3 font-bold text-ink">Insights</Text>
             </View>
-          ))}
-        </Card>
+            {data.insights.map((insight) => (
+              <View key={insight.title} className={`mb-3 rounded-lg p-4 last:mb-0 ${TONE[insight.tone].wash}`}>
+                <View className="flex-row items-center gap-2">
+                  <View className={`h-7 w-7 items-center justify-center rounded-full ${TONE[insight.tone].disc}`}>
+                    <SymbolView name={insight.icon} size={14} tintColor={colors.white} weight="semibold" />
+                  </View>
+                  <Text className="flex-1 font-text text-body-lg font-bold text-ink">{insight.title}</Text>
+                </View>
+                <Text className="mt-2 font-text text-body text-text-secondary">{insight.body}</Text>
+              </View>
+            ))}
+          </Card>
+        ) : null}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   )

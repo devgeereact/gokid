@@ -6,6 +6,7 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { EmptyState } from "@/components/empty-state"
 import { ProgressRing } from "@/components/progress-ring"
+import { BackButton } from "@/components/primitives"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useActiveChildId } from "@/lib/active-child"
@@ -289,15 +290,7 @@ export default function CurriculumBrowser() {
       <StatusBar style="dark" />
 
       <View className="mt-1 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text numberOfLines={1} className="flex-1 text-center font-text text-h3 font-bold text-ink">
           Curriculum
         </Text>

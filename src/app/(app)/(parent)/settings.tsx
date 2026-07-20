@@ -1,22 +1,26 @@
 import { useAuth, useUser } from "@clerk/expo"
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { SymbolView } from "expo-symbols"
 import * as WebBrowser from "expo-web-browser"
 import { useState } from "react"
 import { Alert, Pressable, ScrollView, Text, View } from "react-native"
 
+import { Row, Section } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useChildren } from "@/lib/children"
+import { entitlementLabel, useEntitlement } from "@/lib/subscription"
 
 /**
  * Account settings (MVP → Parent Features → "Account settings", "Subscription management",
- * "Restore purchases"). Reached from the Parent Zone, so it sits behind the maths gate.
+ * "Restore purchases"). Lives in the `(parent)` route group, so its layout guard enforces the passcode
+ * gate before this screen renders — a deep link to `/settings` hits the gate, not the account.
  *
  * No design reference covers this screen — the layout is inferred from the account rows at the foot
  * of design/GoKid-parentcontent-screen.png (screen 12) and reuses that row geometry, the parent-zone
- * section headings, and the same white-card-on-cream surface.
+ * section headings, and the same white-card-on-cream surface. `Row` and `Section` come from the
+ * shared primitives (they were previously redefined locally — see @/components/primitives).
  *
  * Billing is not wired: no StoreKit / RevenueCat is in package.json, so "Restore purchases" reports
  * that there is nothing to restore rather than pretending. The plan row is demo copy.
@@ -25,51 +29,12 @@ import { useChildren } from "@/lib/children"
 const PRIVACY_URL = "https://gokid.app/privacy"
 const TERMS_URL = "https://gokid.app/terms"
 
-function SectionHeading({ label }: { label: string }) {
-  return <Text className="mb-3 mt-8 font-text text-h3 font-bold text-ink">{label}</Text>
-}
-
-function Row({
-  symbol,
-  label,
-  value,
-  border,
-  destructive,
-  onPress,
-}: {
-  symbol: SFSymbol
-  label: string
-  value?: string
-  border?: boolean
-  destructive?: boolean
-  onPress?: () => void
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      className={`h-14 flex-row items-center active:opacity-60 ${border ? "border-b border-border" : ""}`}
-      onPress={onPress}
-    >
-      <SymbolView name={symbol} size={24} tintColor={destructive ? colors.error : colors.ink} weight="regular" />
-      <Text
-        className={`ml-4 flex-1 font-text text-body-lg font-semibold ${destructive ? "text-error" : "text-ink"}`}
-      >
-        {label}
-      </Text>
-      {value ? <Text className="mr-2 font-text text-body-lg font-bold text-text-secondary">{value}</Text> : null}
-      {onPress ? (
-        <SymbolView name="chevron.right" size={18} tintColor={colors["text-secondary"]} weight="semibold" />
-      ) : null}
-    </Pressable>
-  )
-}
-
 export default function Settings() {
   const { user } = useUser()
   const { signOut } = useAuth()
   const { children } = useChildren()
   const [restoring, setRestoring] = useState(false)
+  const entitlement = useEntitlement()
 
   async function restorePurchases() {
     setRestoring(true)
@@ -105,8 +70,15 @@ export default function Settings() {
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="pb-10" showsVerticalScrollIndicator={false}>
-        {/* Parent identity — from Clerk, the only account record the client holds. */}
-        <View className="mt-4 flex-row items-center rounded-2xl border border-border bg-white p-4">
+        {/* Parent identity — from Clerk, the only account record the client holds. Tappable now that
+            the name is editable (§12 → "Profile"): it was a dead card showing values with no way to
+            change them. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Edit your profile"
+          className="mt-4 flex-row items-center rounded-2xl border border-border bg-white p-4 active:opacity-70"
+          onPress={() => router.push("/profile")}
+        >
           <View className="h-12 w-12 items-center justify-center rounded-full bg-study-wash">
             <SymbolView name="person.fill" size={22} tintColor={colors.primary} weight="regular" />
           </View>
@@ -118,11 +90,12 @@ export default function Settings() {
               {user?.primaryEmailAddress?.emailAddress ?? "Signed in"}
             </Text>
           </View>
-        </View>
+          <SymbolView name="chevron.right" size={18} tintColor={colors["text-secondary"]} weight="semibold" />
+        </Pressable>
 
         {/* The list itself lives on /children (the manager) — this is the way in. Two screens both
             rendering child rows drifted apart; one owner now. */}
-        <SectionHeading label="Children" />
+        <Section title="Children" className="mb-3 mt-8" />
         <View className="rounded-2xl border border-border bg-white px-4">
           <Row
             symbol="person.2"
@@ -134,9 +107,18 @@ export default function Settings() {
           <Row symbol="plus.circle" label="Add a child" onPress={() => router.push("/add-child")} />
         </View>
 
-        <SectionHeading label="Subscription" />
+        <Section title="Subscription" className="mb-3 mt-8" />
         <View className="rounded-2xl border border-border bg-white px-4">
-          <Row symbol="star.circle" label="Plan" value="GoKid Plus" border onPress={() => router.push("/paywall")} />
+          {/* Was `value="GoKid Plus"` as a literal, so every parent was told they held a paid plan —
+              including one who had never seen a payment screen. Reads the entitlement seam now, and
+              opens the subscription screen rather than an offer to buy what they were told they had. */}
+          <Row
+            symbol="star.circle"
+            label="Plan"
+            value={entitlementLabel(entitlement)}
+            border
+            onPress={() => router.push("/subscription")}
+          />
           <Row
             symbol="arrow.clockwise.circle"
             label={restoring ? "Restoring…" : "Restore purchases"}
@@ -146,25 +128,53 @@ export default function Settings() {
           <Row symbol="creditcard" label="Billing" value="Apple" />
         </View>
 
-        <SectionHeading label="Learning" />
+        <Section title="Learning" className="mb-3 mt-8" />
         <View className="rounded-2xl border border-border bg-white px-4">
           <Row symbol="bell" label="Notifications" border onPress={() => router.push("/notifications")} />
-          <Row symbol="arrow.down.circle" label="Downloads" onPress={() => router.push("/offline")} />
+          <Row symbol="arrow.down.circle" label="Downloads" border onPress={() => router.push("/offline")} />
+          <Row symbol="target" label="Daily study goal" border onPress={() => router.push("/study-goal")} />
+          <Row symbol="clock.badge" label="Study reminder" border onPress={() => router.push("/reminders")} />
+          <Row symbol="accessibility" label="Accessibility" onPress={() => router.push("/accessibility")} />
         </View>
 
-        <SectionHeading label="Privacy" />
+        <Section title="Privacy" className="mb-3 mt-8" />
         <View className="rounded-2xl border border-border bg-white px-4">
+          <Row symbol="lock" label="Parent passcode" value="Change" border onPress={() => router.push("/passcode")} />
           <Row
             symbol="hand.raised"
             label="Privacy policy"
             border
             onPress={() => void WebBrowser.openBrowserAsync(PRIVACY_URL)}
           />
-          <Row symbol="doc.text" label="Terms of service" onPress={() => void WebBrowser.openBrowserAsync(TERMS_URL)} />
+          <Row
+            symbol="doc.text"
+            label="Terms of service"
+            border
+            onPress={() => void WebBrowser.openBrowserAsync(TERMS_URL)}
+          />
+          <Row symbol="arrow.triangle.2.circlepath" label="Back up &amp; sync" border onPress={() => router.push("/sync")} />
+          <Row symbol="internaldrive" label="Storage" border onPress={() => router.push("/storage")} />
+          <Row symbol="eye" label="What data we collect" border onPress={() => router.push("/data-usage")} />
+          <Row symbol="square.and.arrow.up" label="Export your data" onPress={() => router.push("/data-export")} />
         </View>
 
+        <Section title="Support" className="mb-3 mt-8" />
+        <View className="rounded-2xl border border-border bg-white px-4">
+          <Row symbol="questionmark.circle" label="Help &amp; Support" border onPress={() => router.push("/help")} />
+          <Row symbol="info.circle" label="About GoKid" onPress={() => router.push("/about")} />
+        </View>
+
+        {/* Sign out and delete sit together at the bottom, in that order: the reversible one first,
+            so the destructive one is never the thing a thumb lands on by habit. */}
         <View className="mt-8 rounded-2xl border border-border bg-white px-4">
-          <Row symbol="rectangle.portrait.and.arrow.right" label="Sign out" destructive onPress={confirmSignOut} />
+          <Row
+            symbol="rectangle.portrait.and.arrow.right"
+            label="Sign out"
+            border
+            destructive
+            onPress={confirmSignOut}
+          />
+          <Row symbol="trash" label="Delete account" destructive onPress={() => router.push("/delete-account")} />
         </View>
       </ScrollView>
     </SafeAreaView>

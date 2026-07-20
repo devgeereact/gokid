@@ -7,7 +7,6 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 import { ChildAvatar } from "@/components/child-avatar"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useActiveChildId } from "@/lib/active-child"
 import {
   type CalendarView,
   type DayCell,
@@ -16,7 +15,8 @@ import {
   useLearningCalendar,
   viewDays,
 } from "@/lib/calendar"
-import { DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, useStudyingChildId, yearLabel } from "@/lib/children"
+import { useProgress } from "@/lib/reviews"
 
 /**
  * Learning Calendar (design/gokid-screens.md §8 — "Learning Calendar"). The period switch also
@@ -28,8 +28,10 @@ import { DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/children"
  * cream page, the same three-up wash tiles, the same teal progress fill. The heat ramp itself is
  * inferred (see `colors.calendar` in src/design/tokens.js).
  *
- * Every day's record is demo data from src/lib/calendar.ts, overlaid with any sessions the child
- * really finished on this device. The Neon/Drizzle progress API lands later (AGENTS.md).
+ * Every day's record is the child's own: src/lib/calendar.ts builds each cell from the sessions they
+ * actually finished, so an untouched calendar is honestly empty rather than seeded with a study
+ * history that never happened. Sessions are on-device today; the Neon progress API lands later
+ * (AGENTS.md).
  */
 
 const PERIODS: { key: Period; label: string }[] = [
@@ -211,7 +213,7 @@ function Legend() {
 }
 
 export default function LearningCalendar() {
-  const childId = useActiveChildId() ?? "demo-amara"
+  const childId = useStudyingChildId() ?? ""
   const { children } = useChildren()
   const child = children.find((c) => c.id === childId) ?? children[0]
 
@@ -224,7 +226,13 @@ export default function LearningCalendar() {
   const [offset, setOffset] = useState(0)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
 
-  const { view, summary, streak, today, sessionsOn } = useLearningCalendar(childId, period, offset)
+  const { view, summary, today, sessionsOn } = useLearningCalendar(childId, period, offset)
+
+  // Cards the child has genuinely retained — a card in box 2 or higher has been recalled at least
+  // twice across widening intervals. Intrinsic and cumulative: unlike a streak, a day off never
+  // takes it away.
+  const { cards } = useProgress(childId)
+  const retained = cards.filter((c) => c.box >= 2).length
 
   // Nothing picked yet (or the pick fell outside the period the user just switched to) — the day
   // sheet falls back to today, which is always a real cell.
@@ -269,16 +277,16 @@ export default function LearningCalendar() {
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
-        {/* Child + streak */}
+        {/* Child + cards retained. Not a streak: this only ever goes up, so a day off costs nothing. */}
         <View className="flex-row items-center">
           <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-14 w-14" />
           <View className="ml-3 flex-1">
             <Text className="font-text text-h3 font-bold text-ink">{child?.name ?? "Amara"}</Text>
             <Text className="font-text text-body text-text-secondary">{yearLabel(child?.yearGroup ?? "Y3")}</Text>
           </View>
-          <View className="flex-row items-center gap-2 rounded-full bg-gamify-flame-wash px-4 py-2">
-            <SymbolView name="flame.fill" size={14} tintColor={colors.gamify.flame} weight="semibold" />
-            <Text className="font-text text-body font-bold text-ink">{streak} days</Text>
+          <View className="flex-row items-center gap-2 rounded-full bg-gamify-green-wash px-4 py-2">
+            <SymbolView name="brain.head.profile" size={14} tintColor={colors.success} weight="semibold" />
+            <Text className="font-text text-body font-bold text-ink">{retained} learned</Text>
           </View>
         </View>
 
@@ -385,7 +393,7 @@ export default function LearningCalendar() {
                 ))}
               </View>
 
-              {/* Real sessions, when this day has any. A demo day has the totals above and no rows. */}
+              {/* The individual sessions behind this day's totals. */}
               {sessions.map((s) => (
                 <View key={s.id} className="mt-3 flex-row items-center">
                   <View className="h-9 w-9 items-center justify-center rounded-md bg-gamify-tile">
@@ -401,7 +409,7 @@ export default function LearningCalendar() {
           )}
         </Card>
 
-        {/* Best day in the period — the one honest superlative that isn't a streak or a leaderboard. */}
+        {/* Best day in the period — an honest superlative, and one a day off cannot take away. */}
         {summary.bestDay ? (
           <Card>
             <Text className="mb-2 font-text text-h3 font-bold text-ink">Best day</Text>

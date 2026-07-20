@@ -1,8 +1,7 @@
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { SymbolView } from "expo-symbols"
-import { useState } from "react"
-import { Alert, Pressable, ScrollView, Text, View } from "react-native"
+import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { ChildAvatar } from "@/components/child-avatar"
 import { EmptyState } from "@/components/empty-state"
@@ -19,7 +18,7 @@ import { type Child, DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/childr
  * child identity — avatar, name, year group — from design/GoKid-whoisstudying-screen.png.
  *
  * Who's-studying is the child-facing picker; this is the parent-facing list, reached from the Parent
- * Zone behind its maths gate. Tapping a row opens the prefilled add-child form in edit mode; the
+ * Zone behind its passcode gate. Tapping a row opens the prefilled add-child form in edit mode; the
  * per-row switch makes that child the active one without leaving the parent zone.
  */
 
@@ -37,9 +36,12 @@ function ChildRow({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Edit ${child.name}, ${yearLabel(child.yearGroup)}`}
+      accessibilityLabel={`${child.name}, ${yearLabel(child.yearGroup)}. Open profile.`}
       className={`h-18 flex-row items-center active:opacity-60 ${border ? "border-b border-border" : ""}`}
-      onPress={() => router.push({ pathname: "/add-child", params: { id: child.id } })}
+      // Opens the per-child profile (§2 "Child Achievement Profile") rather than jumping straight
+      // into the edit form. The profile is the richer destination and links on to editing, so the
+      // form is one tap further rather than unreachable.
+      onPress={() => router.push({ pathname: "/child/[id]", params: { id: child.id } })}
     >
       {/* Children added before the avatar field existed have no `avatar` — same fallback as home. */}
       <ChildAvatar avatar={child.avatar ?? DEFAULT_AVATAR} className="h-11 w-11" />
@@ -73,37 +75,12 @@ function ChildRow({
 }
 
 export default function Children() {
-  const { children, seedDemoChildren } = useChildren()
+  const { children } = useChildren()
   const activeId = useActiveChildId()
-  const [seeding, setSeeding] = useState(false)
 
   function goBack() {
     if (router.canGoBack()) router.back()
     else router.replace("/home")
-  }
-
-  // Overwrites whatever is there, so it confirms first. Demo profiles cover Reception → Year 6.
-  function confirmSeed() {
-    Alert.alert(
-      "Load demo children?",
-      "Replaces the current profiles with one child per year group, Reception to Year 6.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Load",
-          style: "destructive",
-          onPress: async () => {
-            setSeeding(true)
-            try {
-              await seedDemoChildren()
-            } finally {
-              // useChildren already reported to Sentry — stay put so the parent can retry.
-              setSeeding(false)
-            }
-          },
-        },
-      ]
-    )
   }
 
   return (
@@ -171,26 +148,6 @@ export default function Children() {
           </Pressable>
         ) : null}
 
-        {/* Demo seed. Behind the parent gate and confirmed — it exists so the curriculum in
-            src/lib/study.ts can be walked end to end (Reception → Year 6) without hand-typing
-            seven profiles. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Load demo children"
-          className="mt-4 h-14 flex-row items-center rounded-2xl border border-border bg-white px-4 active:opacity-60"
-          disabled={seeding}
-          onPress={confirmSeed}
-        >
-          <View className="w-6 items-center">
-            <SymbolView name="sparkles" size={24} tintColor={colors.ink} weight="regular" />
-          </View>
-          <Text className="ml-4 flex-1 font-text text-body-lg font-semibold text-ink">
-            {seeding ? "Loading demo…" : "Load demo children"}
-          </Text>
-        </Pressable>
-        <Text className="mt-2 px-4 font-text text-caption text-text-secondary">
-          One profile per year group, Reception to Year 6 — every set in the curriculum.
-        </Text>
       </ScrollView>
     </SafeAreaView>
   )

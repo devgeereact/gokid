@@ -6,7 +6,7 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 import { EmptyState } from "@/components/empty-state"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useActiveChildId } from "@/lib/active-child"
+import { useStudyingChildId } from "@/lib/children"
 import { dueLabel, type SessionRecord, useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
 
@@ -69,7 +69,7 @@ function SessionRow({ session }: { session: SessionRecord }) {
 }
 
 export default function History() {
-  const childId = useActiveChildId() ?? "demo-amara"
+  const childId = useStudyingChildId() ?? ""
   const { sessions, upcoming } = useProgress(childId)
   const totalMinutes = sessions.reduce((sum, s) => sum + s.minutes, 0)
   const totalCards = sessions.reduce((sum, s) => sum + s.cardsReviewed, 0)

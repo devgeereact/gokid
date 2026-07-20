@@ -4,25 +4,23 @@ import { type SFSymbol, SymbolView } from "expo-symbols"
 import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
+import { BackButton } from "@/components/primitives"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { useStudyingChildId } from "@/lib/children"
+import { useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
 
 /**
  * Set results (design/GoKid-setresult-screen.png, screen 18). Post-quiz breakdown: an accuracy ring
  * summary card, a four-stat row, per-difficulty rings, a horizontal question-review strip, and a
- * "what to try next" prompt. All figures (accuracy %, correct/incorrect counts, time, streak, the
- * difficulty splits, completion time) are demo constants matching the mockup — the Neon/Drizzle
- * progress API lands later (AGENTS.md). The "18. Set Results" title annotation is dropped. The
- * "what to try next" chart is a tinted SF Symbol (no bundled asset for it) — inferred.
+ * "what to try next" prompt. Accuracy %, correct/incorrect counts, time and the difficulty splits
+ * are still demo constants matching the mockup — the Neon/Drizzle progress API lands later
+ * (AGENTS.md); "Cards learned" is real, read from the spaced-repetition record. The mockup's
+ * "Longest streak" tile is gone — design/gokid-screens.md §9 rejects streaks. The "18. Set Results"
+ * title annotation is dropped. The "what to try next" chart is a tinted SF Symbol (no bundled asset
+ * for it) — inferred.
  */
-
-// Per-difficulty performance — demo data, numbers taken from the mockup.
-const DIFFICULTY = [
-  { label: "Easy", pct: 100, ratio: "10 / 10", color: colors.success, text: "text-success" },
-  { label: "Medium", pct: 80, ratio: "6 / 8", color: colors.accent, text: "text-accent" },
-  { label: "Hard", pct: 50, ratio: "1 / 2", color: colors.error, text: "text-error" },
-] as const
 
 // Single-arc percentage ring (a light track circle + a coloured arc). The label is overlaid on top,
 // centred over the SVG box.
@@ -94,22 +92,24 @@ function Stat({
 
 export default function SetResult() {
   const { id, score } = useLocalSearchParams<{ id: string; score?: string }>()
+  const childId = useStudyingChildId() ?? ""
+  const { cards } = useProgress(childId)
   const set = getStudySet(id)
   if (!set) return <Redirect href="/home" />
 
-  // Demo figures (mockup). If a score was passed from the quiz it drives the "Correct" stat; the rest
-  // stay demo until the progress API lands.
-  const correct = Number(score) || 17
-  const total = 20
+  // Box 2+ — recalled correctly at least twice across widening gaps. Real, from the SRS record.
+  const learned = cards.filter((c) => c.setId === set.id && c.box >= 2).length
 
-  // Question review — the first four quiz entries. #3 is marked wrong (matching the mockup) with a
-  // stand-in incorrect answer and the correct answer revealed below.
-  const review = set.quiz.slice(0, 4).map((q, i) => {
-    const correctText = q.options[q.answer]
-    const wrong = i === 2
-    const yourText = wrong ? (q.options.find((_, idx) => idx !== q.answer) ?? correctText) : correctText
-    return { key: q.id, n: i + 1, prompt: q.prompt, correctText, yourText, wrong }
-  })
+  // Real figures: the quiz's own length, and the score the runner passed. A score is only shown when
+  // one was actually recorded — this screen is also reached from progress, with no quiz behind it.
+  const total = set.quiz.length
+  const scored = score !== undefined && score !== ""
+  const correct = Math.min(Number(score) || 0, total)
+  const accuracy = scored && total > 0 ? Math.round((correct / total) * 100) : null
+
+  // The per-question review the mockup drew is gone: this screen is handed a score, not the child's
+  // answers, so it previously invented one — always marking question 3 wrong. The real per-question
+  // replay lives on /quiz/review/[id], which does receive the responses.
 
   return (
     <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-background px-5">
@@ -117,15 +117,7 @@ export default function SetResult() {
 
       {/* Header — back / title / share */}
       <View className="mt-1 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text className="flex-1 text-center font-text text-h3 font-bold text-ink">Set Results</Text>
         <View className="h-11 w-11 items-center justify-center">
           <SymbolView name="square.and.arrow.up" size={22} tintColor={colors.ink} weight="regular" />
@@ -149,8 +141,10 @@ export default function SetResult() {
               </Text>
             </View>
             <View className="ml-2 items-center">
-              <Ring pct={85} color={colors.primary} size={92} stroke={8}>
-                <Text className="font-text text-body-lg font-bold text-ink">85%</Text>
+              <Ring pct={accuracy ?? 0} color={colors.primary} size={92} stroke={8}>
+                <Text className="font-text text-body-lg font-bold text-ink">
+                  {accuracy === null ? "—" : `${accuracy}%`}
+                </Text>
                 <Text className="font-text text-caption text-text-secondary">Accuracy</Text>
               </Ring>
               <View className="mt-2 flex-row items-center gap-1 rounded-full bg-gamify-green-wash px-3 py-1">
@@ -159,85 +153,25 @@ export default function SetResult() {
               </View>
             </View>
           </View>
-          <MetaRow symbol="calendar" label="Completed today, 10:30 AM" />
-          <MetaRow symbol="clock" label="Time taken: 12m 45s" />
+          <MetaRow symbol="square.stack" label={`${set.cardsTotal} cards • ${total} questions`} />
         </View>
 
         {/* Four-stat row */}
         <View className="mt-4 flex-row rounded-2xl border border-border bg-white p-4">
           <Stat symbol="checkmark.circle.fill" tint={colors.success} value={`${correct} / ${total}`} label="Correct" />
-          <Stat symbol="xmark.circle.fill" tint={colors.error} value="3 / 20" label="Incorrect" />
-          <Stat symbol="clock" tint={colors.accent} value="12m 45s" label="Time taken" />
-          <Stat symbol="target" tint={colors.gamify.purple} value="8" label="Longest streak" />
+          <Stat
+            symbol="xmark.circle.fill"
+            tint={colors.error}
+            value={scored ? `${total - correct} / ${total}` : "—"}
+            label="Incorrect"
+          />
+          {/* The reference's fourth tile was "Longest streak: 8" — a run of consecutive correct
+              answers, which rewards not slipping rather than learning (§9). Replaced with the
+              schedule outcome: how many of this set's cards are now genuinely retained. */}
+          <Stat symbol="brain.head.profile" tint={colors.gamify.green} value={String(learned)} label="Cards learned" />
         </View>
 
-        {/* Performance by difficulty */}
-        <Text className="mb-3 mt-8 font-text text-h3 font-bold text-ink">Performance by difficulty</Text>
-        <View className="flex-row gap-3">
-          {DIFFICULTY.map((d) => (
-            <View key={d.label} className="flex-1 items-center rounded-2xl border border-border bg-white py-4">
-              <Text className={`mb-3 font-text text-body-lg font-bold ${d.text}`}>{d.label}</Text>
-              <Ring pct={d.pct} color={d.color} size={76} stroke={7}>
-                <Text className={`font-text text-body-lg font-bold ${d.text}`}>{d.pct}%</Text>
-              </Ring>
-              <Text className="mt-3 font-text text-body text-text-secondary">{d.ratio}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Question review */}
-        <View className="mb-3 mt-8 flex-row items-center justify-between">
-          <Text className="font-text text-h3 font-bold text-ink">Question review</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Review all questions"
-            className="flex-row items-center gap-1 active:opacity-60"
-          >
-            <Text className="font-text text-body-lg font-bold text-primary">Review all</Text>
-            <SymbolView name="chevron.right" size={15} tintColor={colors.primary} weight="semibold" />
-          </Pressable>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="pr-5"
-          className="-mr-5"
-        >
-          {review.map((q) => (
-            <View key={q.key} className="mr-3 w-64 rounded-2xl border border-border bg-white p-4">
-              <View className="flex-row items-center justify-between">
-                <View
-                  className={`h-7 w-7 items-center justify-center rounded-full ${q.wrong ? "bg-error" : "bg-success"}`}
-                >
-                  <Text className="font-text text-body font-bold text-white">{q.n}</Text>
-                </View>
-                <SymbolView
-                  name={q.wrong ? "xmark" : "checkmark"}
-                  size={16}
-                  tintColor={q.wrong ? colors.error : colors.success}
-                  weight="bold"
-                />
-              </View>
-              <Text numberOfLines={2} className="mt-3 min-h-11 font-text text-body font-semibold text-ink">
-                {q.prompt}
-              </Text>
-              <View className={`mt-3 rounded-xl p-3 ${q.wrong ? "bg-gamify-red-wash" : "bg-gamify-green-wash"}`}>
-                <Text className="text-center font-text text-caption text-text-secondary">Your answer</Text>
-                <Text
-                  className={`mt-0.5 text-center font-text text-body-lg font-bold ${q.wrong ? "text-error" : "text-success"}`}
-                >
-                  {q.yourText}
-                </Text>
-                {q.wrong ? (
-                  <Text className="mt-1 text-center font-text text-caption text-error">
-                    Correct answer: {q.correctText}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-
+        {/* Question review lives on the screen that actually has the answers. */}
         {/* What to try next */}
         <Text className="mb-3 mt-8 font-text text-h3 font-bold text-ink">What to try next</Text>
         <View className="flex-row items-center rounded-2xl border border-border bg-white p-4">

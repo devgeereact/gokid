@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react"
 
+import { curriculumForYear } from "./curriculum"
 import { STUDY_SETS, type StudySet } from "./study"
 
 /**
@@ -57,6 +58,55 @@ export function searchSets(query: string, subject: string | null): StudySet[] {
     const haystack = norm(`${set.title} ${set.subject} ${set.topic} ${set.yearGroup}`)
     return terms.every((term) => haystack.includes(term))
   })
+}
+
+/**
+ * Curriculum Search (design/gokid-screens.md §15 → "Curriculum Search": objectives and strands were
+ * not searchable at all).
+ *
+ * Searching a curriculum app for "fronted adverbials" or "photosynthesis" should find the thing the
+ * curriculum calls that, not only sets whose *title* happens to contain the phrase. Set titles are
+ * marketing-ish ("Place Value to 1,000"); objectives are the wording a teacher or parent actually
+ * uses, and are what a parent checking "is my child covering X?" types in.
+ *
+ * Returns the objective, the subject it belongs to, and the year it is taught — the year matters,
+ * because the same strand recurs with different expectations across Reception to Year 6.
+ */
+export type CurriculumHit = {
+  text: string
+  strand: string
+  subject: string
+  subjectSlug: string
+  yearCode: string
+  yearGroup: string
+}
+
+const YEAR_CODES = ["Rec", "Y1", "Y2", "Y3", "Y4", "Y5", "Y6"]
+
+export function searchCurriculum(query: string, subject: string | null, limit = 12): CurriculumHit[] {
+  const terms = norm(query).split(/\s+/).filter(Boolean)
+  if (terms.length === 0) return []
+
+  const hits: CurriculumHit[] = []
+  for (const yearCode of YEAR_CODES) {
+    for (const row of curriculumForYear(yearCode)) {
+      if (subject && row.subject.name !== subject) continue
+      for (const objective of row.objectives) {
+        const haystack = norm(`${objective.text} ${objective.strand} ${row.subject.name}`)
+        if (!terms.every((term) => haystack.includes(term))) continue
+        hits.push({
+          text: objective.text,
+          strand: objective.strand,
+          subject: row.subject.name,
+          subjectSlug: row.subject.slug,
+          yearCode,
+          yearGroup: yearCode === "Rec" ? "Reception" : `Year ${yearCode.slice(1)}`,
+        })
+        if (hits.length >= limit) return hits
+      }
+    }
+  }
+  return hits
 }
 
 // ---- Recent searches ------------------------------------------------------------------------

@@ -11,6 +11,7 @@ import {
   clearSearches,
   forgetSearch,
   rememberSearch,
+  searchCurriculum,
   searchSets,
   subjectTint,
   SUBJECTS,
@@ -215,6 +216,12 @@ export default function Search() {
   // A bare subject chip with no text is a browse, not a search — both go through the same index.
   const browsing = trimmed.length === 0 && subject === null
   const results = useMemo(() => (browsing ? [] : searchSets(trimmed, subject)), [browsing, trimmed, subject])
+  // §15 "Curriculum Search" — objectives and strands, which set titles do not contain. A parent
+  // checking "is my child covering fronted adverbials?" types the curriculum's words, not a title.
+  const curriculum = useMemo(
+    () => (browsing ? [] : searchCurriculum(trimmed, subject)),
+    [browsing, trimmed, subject]
+  )
 
   function submit() {
     rememberSearch(trimmed)
@@ -256,11 +263,11 @@ export default function Search() {
       >
         {browsing ? (
           <RecentSearches onPick={runRecent} />
-        ) : results.length === 0 ? (
+        ) : results.length === 0 && curriculum.length === 0 ? (
           <EmptyState
             symbol="doc.text.magnifyingglass"
-            title="No sets found"
-            body={`Nothing matches "${trimmed || subject}". Try a different word, or clear the subject filter.`}
+            title="Nothing found"
+            body={`Nothing matches "${trimmed || subject}" in the sets or the curriculum. Try a different word, or clear the subject filter.`}
             actionLabel="Clear filters"
             onAction={() => {
               setQuery("")
@@ -269,12 +276,39 @@ export default function Search() {
           />
         ) : (
           <>
-            <Text className="mb-4 mt-6 font-text text-h3 font-bold text-ink">
-              {results.length} {results.length === 1 ? "set" : "sets"}
-            </Text>
+            {results.length > 0 ? (
+              <Text className="mb-4 mt-6 font-text text-h3 font-bold text-ink">
+                {results.length} {results.length === 1 ? "set" : "sets"}
+              </Text>
+            ) : null}
             {results.map((set) => (
               <ResultRow key={set.id} set={set} />
             ))}
+
+            {/* §15 "Curriculum Search". Below the sets, because a set is something a child can open
+                now and an objective is context — but present, because the curriculum's own wording is
+                what a parent searches with. Each row opens that year's Curriculum Browser. */}
+            {curriculum.length > 0 ? (
+              <>
+                <Text className="mb-3 mt-8 font-text text-h3 font-bold text-ink">In the curriculum</Text>
+                {curriculum.map((hit) => (
+                  <Pressable
+                    key={`${hit.yearCode}-${hit.subjectSlug}-${hit.text}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${hit.text}. ${hit.subject}, ${hit.yearGroup}.`}
+                    className="mb-3 rounded-lg border border-border bg-white p-4 active:opacity-80"
+                    onPress={() =>
+                      router.push({ pathname: "/curriculum", params: { year: hit.yearCode } })
+                    }
+                  >
+                    <Text className="font-text text-body font-semibold text-ink">{hit.text}</Text>
+                    <Text numberOfLines={1} className="mt-1 font-text text-caption text-text-secondary">
+                      {hit.subject} · {hit.strand} · {hit.yearGroup}
+                    </Text>
+                  </Pressable>
+                ))}
+              </>
+            ) : null}
           </>
         )}
       </ScrollView>

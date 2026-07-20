@@ -4,21 +4,28 @@ import { type SFSymbol, SymbolView } from "expo-symbols"
 import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
+import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useChildren } from "@/lib/children"
+import { useChildren, useStudyingChildId } from "@/lib/children"
+import { nextDueLabel, useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
 
 /**
  * Answer Result (design/GoKid-answerresult-screen.png, screen 20). Per-question feedback shown after
- * a card is answered in the study session: a correct/incorrect badge, a "+10 points" reward ring, the
- * child's answer beside the correct one, an explanation, session stats and the "what's next" entry
- * point. The "20. Answer Result" title is a mockup annotation — dropped.
+ * a card is answered in the study session: a correct/incorrect badge, a recall ring, the child's
+ * answer beside the correct one, an explanation, session stats and the "what's next" entry point.
+ * The "20. Answer Result" title is a mockup annotation — dropped.
+ *
+ * The reference rewards a correct answer with "+10 points" and shows a streak counter. Both are
+ * extrinsic mechanics that design/gokid-screens.md §9 rejects. The honest reward for recalling a
+ * card is what the spaced-repetition engine does with it: the card moves up a box and comes back
+ * later. So the ring now shows the recall interval the answer just earned — "Back in 5 days" — which
+ * is a real consequence rather than a number invented to feel good.
  *
  * Inferred (no design-system token / asset for these):
- *   - Session stats (accuracy 90%, streak 9, points 120/earned) are demo constants — the Neon/Drizzle
- *     progress API lands later (AGENTS.md). Numbers match the reference.
- *   - Reward ring + confetti drawn with react-native-svg / tinted views (the ref art has no asset).
+ *   - Accuracy is still a demo constant — the Neon/Drizzle progress API lands later (AGENTS.md).
+ *   - Ring + confetti drawn with react-native-svg / tinted views (the ref art has no asset).
  *   - "What's next" bar illustration is a tinted `chart.bar.fill` SymbolView (no bundled asset).
  *   - The Hundreds/Tens/Ones place-value table is rendered only for the place-value set, as in the ref.
  */
@@ -33,16 +40,12 @@ const BAR: Record<number, string> = {
   90: "w-[90%]", 95: "w-[95%]", 100: "w-[100%]",
 }
 
-// Demo session stats — match the reference numbers.
-const STATS = {
-  accuracy: "90%",
-  accuracyDelta: "5% vs last time",
-  streak: "9",
-  streakBest: "Best: 9",
-  points: "120",
-} as const
-
-function PointsRing({ correct }: { correct: boolean }) {
+/**
+ * The reward ring. Fills on a correct recall and names the interval the card just earned; on a miss
+ * it stays open and says the card comes back tomorrow. Both are true statements about the schedule,
+ * which is the point — the child is being told what happens next, not handed a score.
+ */
+function RecallRing({ correct, label }: { correct: boolean; label: string }) {
   const r = 56
   const c = 2 * Math.PI * r
   const filled = correct ? c : 0
@@ -62,9 +65,20 @@ function PointsRing({ correct }: { correct: boolean }) {
           transform="rotate(-90 66 66)"
         />
       </Svg>
-      <View className="absolute items-center">
-        <Text className="font-text text-h1 font-bold text-gamify-green">{correct ? "+10" : "+0"}</Text>
-        <Text className="font-text text-body text-text-secondary">points</Text>
+      <View className="absolute items-center px-4">
+        <SymbolView
+          name={correct ? "checkmark.circle.fill" : "arrow.clockwise"}
+          size={26}
+          tintColor={correct ? colors.gamify.green : colors.accent}
+          weight="semibold"
+        />
+        <Text className="mt-1 text-center font-text text-caption text-text-secondary">Back</Text>
+        <Text
+          numberOfLines={1}
+          className={`text-center font-text text-body-lg font-bold ${correct ? "text-gamify-green" : "text-accent"}`}
+        >
+          {label}
+        </Text>
       </View>
     </View>
   )
@@ -141,7 +155,9 @@ function PlaceValueTable() {
 
 export default function AnswerResult() {
   const { id, index, choice } = useLocalSearchParams<{ id: string; index?: string; choice?: string }>()
+  const childId = useStudyingChildId() ?? ""
   const { children } = useChildren()
+  const { cards } = useProgress(childId)
   const set = getStudySet(id)
   if (!set) return <Redirect href="/home" />
 
@@ -151,6 +167,20 @@ export default function AnswerResult() {
   const q = set.quiz[i % set.quiz.length]
   const chosen = Number(choice ?? -1)
   const correct = chosen === q.answer
+
+  // What this answer earns on the schedule. `nextDueLabel` runs the same `schedule` the flashcard
+  // runner writes through, so the ring promises exactly what the engine will do — tomorrow on a
+  // miss, a widening gap on a recall.
+  const existing = cards.find((c) => c.setId === set.id && c.cardId === q.id)
+  const nextLabel = nextDueLabel(existing, correct ? "gotit" : "tricky")
+
+  const setCards = cards.filter((c) => c.setId === set.id)
+  const learned = setCards.filter((c) => c.box >= 2).length
+  const returning = setCards.filter((c) => c.box < 2).length
+
+  // This set's real recall rate: of the cards rated so far, how many came back as "got it".
+  const recalled = setCards.filter((c) => c.lastRating === "gotit").length
+  const accuracy = setCards.length ? Math.round((recalled / setCards.length) * 100) : null
 
   const yourAnswer = q.options[chosen] ?? "—"
   const correctAnswer = q.options[q.answer]
@@ -172,15 +202,7 @@ export default function AnswerResult() {
 
       {/* Header */}
       <View className="flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text className="flex-1 text-center font-text text-h3 font-bold text-ink">Answer Result</Text>
         <View className="h-11 w-11 items-center justify-center">
           <SymbolView name="bookmark" size={24} tintColor={colors.ink} weight="regular" />
@@ -211,8 +233,8 @@ export default function AnswerResult() {
               </Text>
             </View>
             <View className="relative">
-              <Confetti />
-              <PointsRing correct={correct} />
+              {correct ? <Confetti /> : null}
+              <RecallRing correct={correct} label={nextLabel} />
             </View>
           </View>
 
@@ -261,7 +283,8 @@ export default function AnswerResult() {
           {set.id === "place-value" ? <PlaceValueTable /> : null}
         </View>
 
-        {/* Session stats */}
+        {/* Session stats. The reference's "Current streak" and "Points earned" tiles are gone (§9);
+            what stands in their place is this set's real recall state. */}
         <View className="mt-4 rounded-2xl border border-border bg-white p-5">
           <Text className="mb-4 font-text text-h3 font-bold text-ink">Keep it up! You&apos;re doing well.</Text>
           <View className="flex-row">
@@ -270,30 +293,30 @@ export default function AnswerResult() {
               tint={colors.success}
               wash="bg-gamify-green-wash"
               label="Accuracy"
-              value={STATS.accuracy}
-              foot={`↑ ${STATS.accuracyDelta}`}
+              value={accuracy === null ? "—" : `${accuracy}%`}
+              foot={accuracy === null ? "No cards rated yet" : `${recalled} of ${setCards.length} recalled`}
               footWash="bg-gamify-green-wash"
               footInk="text-success"
             />
             <Stat
-              symbol="flame.fill"
-              tint={colors.gamify.flame}
-              wash="bg-gamify-flame-wash"
-              label="Current streak"
-              value={STATS.streak}
-              foot={STATS.streakBest}
-              footWash="bg-gamify-flame-wash"
-              footInk="text-gamify-flame"
+              symbol="brain.head.profile"
+              tint={colors.gamify.green}
+              wash="bg-gamify-green-wash"
+              label="Cards learned"
+              value={String(learned)}
+              foot="In this set"
+              footWash="bg-gamify-green-wash"
+              footInk="text-gamify-green"
             />
             <Stat
-              symbol="trophy.fill"
-              tint={colors.gamify.purple}
-              wash="bg-gamify-purple-wash"
-              label="Points earned"
-              value={STATS.points}
-              foot="Total points"
-              footWash="bg-gamify-purple-wash"
-              footInk="text-gamify-purple"
+              symbol="arrow.clockwise"
+              tint={colors.gamify.blue}
+              wash="bg-gamify-blue-wash"
+              label="Coming back"
+              value={String(returning)}
+              foot="To make it stick"
+              footWash="bg-gamify-blue-wash"
+              footInk="text-gamify-blue"
             />
           </View>
         </View>

@@ -5,18 +5,19 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { EmptyState } from "@/components/empty-state"
 import { ProgressRing } from "@/components/progress-ring"
+import { SubjectMark } from "@/components/subject-mark"
+import { BackButton } from "@/components/primitives"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useActiveChildId } from "@/lib/active-child"
+import { plural, type StrandProgress, useSubjectProgress } from "@/lib/analytics"
 import { useChildren, yearLabel } from "@/lib/children"
 import type { StudySet } from "@/lib/study"
 import {
   getSubject,
   recommendedSets,
-  type Strand,
   type Subject,
-  subjectOverall,
-  subjectSetsDone,
+  subjectSetCount,
 } from "@/lib/subjects"
 
 /**
@@ -100,23 +101,22 @@ function MetaPill({ symbol, label }: { symbol: SFSymbol; label: string }) {
 
 /** The subject's illustration, or its SF Symbol where the repo has no art for it. */
 function SubjectArt({ subject }: { subject: Subject }) {
-  return (
-    <View className={`h-16 w-16 items-center justify-center rounded-full ${subject.wash}`}>
-      {subject.art ? (
-        <Image accessibilityIgnoresInvertColors className="h-12 w-12" contentFit="contain" source={subject.art} />
-      ) : (
-        <SymbolView name={subject.symbol} size={28} tintColor={subject.ink} weight="semibold" />
-      )}
-    </View>
-  )
+  return <SubjectMark subject={subject} className="h-16 w-16" symbolSize={28} />
 }
 
-function StrandRow({ strand, subject, first }: { strand: Strand; subject: Subject; first: boolean }) {
-  const tone = toneFor(strand.pct)
+function StrandRow({ strand, subject, first }: { strand: StrandProgress; subject: Subject; first: boolean }) {
+  // A strand they have not opened has no percentage to show. Rendering 0% there would read as
+  // "tried it, learned nothing" — the opposite of the truth.
+  const started = strand.pct !== null
+  const tone = toneFor(strand.pct ?? 0)
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${strand.name}, ${strand.pct} percent, ${strand.done} of ${strand.total} sets`}
+      accessibilityLabel={
+        started
+          ? `${strand.name}, ${strand.pct} percent, ${strand.setsDone} of ${plural(strand.sets, "set")}`
+          : `${strand.name}, not started, ${plural(strand.sets, "set")}`
+      }
       className={`flex-row items-center py-3 active:opacity-70 ${first ? "" : "border-t border-border"}`}
       onPress={() => router.push({ pathname: "/progress/subject/[subject]", params: { subject: subject.slug } })}
     >
@@ -128,13 +128,19 @@ function StrandRow({ strand, subject, first }: { strand: Strand; subject: Subjec
             Subject Progress screen (screen 17) at this width, and the strand name is the row. */}
         <Text className="font-text text-body font-semibold text-ink">{strand.name}</Text>
         <Text className="mt-0.5 font-text text-caption text-text-secondary">
-          {strand.done} of {strand.total} sets
+          {started
+            ? `${strand.setsDone} of ${plural(strand.sets, "set")}`
+            : `${plural(strand.sets, "set")} · not started`}
         </Text>
       </View>
       <View className="mx-3 h-2 w-20 overflow-hidden rounded-full bg-gamify-track">
-        <View className={`h-full rounded-full ${tone.bar} ${barWidth(strand.pct)}`} />
+        {started ? <View className={`h-full rounded-full ${tone.bar} ${barWidth(strand.pct ?? 0)}`} /> : null}
       </View>
-      <Text className={`w-10 text-right font-text text-body-lg font-bold ${tone.text}`}>{strand.pct}%</Text>
+      <Text
+        className={`w-10 text-right font-text text-body-lg font-bold ${started ? tone.text : "text-text-secondary"}`}
+      >
+        {started ? `${strand.pct}%` : "—"}
+      </Text>
       <SymbolView
         name="chevron.right"
         size={14}
@@ -175,6 +181,8 @@ export default function SubjectHub() {
   const { children } = useChildren()
   const child = children.find((c) => c.id === activeId) ?? children[0]
   const subject = getSubject(slug)
+  // Before the early return below: hooks cannot sit behind a conditional.
+  const progress = useSubjectProgress(subject, child?.id ?? "")
 
   if (!subject) {
     return (
@@ -191,7 +199,8 @@ export default function SubjectHub() {
     )
   }
 
-  const overall = subjectOverall(subject)
+  // Real standing for this child in this subject, not an average of authored strand figures.
+  const overall = progress.pct ?? 0
   const standing = standingFor(overall)
   const sets = recommendedSets(subject, child?.yearGroup)
   const childName = child?.name ?? "Your child"
@@ -203,15 +212,7 @@ export default function SubjectHub() {
 
       {/* Header — title is the subject, not a screen name: the hub *is* the subject. */}
       <View className="mt-1 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text numberOfLines={1} className="flex-1 text-center font-text text-h3 font-bold text-ink">
           {subject.name}
         </Text>
@@ -252,7 +253,10 @@ export default function SubjectHub() {
               because three pills at the reference's wording overrun the 322pt row by ~20pt. */}
           <View className="mt-4 flex-row items-center gap-2">
             <MetaPill symbol="graduationcap.fill" label={year} />
-            <MetaPill symbol="target" label={`${subjectSetsDone(subject)} sets`} />
+            <MetaPill
+              symbol="target"
+              label={`${progress.setsDone} of ${plural(subjectSetCount(subject), "set")}`}
+            />
             <View className={`justify-center rounded-full px-3 py-2 ${standing.wash}`}>
               <Text className={`font-text text-caption font-bold ${standing.ink}`}>{standing.label}</Text>
             </View>
@@ -301,7 +305,7 @@ export default function SubjectHub() {
             />
           </Pressable>
           <View className="mt-2">
-            {subject.strands.map((strand, i) => (
+            {progress.strands.map((strand, i) => (
               <StrandRow key={strand.name} strand={strand} subject={subject} first={i === 0} />
             ))}
           </View>
