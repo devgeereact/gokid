@@ -162,6 +162,23 @@ export default function LessonDetail() {
         >
           <Text className="font-text text-body-lg font-bold text-white">Study cards</Text>
         </Pressable>
+        {/*
+          The guided session (screens 18–23: session → answer-result → session-summary → set-result →
+          congratulations → certificate). This is the door that flow never had — every screen in it was
+          built and wired to its neighbours, but nothing in the app pushed into it, so the whole chain
+          including the earned Certificate was unreachable by playing the app.
+
+          It sits between the two existing modes because that is the order of commitment: flip through
+          cards, work a guided session, then test yourself.
+        */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Start a study session"
+          className="mt-3 h-14 items-center justify-center rounded-full border border-border bg-white active:opacity-70"
+          onPress={() => router.push({ pathname: "/study/session/[id]", params: { id: set.id } })}
+        >
+          <Text className="font-text text-body-lg font-bold text-ink">Study session</Text>
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Take the quiz"
