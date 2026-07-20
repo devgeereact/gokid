@@ -33,6 +33,12 @@ import {
 export const avatarKind = pgEnum("avatar_kind", ["preset", "emoji", "image"])
 /** Matches `MixedQuestion["kind"]` in lib/study.ts. */
 export const quizKind = pgEnum("quiz_kind", ["mcq", "multi", "fill", "order", "match"])
+/**
+ * Publication state of a question. AI-generated questions land as `draft` and are invisible to
+ * children until a human moves them to `published`; `rejected` keeps a bad generation out of the
+ * pool without deleting the evidence. The hand-authored seed is `published` from the start.
+ */
+export const questionStatus = pgEnum("question_status", ["draft", "published", "rejected"])
 /** Matches `Rating` in lib/reviews.ts. */
 export const rating = pgEnum("rating", ["tricky", "gotit"])
 /** Matches `Certificate["tier"]` in lib/rewards.ts. */
@@ -41,6 +47,33 @@ export const certTier = pgEnum("cert_tier", ["Gold", "Silver", "Bronze"])
 export const subStatus = pgEnum("sub_status", ["none", "trialing", "active", "expired"])
 
 // --- Content (shared across all users) -------------------------------------------------------------
+
+/**
+ * A single England National Curriculum objective — the topic skeleton questions are generated
+ * against (Rec–Y6). These are *learning objectives* ("count to 100 forwards and backwards"), not
+ * questions: they are the free, public part of the curriculum and the prompt spine for AI
+ * generation. A generated question carries the `id` of the objective it was written to test, so the
+ * pool for a topic can be grown objective-by-objective and coverage is auditable.
+ */
+export const curriculumObjectives = pgTable(
+  "curriculum_objectives",
+  {
+    id: text("id").primaryKey(),
+    subject: text("subject").notNull(),
+    /** "Rec".."Y6" — matches children.yearCode. */
+    yearCode: text("year_code").notNull(),
+    topic: text("topic").notNull(),
+    /** The NC reference where one exists (e.g. "Ma3/2.1a"); free-form otherwise. */
+    code: text("code"),
+    /** The objective text, verbatim from the published curriculum. */
+    statement: text("statement").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("objectives_year_subject_idx").on(t.yearCode, t.subject),
+    index("objectives_topic_idx").on(t.topic),
+  ]
+)
 
 /** A study set. `id` keeps the current string ids ("place-value") so existing links stay valid. */
 export const studySets = pgTable(
@@ -100,8 +133,29 @@ export const quizQuestions = pgTable(
      *  way the client does (a session must never receive a non-MCQ question). */
     mixed: boolean("mixed").notNull().default(false),
     position: integer("position").notNull().default(0),
+    /**
+     * Publication state. Defaults to `published` so the existing hand-authored seed keeps serving
+     * unchanged; the AI generator writes `draft` explicitly, so nothing generated reaches a child
+     * before review. The serving endpoint filters on this.
+     */
+    status: questionStatus("status").notNull().default("published"),
+    /** The curriculum objective this question was generated to test. Null for the legacy seed. */
+    objectiveId: text("objective_id").references(() => curriculumObjectives.id, {
+      onDelete: "set null",
+    }),
+    /** 1 (easiest) .. 3 (hardest). Lets a session mix difficulty rather than serve one band. */
+    difficulty: integer("difficulty").notNull().default(1),
+    /** How the question entered the pool — "seed" for the hand-authored set, "ai" for generated. */
+    source: text("source").notNull().default("seed"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("quiz_set_idx").on(t.setId)]
+  (t) => [
+    index("quiz_set_idx").on(t.setId),
+    // The serving query is "published questions for this set" — a partial-ish composite keeps it fast
+    // as the generated pool grows into the thousands.
+    index("quiz_set_status_idx").on(t.setId, t.status),
+    index("quiz_objective_idx").on(t.objectiveId),
+  ]
 )
 
 // --- Per-family data -------------------------------------------------------------------------------
@@ -165,6 +219,37 @@ export const reviews = pgTable(
     uniqueIndex("reviews_child_card_idx").on(t.childId, t.setId, t.cardId),
     // "Coming back soon" queries sort a child's cards by due date.
     index("reviews_due_idx").on(t.childId, t.dueAt),
+  ]
+)
+
+/**
+ * One row per (child, question) the moment it is served — the no-repeat ledger.
+ *
+ * The product rule is "a child must not see the same question twice within 12 hours", so that a
+ * right answer means recall, not memory of the last screen. The serving endpoint writes an
+ * impression as it hands a question out, and excludes any question whose most recent impression for
+ * this child is under 12h old. When the whole eligible pool has been seen inside the window it
+ * re-serves the *oldest-seen* question rather than blocking practice (product decision), so this is
+ * an upsert keyed on (child, question): one row per pairing, `servedAt` bumped on each serve.
+ */
+export const questionImpressions = pgTable(
+  "question_impressions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    childId: uuid("child_id")
+      .notNull()
+      .references(() => children.id, { onDelete: "cascade" }),
+    questionId: text("question_id")
+      .notNull()
+      .references(() => quizQuestions.id, { onDelete: "cascade" }),
+    setId: text("set_id").notNull(),
+    servedAt: timestamp("served_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // Upsert target: at most one impression row per (child, question).
+    uniqueIndex("impressions_child_question_idx").on(t.childId, t.questionId),
+    // The serving query filters "this child's impressions in this set, newest first".
+    index("impressions_child_set_served_idx").on(t.childId, t.setId, t.servedAt),
   ]
 )
 
@@ -272,14 +357,32 @@ export const cardsRelations = relations(cards, ({ one }) => ({
   set: one(studySets, { fields: [cards.setId], references: [studySets.id] }),
 }))
 
-export const quizQuestionsRelations = relations(quizQuestions, ({ one }) => ({
+export const quizQuestionsRelations = relations(quizQuestions, ({ one, many }) => ({
   set: one(studySets, { fields: [quizQuestions.setId], references: [studySets.id] }),
+  objective: one(curriculumObjectives, {
+    fields: [quizQuestions.objectiveId],
+    references: [curriculumObjectives.id],
+  }),
+  impressions: many(questionImpressions),
+}))
+
+export const curriculumObjectivesRelations = relations(curriculumObjectives, ({ many }) => ({
+  questions: many(quizQuestions),
+}))
+
+export const questionImpressionsRelations = relations(questionImpressions, ({ one }) => ({
+  child: one(children, { fields: [questionImpressions.childId], references: [children.id] }),
+  question: one(quizQuestions, {
+    fields: [questionImpressions.questionId],
+    references: [quizQuestions.id],
+  }),
 }))
 
 export const childrenRelations = relations(children, ({ many }) => ({
   reviews: many(reviews),
   sessions: many(sessions),
   certificates: many(certificates),
+  impressions: many(questionImpressions),
 }))
 
 export const reviewsRelations = relations(reviews, ({ one }) => ({
