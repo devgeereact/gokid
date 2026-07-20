@@ -1,11 +1,16 @@
+import { useAuth } from "@clerk/expo"
+import * as Sentry from "@sentry/react-native"
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { SymbolView } from "expo-symbols"
-import { useMemo, useState } from "react"
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native"
+import { useEffect, useMemo, useState } from "react"
 
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { fetchServedQuiz } from "@/lib/api"
+import { useStudyingChildId } from "@/lib/children"
+import { clearServedQuiz, getServedQuiz, setServedQuiz } from "@/lib/served-quiz"
 import {
   blankResponse,
   decodeAnswers,
@@ -347,7 +352,64 @@ export default function Quiz() {
   // looked back over it — which is the whole point of a review pass, and impossible while each
   // question is scored the instant it is answered. Practice keeps the instant feedback.
   const testMode = mode === "test"
-  const items = useMemo(() => (set ? quizItems(set) : []), [set])
+  const localItems = useMemo(() => (set ? quizItems(set) : []), [set])
+
+  // No-repeat serving. On a fresh entry we ask the server for questions this child has NOT seen in the
+  // last 12 hours (api/quiz), stash them so the results/review screens grade the same list, and only
+  // then run the quiz. On any failure — signed out, no active child, offline, empty pool — we fall
+  // back to the local set, so this can only ever add the no-repeat behaviour, never break the quiz.
+  //
+  // Resuming from the Final Review (an `answers` param, or a list already stashed for this set) must
+  // NOT refetch: a new draw would be different questions and desync every answer the child gave. So a
+  // cached list is used verbatim and the fetch is skipped.
+  const { getToken } = useAuth()
+  const childId = useStudyingChildId()
+  // Resuming = returning from the Final Review, identified by carried-back `answers`/`start` params.
+  // A resume must reuse the exact questions the child already answered (from the store); a fresh
+  // start must draw a NEW no-repeat set, so it never reads the store — otherwise a second attempt at
+  // the same set would replay the first attempt's questions and defeat the whole rule.
+  const resuming = answers !== undefined || start !== undefined
+  // A fresh attempt with a signed-in active child is the only case that fetches a served draw.
+  const willFetch = !resuming && !!set && !!childId
+  const [served, setServed] = useState<MixedQuestion[] | null>(() => (resuming ? getServedQuiz(id) : null))
+  const [fetchDone, setFetchDone] = useState(false)
+  // Derived, not stored: setting `resolving` synchronously in the effect would trip the React
+  // Compiler's set-state-in-effect rule. It is true only while a fetch we WILL run hasn't settled.
+  const resolving = willFetch && !fetchDone
+
+  useEffect(() => {
+    if (resuming) return
+    // Fresh attempt: drop any list a previous attempt stashed, so a fallback to local can't be
+    // shadowed by a stale served list in the store (resolveItems would otherwise return the old one).
+    // This is a module side-effect, not React state — safe to run synchronously here.
+    clearServedQuiz(id)
+    if (!set || !childId) return
+    let active = true
+    ;(async () => {
+      try {
+        const token = await getToken()
+        if (!token) throw new Error("Not signed in.")
+        const questions = await fetchServedQuiz(
+          { setId: set.id, clientId: childId, count: localItems.length || 8 },
+          token
+        )
+        if (active && questions.length > 0) {
+          setServedQuiz(set.id, questions)
+          setServed(questions)
+        }
+      } catch (err) {
+        // A served quiz is an enhancement; failing to get one just means the local set is used.
+        Sentry.captureException(err, { tags: { flow: "served-quiz" }, extra: { setId: id } })
+      } finally {
+        if (active) setFetchDone(true)
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [id, set, childId, resuming, getToken, localItems.length])
+
+  const items = served ?? localItems
 
   // Lazy initialisers, so re-entering from the review restores the child's work and lands them on
   // the question they tapped rather than back at question one with an empty sheet.
@@ -359,6 +421,15 @@ export default function Quiz() {
   const [responses, setResponses] = useState<QuizResponse[]>(() => decodeAnswers(answers))
 
   if (!set) return <Redirect href="/home" />
+  // Hold the quiz until the served draw is decided, so a child never starts on the local list and then
+  // has it swapped mid-attempt. Once resolved, `items` is stable for the whole session.
+  if (resolving) {
+    return (
+      <SafeAreaView edges={["top", "bottom"]} className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator color={colors.primary} />
+      </SafeAreaView>
+    )
+  }
   if (items.length === 0) return <Redirect href="/home" />
 
   const setId = set.id

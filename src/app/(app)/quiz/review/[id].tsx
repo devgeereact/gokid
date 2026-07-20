@@ -5,7 +5,8 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { decodeAnswers, getStudySet, quizAttempt, type QuizReviewRow } from "@/lib/study"
+import { resolveItems } from "@/lib/served-quiz"
+import { decodeAnswers, getStudySet, quizAttempt, quizItems, type QuizReviewRow } from "@/lib/study"
 
 /**
  * Incorrect Answers (design/gokid-screens.md §7). Replays the questions the child got wrong after a
@@ -90,7 +91,8 @@ export default function QuizReview() {
   if (!set) return <Redirect href="/home" />
 
   const setId = set.id
-  const attempt = quizAttempt(set, decodeAnswers(answers))
+  // Grade against the questions actually served this child, not a freshly-derived local list.
+  const attempt = quizAttempt(set, decodeAnswers(answers), resolveItems(set.id, quizItems(set)))
   const allRight = attempt.wrong.length === 0
 
   return (
