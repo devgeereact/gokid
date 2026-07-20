@@ -2,6 +2,8 @@ import Constants from "expo-constants"
 import * as Sentry from "@sentry/react-native"
 import { useCallback, useEffect, useState } from "react"
 
+import type { MixedQuestion } from "@/lib/study"
+
 /**
  * Client → API layer. The app never touches Postgres directly (AGENTS.md); it calls the Expo Router
  * API routes, which own the Drizzle/Neon access.
@@ -205,6 +207,63 @@ function useQuery<T>(path: string, enabled = true): Query<T> {
     errorKind: fresh ? result.errorKind : null,
     reload,
   }
+}
+
+/**
+ * A no-repeat quiz served for a specific child — `GET /api/quiz` (see api/quiz+api.ts).
+ *
+ * Unlike `getStudySet`, which returns a set's fixed question list identical for everyone, this asks
+ * the server for questions this child has NOT seen in the last 12 hours, already shuffled and with
+ * option positions re-randomised. The server owns the no-repeat rule; the client just renders what it
+ * is handed. `repeated > 0` means the pool was exhausted inside the window and some questions were
+ * re-served — the signal to grow the pool with the generator.
+ */
+export type ServedQuiz = {
+  ok: boolean
+  setId: string
+  count: number
+  repeated: number
+  poolSize: number
+  questions: {
+    id: string
+    kind: MixedQuestion["kind"]
+    prompt: string
+    explanation: string | null
+    topic: string | null
+    difficulty: number
+    payload: Record<string, unknown>
+  }[]
+}
+
+/**
+ * Reassemble a served row into the flat `MixedQuestion` the quiz runner consumes. The server stores
+ * the kind-specific fields under `payload` (options/answer, accept, items, pairs …); the client union
+ * carries them at the top level, so this is the inverse of the server's `toStoredColumns` split.
+ */
+export function servedToMixed(row: ServedQuiz["questions"][number]): MixedQuestion {
+  const base = {
+    id: row.id,
+    prompt: row.prompt,
+    ...(row.explanation ? { explanation: row.explanation } : {}),
+    ...(row.topic ? { topic: row.topic } : {}),
+  }
+  return { ...base, kind: row.kind, ...row.payload } as MixedQuestion
+}
+
+/**
+ * Fetch a no-repeat quiz for a child. `token` is a Clerk session JWT the caller obtains via
+ * `getToken()` (same contract as the progress API), and `clientId` is the child's on-device id. Kept
+ * a plain async function, not a hook, so the quiz screen can call it once on entry and thread the
+ * resulting questions through its existing results/review pipeline.
+ */
+export async function fetchServedQuiz(
+  params: { setId: string; clientId: string; count?: number },
+  token: string
+): Promise<MixedQuestion[]> {
+  const q = new URLSearchParams({ setId: params.setId, clientId: params.clientId })
+  if (params.count) q.set("count", String(params.count))
+  const res = await apiGetAuthed<ServedQuiz>(`/api/quiz?${q.toString()}`, token)
+  return res.questions.map(servedToMixed)
 }
 
 /** The study catalogue for a year group, straight from the database. */
