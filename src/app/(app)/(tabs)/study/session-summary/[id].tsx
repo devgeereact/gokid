@@ -2,12 +2,13 @@ import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { type SFSymbol, SymbolView } from "expo-symbols"
 import { Pressable, ScrollView, Text, View } from "react-native"
-import Svg, { Circle, Line, Polyline, Text as SvgText } from "react-native-svg"
 
 import { ChildAvatar } from "@/components/child-avatar"
+import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { DEFAULT_AVATAR, useChildren } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, useStudyingChildId } from "@/lib/children"
+import { dueLabel, useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
 
 /**
@@ -33,62 +34,10 @@ const PCT: Record<number, string> = {
 
 type Stat = { symbol: SFSymbol; wash: string; tint: string; label: string; value: string }
 
-const STATS: Stat[] = [
-  { symbol: "clock", wash: "bg-gamify-green-wash", tint: colors.success, label: "Time spent", value: "18m 30s" },
-  { symbol: "rectangle.stack.fill", wash: "bg-gamify-purple-wash", tint: colors.gamify.purple, label: "Cards studied", value: "20" },
-  { symbol: "target", wash: "bg-gamify-blue-wash", tint: colors.gamify.blue, label: "Accuracy", value: "90%" },
-  { symbol: "flame.fill", wash: "bg-gamify-flame-wash", tint: colors.gamify.flame, label: "Best streak", value: "9" },
-  { symbol: "star.fill", wash: "bg-gamify-amber-wash", tint: colors.accent, label: "New high score", value: "120" },
-]
-
-// Accuracy-trend line chart geometry — five points across a 320×160 viewBox. Precomputed at module
-// scope so nothing is recomputed per render.
-const TREND = [72, 78, 82, 85, 90]
-const TREND_LABELS = ["May 6", "May 7", "May 8", "May 9", "Today"]
-const TREND_X = TREND.map((_, i) => 44 + i * ((300 - 44) / 4))
-const TREND_Y = TREND.map((v) => 12 + ((100 - v) / 100) * 118)
-const TREND_POINTS = TREND.map((v, i) => `${TREND_X[i]},${TREND_Y[i]}`).join(" ")
-const GRID = [100, 75, 50, 25, 0].map((v) => ({ v, y: 12 + ((100 - v) / 100) * 118 }))
-
-// Performance-by-difficulty donut — three arcs on one ring. Segment lengths are a visual split that
-// reproduces the mock's proportions (the underlying scores are shown as the legend %); reused donut
-// maths from progress.tsx. easy=success / medium=accent / hard=error per the token convention.
-type Difficulty = { label: string; pct: number; ratio: string; color: string; dot: string; weight: number }
-const DIFFICULTY: Difficulty[] = [
-  { label: "Easy", pct: 100, ratio: "(10/10)", color: colors.success, dot: "bg-success", weight: 42 },
-  { label: "Medium", pct: 80, ratio: "(6/8)", color: colors.accent, dot: "bg-accent", weight: 30 },
-  { label: "Hard", pct: 50, ratio: "(1/2)", color: colors.error, dot: "bg-error", weight: 28 },
-]
-const R = 40
-const STROKE = 16
-const C = 2 * Math.PI * R
-const ARCS = DIFFICULTY.reduce<{ color: string; len: number; offset: number }[]>((acc, seg) => {
-  const len = (seg.weight / 100) * C
-  const offset = acc.reduce((sum, a) => sum + a.len, 0)
-  acc.push({ color: seg.color, len, offset })
-  return acc
-}, [])
-
+// "Best streak" and "New high score" were on the reference; both are extrinsic mechanics §9 rejects
+// (and a "high score" invites the comparison a leaderboard would). Replaced by what the session
+// actually produced.
 type BarRow = { symbol: SFSymbol; wash: string; tint: string; label: string; pct: number; bar: string }
-
-const STRENGTHS: BarRow[] = [
-  { symbol: "square.grid.2x2.fill", wash: "bg-gamify-green-wash", tint: colors.success, label: "Number and place value", pct: 100, bar: "bg-success" },
-  { symbol: "plus.forwardslash.minus", wash: "bg-gamify-amber-wash", tint: colors.accent, label: "Addition and subtraction", pct: 95, bar: "bg-success" },
-  { symbol: "multiply", wash: "bg-gamify-blue-wash", tint: colors.gamify.blue, label: "Multiplication", pct: 88, bar: "bg-success" },
-]
-
-const PRACTICE: BarRow[] = [
-  { symbol: "divide", wash: "bg-gamify-purple-wash", tint: colors.gamify.purple, label: "Division", pct: 50, bar: "bg-accent" },
-  { symbol: "chart.pie.fill", wash: "bg-gamify-red-wash", tint: colors.error, label: "Fractions", pct: 50, bar: "bg-accent" },
-  { symbol: "gauge.medium", wash: "bg-gamify-blue-wash", tint: colors.gamify.blue, label: "Measurement", pct: 40, bar: "bg-error" },
-]
-
-type Achievement = { symbol: SFSymbol; title: string; sub: string; progress: string }
-const ACHIEVEMENTS: Achievement[] = [
-  { symbol: "calendar", title: "7-Day Streak", sub: "You're on fire!", progress: "checks" },
-  { symbol: "target", title: "Accuracy Pro", sub: "Scored 80% or higher 5 times", progress: "5/5" },
-  { symbol: "trophy.fill", title: "Set Champion", sub: "Completed 20 sets this week", progress: "20/20" },
-]
 
 function Card({ children }: { children: React.ReactNode }) {
   return <View className="mt-4 rounded-2xl border border-border bg-white p-5">{children}</View>
@@ -123,13 +72,80 @@ function BarList({ rows, title }: { rows: BarRow[]; title: string }) {
 
 export default function SessionSummary() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const childId = useStudyingChildId() ?? ""
   const set = getStudySet(id)
   const { children } = useChildren()
+  const { cards, sessions } = useProgress(childId)
 
   if (!set) return <Redirect href="/home" />
 
   const child = children[0]
   const name = child?.name ?? "Amara"
+
+  // Real outcomes from the spaced-repetition record. Box 2+ means recalled correctly at least twice
+  // across widening gaps — the engine's own definition of "learned", not a display constant.
+  const setCards = cards.filter((c) => c.setId === set.id)
+  const learned = setCards.filter((c) => c.box >= 2).length
+  const upcoming = setCards
+    .slice()
+    .sort((a, b) => a.dueAt - b.dueAt)
+    .slice(0, 3)
+    .map((card) => ({ card, title: getStudySet(card.setId)?.title ?? set.title }))
+
+  // The session that was just recorded for this set — the source for time and cards studied.
+  const lastSession = sessions.find((session) => session.setId === set.id)
+  const recalled = setCards.filter((c) => c.lastRating === "gotit").length
+  const accuracy = setCards.length ? Math.round((recalled / setCards.length) * 100) : null
+
+  const stats: Stat[] = [
+    {
+      symbol: "clock",
+      wash: "bg-gamify-green-wash",
+      tint: colors.success,
+      label: "Time spent",
+      value: lastSession ? `${lastSession.minutes}m` : "—",
+    },
+    {
+      symbol: "rectangle.stack.fill",
+      wash: "bg-gamify-purple-wash",
+      tint: colors.gamify.purple,
+      label: "Cards studied",
+      value: lastSession ? String(lastSession.cardsReviewed) : String(setCards.length),
+    },
+    {
+      symbol: "target",
+      wash: "bg-gamify-blue-wash",
+      tint: colors.gamify.blue,
+      label: "Recall",
+      value: accuracy === null ? "—" : `${accuracy}%`,
+    },
+  ]
+
+  // Strengths / needs-practice across every topic this child has cards in — real mastery, ranked.
+  const byTopic = new Map<string, { seen: number; learned: number }>()
+  for (const card of cards) {
+    const topic = getStudySet(card.setId)?.topic
+    if (!topic) continue
+    const row = byTopic.get(topic) ?? { seen: 0, learned: 0 }
+    row.seen += 1
+    if (card.box >= 2) row.learned += 1
+    byTopic.set(topic, row)
+  }
+  const topicRows: BarRow[] = [...byTopic.entries()]
+    .map(([label, r]) => ({
+      symbol: "square.grid.2x2.fill" as SFSymbol,
+      wash: "bg-gamify-green-wash",
+      tint: colors.success,
+      label,
+      pct: r.seen ? Math.round((r.learned / r.seen) * 100) : 0,
+      bar: "bg-success",
+    }))
+    .sort((a, b) => b.pct - a.pct)
+  const strengths = topicRows.filter((r) => r.pct >= 60).slice(0, 3)
+  const practice = topicRows
+    .filter((r) => r.pct < 60)
+    .map((r) => ({ ...r, wash: "bg-gamify-amber-wash", tint: colors.accent, bar: "bg-accent" }))
+    .slice(0, 3)
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
@@ -137,15 +153,7 @@ export default function SessionSummary() {
 
       {/* Header */}
       <View className="mt-1 h-11 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text className="flex-1 text-center font-text text-h3 font-bold text-ink">Session Summary</Text>
         <View className="-mr-2 h-11 w-11 items-center justify-center">
           <SymbolView name="square.and.arrow.up" size={22} tintColor={colors.ink} weight="regular" />
@@ -160,11 +168,13 @@ export default function SessionSummary() {
             <Text className="font-text text-body-lg font-bold text-ink">Amazing work, {name}! ⭐</Text>
             <Text className="mt-1 font-text text-body text-text-secondary">You completed your study session.</Text>
           </View>
+          {/* The reference put "120 points earned" here. Points are a proxy; cards learned is the
+              thing itself, and it is what the engine actually recorded. */}
           <View className="ml-2 flex-row items-center">
-            <SymbolView name="shield.fill" size={40} tintColor={colors.success} weight="regular" />
+            <SymbolView name="brain.head.profile" size={38} tintColor={colors.success} weight="regular" />
             <View className="ml-2">
-              <Text className="font-text text-h3 font-bold text-ink">120</Text>
-              <Text className="font-text text-caption text-text-secondary">points earned</Text>
+              <Text className="font-text text-h3 font-bold text-ink">{learned}</Text>
+              <Text className="font-text text-caption text-text-secondary">cards learned</Text>
             </View>
           </View>
         </View>
@@ -173,7 +183,7 @@ export default function SessionSummary() {
         <Card>
           <Text className="mb-4 font-text text-h3 font-bold text-ink">Session overview</Text>
           <View className="flex-row gap-2">
-            {STATS.map((s) => (
+            {stats.map((s) => (
               <View key={s.label} className="flex-1 items-center rounded-xl border border-border bg-white p-2">
                 <View className={`h-9 w-9 items-center justify-center rounded-full ${s.wash}`}>
                   <SymbolView name={s.symbol} size={18} tintColor={s.tint} weight="semibold" />
@@ -189,81 +199,9 @@ export default function SessionSummary() {
           </View>
         </Card>
 
-        {/* Accuracy trend */}
-        <Card>
-          <Text className="mb-4 font-text text-h3 font-bold text-ink">Accuracy trend</Text>
-          <Svg width="100%" height={160} viewBox="0 0 320 160">
-            {GRID.map((g) => (
-              <Line key={g.v} x1={44} y1={g.y} x2={300} y2={g.y} stroke={colors.border} strokeWidth={1} />
-            ))}
-            {GRID.map((g) => (
-              <SvgText key={`l-${g.v}`} x={38} y={g.y + 4} fontSize={11} fill={colors["text-secondary"]} textAnchor="end">
-                {g.v}%
-              </SvgText>
-            ))}
-            <Polyline points={TREND_POINTS} fill="none" stroke={colors.success} strokeWidth={2.5} />
-            {TREND.map((v, i) => (
-              <Circle key={`c-${v}`} cx={TREND_X[i]} cy={TREND_Y[i]} r={4} fill={colors.success} />
-            ))}
-            {TREND.map((v, i) => (
-              <SvgText
-                key={`v-${v}`}
-                x={TREND_X[i]}
-                y={TREND_Y[i] - 9}
-                fontSize={12}
-                fontWeight="bold"
-                fill={i === TREND.length - 1 ? colors.success : colors.ink}
-                textAnchor="middle"
-              >
-                {v}%
-              </SvgText>
-            ))}
-            {TREND_LABELS.map((label, i) => (
-              <SvgText key={label} x={TREND_X[i]} y={150} fontSize={11} fill={colors["text-secondary"]} textAnchor="middle">
-                {label}
-              </SvgText>
-            ))}
-          </Svg>
-        </Card>
-
-        {/* Performance by difficulty */}
-        <Card>
-          <Text className="mb-4 font-text text-h3 font-bold text-ink">Performance by difficulty</Text>
-          <View className="flex-row items-center">
-            <Svg width={104} height={104} viewBox="0 0 104 104">
-              {ARCS.map((arc) => (
-                <Circle
-                  key={arc.color}
-                  cx={52}
-                  cy={52}
-                  r={R}
-                  fill="none"
-                  stroke={arc.color}
-                  strokeWidth={STROKE}
-                  strokeDasharray={`${arc.len} ${C - arc.len}`}
-                  strokeDashoffset={-arc.offset}
-                  transform="rotate(-90 52 52)"
-                />
-              ))}
-            </Svg>
-            <View className="ml-6 flex-1">
-              {DIFFICULTY.map((d) => (
-                <View key={d.label} className="mb-3 flex-row items-center last:mb-0">
-                  <View className={`h-3 w-3 rounded-full ${d.dot}`} />
-                  <Text className="ml-3 flex-1 font-text text-body-lg text-text-secondary">{d.label}</Text>
-                  <View className="items-end">
-                    <Text className="font-text text-body-lg font-bold text-ink">{d.pct}%</Text>
-                    <Text className="font-text text-caption text-text-secondary">{d.ratio}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        </Card>
-
         {/* Top strengths / Needs more practice */}
-        <BarList rows={STRENGTHS} title="Top strengths" />
-        <BarList rows={PRACTICE} title="Needs more practice" />
+        {strengths.length > 0 ? <BarList rows={strengths} title="Top strengths" /> : null}
+        {practice.length > 0 ? <BarList rows={practice} title="Needs more practice" /> : null}
 
         {/* Study tip */}
         <View className="mt-4 flex-row items-center rounded-2xl bg-gamify-amber-wash p-4">
@@ -279,36 +217,28 @@ export default function SessionSummary() {
           <SymbolView name="chevron.right" size={18} tintColor={colors["text-secondary"]} weight="semibold" />
         </View>
 
-        {/* Achievements strip */}
-        <View className="mt-4 flex-row gap-3 rounded-2xl bg-gamify-purple-wash p-4">
-          {ACHIEVEMENTS.map((a) => (
-            <View key={a.title} className="flex-1">
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-white">
-                <SymbolView name={a.symbol} size={20} tintColor={colors.gamify.purple} weight="semibold" />
+        {/* Coming back — replaces the reference's badge strip (a 7-Day Streak, an "Accuracy Pro" and
+            a "Set Champion", none of which §9 allows). This is the retention mechanic that brief
+            asks for: not a nudge to return today, just when the work is genuinely due. */}
+        {upcoming.length > 0 ? (
+          <View className="mt-4 rounded-2xl bg-gamify-blue-wash p-4">
+            <Text className="font-text text-body-lg font-bold text-ink">Coming back</Text>
+            <Text className="mt-0.5 font-text text-body text-text-secondary">
+              We&apos;ll bring these back so they stick.
+            </Text>
+            {upcoming.map(({ card, title }) => (
+              <View key={`${card.setId}:${card.cardId}`} className="mt-3 flex-row items-center">
+                <View className="h-9 w-9 items-center justify-center rounded-full bg-white">
+                  <SymbolView name="arrow.clockwise" size={16} tintColor={colors.gamify.blue} weight="semibold" />
+                </View>
+                <Text numberOfLines={1} className="ml-3 flex-1 font-text text-body font-semibold text-ink">
+                  {title}
+                </Text>
+                <Text className="ml-2 font-text text-body font-bold text-gamify-blue">{dueLabel(card.dueAt)}</Text>
               </View>
-              <Text numberOfLines={1} className="mt-2 font-text text-body font-bold text-ink">
-                {a.title}
-              </Text>
-              <Text numberOfLines={2} className="mt-0.5 font-text text-caption text-text-secondary">
-                {a.sub}
-              </Text>
-              {a.progress === "checks" ? (
-                <View className="mt-2 flex-row gap-1">
-                  {[0, 1, 2, 3, 4].map((n) => (
-                    <SymbolView key={n} name="checkmark.circle.fill" size={14} tintColor={colors.gamify.purple} weight="semibold" />
-                  ))}
-                </View>
-              ) : (
-                <View className="mt-2 flex-row items-center">
-                  <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-white">
-                    <View className="h-full w-[100%] rounded-full bg-gamify-purple" />
-                  </View>
-                  <Text className="ml-2 font-text text-caption font-bold text-ink">{a.progress}</Text>
-                </View>
-              )}
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        ) : null}
 
         {/* Actions */}
         <View className="mt-6 flex-row gap-3">

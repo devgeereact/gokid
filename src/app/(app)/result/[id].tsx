@@ -7,7 +7,7 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useChildren } from "@/lib/children"
-import { getStudySet } from "@/lib/study"
+import { getStudySet, quizItems } from "@/lib/study"
 
 /**
  * Quiz results (design/GoKid-result-screen.png, screen 9). Celebrating child, a score ring, then two
@@ -40,7 +40,7 @@ export default function Result() {
 
   if (!set) return <Redirect href="/home" />
 
-  const total = set.quiz.length
+  const total = quizItems(set).length
   const correct = Math.min(Number(score ?? 0) || 0, total)
   const childName = children[0]?.name ?? user?.firstName ?? "you"
 

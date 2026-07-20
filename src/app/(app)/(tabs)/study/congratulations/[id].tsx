@@ -5,20 +5,27 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useChildren } from "@/lib/children"
-import { STUDY_SETS, getStudySet } from "@/lib/study"
+import { useParentGate } from "@/lib/parent-gate"
+import { useChildren, useStudyingChildId } from "@/lib/children"
+import { dueLabel, useProgress } from "@/lib/reviews"
+import { shareAboutChild } from "@/lib/share"
+import { getStudySet, nextSetId } from "@/lib/study"
 
 /**
  * Congratulations / All Done (design/GoKid-congratulations-screen.png, screen 23). Completion
- * celebration: a confetti hero with the child and a trophy, four final-result stat tiles, a
- * "mastered" breakdown, a "try next" prompt and an encouragement banner, closing on a pinned
- * "Back to Home" button. The "23. All Done!" title is a mockup annotation — dropped.
+ * celebration: a hero with the child and a trophy, three final-result tiles, a "mastered"
+ * breakdown, a "try next" prompt, the certificate earned and an encouragement banner, closing on a
+ * pinned "Back to Home" button. The "23. All Done!" title is a mockup annotation — dropped.
  *
- * Inferred (no data-layer source, so demo constants at module scope like progress.tsx):
- * accuracy / cards / streak / points, the mastered-topic percentages, and the tile copy — matched
- * to the numbers on the reference. The confetti spray, the mountain-flag tile (reusing the subject
- * mountain art) and the banner's books/plant art are stand-ins for bespoke illustrations the app
- * doesn't ship; the trophy is a 🏆 emoji (gold, matches the reference better than a tinted symbol).
+ * The reference draws four tiles: accuracy, cards, **best streak** and **points earned**. Both of
+ * those last two are extrinsic mechanics that design/gokid-screens.md §9 explicitly rejects, so
+ * they are gone. In their place: cards learned and when the engine brings them back — the intrinsic
+ * pair §9 asks for, and both read from the real spaced-repetition record rather than a constant.
+ * This is the emotional peak of the product; what it celebrates should be true.
+ *
+ * The mountain-flag tile (reusing the subject mountain art) and the banner's plant art are
+ * stand-ins for bespoke illustrations the app doesn't ship; the trophy is a 🏆 emoji (gold, matches
+ * the reference better than a tinted symbol).
  */
 
 type Stat = {
@@ -30,13 +37,6 @@ type Stat = {
   tint: string
   tone: string
 }
-
-const STATS: Stat[] = [
-  { label: "Accuracy", value: "90%", sub: "Great work!", icon: "target", wash: "bg-gamify-green-wash", tint: colors.gamify.green, tone: "text-gamify-green" },
-  { label: "Cards studied", value: "20", sub: "All completed!", icon: "rectangle.stack.fill", wash: "bg-gamify-purple-wash", tint: colors.gamify.purple, tone: "text-gamify-purple" },
-  { label: "Best streak", value: "9", sub: "Keep it up!", icon: "flame.fill", wash: "bg-gamify-flame-wash", tint: colors.gamify.flame, tone: "text-gamify-flame" },
-  { label: "Points earned", value: "120", sub: "Awesome!", icon: "trophy.fill", wash: "bg-gamify-blue-wash", tint: colors.gamify.blue, tone: "text-gamify-blue" },
-]
 
 type Mastered = { title: string; sub: string; pct: number; icon: SFSymbol; wash: string; tint: string }
 
@@ -74,14 +74,54 @@ function StatTile({ stat }: { stat: Stat }) {
 
 export default function Congratulations() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const childId = useStudyingChildId() ?? ""
   const set = getStudySet(id)
   const { children } = useChildren()
+  const { cards } = useProgress(childId)
+  const { unlocked } = useParentGate()
 
   if (!set) return <Redirect href="/home" />
 
-  const name = children[0]?.name ?? "Amara"
-  const idx = STUDY_SETS.findIndex((s) => s.id === set.id)
-  const nextId = STUDY_SETS[(idx + 1) % STUDY_SETS.length].id
+  // The child who actually studied this set, not whoever happens to be first in the roster — the
+  // whole screen is about them and a household with two children was naming the wrong one.
+  const name = (children.find((c) => c.id === childId) ?? children[0])?.name ?? "Your child"
+  const nextId = nextSetId(set.id)
+
+  // Real outcomes for this set, from the spaced-repetition record.
+  const setCards = cards.filter((c) => c.setId === set.id)
+  const learned = setCards.filter((c) => c.box >= 2).length
+  const tricky = setCards.filter((c) => c.lastRating === "tricky").length
+  const nextDue = setCards.slice().sort((a, b) => a.dueAt - b.dueAt)[0]
+
+  const stats: Stat[] = [
+    {
+      label: "Cards learned",
+      value: String(learned),
+      sub: learned > 0 ? "Remembered twice!" : "Keep going!",
+      icon: "brain.head.profile",
+      wash: "bg-gamify-green-wash",
+      tint: colors.gamify.green,
+      tone: "text-gamify-green",
+    },
+    {
+      label: "Found tricky",
+      value: String(tricky),
+      sub: tricky > 0 ? "We'll bring them back" : "None — nice!",
+      icon: "arrow.clockwise",
+      wash: "bg-gamify-amber-wash",
+      tint: colors.accent,
+      tone: "text-accent",
+    },
+    {
+      label: "Coming back",
+      value: nextDue ? dueLabel(nextDue.dueAt) : "—",
+      sub: "So it sticks",
+      icon: "calendar",
+      wash: "bg-gamify-blue-wash",
+      tint: colors.gamify.blue,
+      tone: "text-gamify-blue",
+    },
+  ]
 
   return (
     <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-background px-5">
@@ -95,7 +135,15 @@ export default function Congratulations() {
           accessibilityRole="button"
           accessibilityLabel="Share"
           className="w-20 flex-row items-center justify-end gap-1 active:opacity-60"
-          onPress={() => {}}
+          onPress={() =>
+            // Gated exactly like the certificate's share — see lib/share.ts for why.
+            shareAboutChild({
+              unlocked,
+              message: `${name} finished ${set.title} on GoKid — ${learned} ${
+                learned === 1 ? "card" : "cards"
+              } learned.`,
+            })
+          }
         >
           <SymbolView name="square.and.arrow.up" size={20} tintColor={colors.study.teal} weight="semibold" />
           <Text className="font-text text-body font-semibold text-study-teal">Share</Text>
@@ -113,8 +161,12 @@ export default function Congratulations() {
               source={require("../../../../../../assets/images/gokid-result-child.png")}
             />
             <View className="ml-2 flex-1">
-              <Text className="font-text text-h3 font-bold text-ink">Congratulations,</Text>
-              <Text className="font-text text-h2 font-bold text-gamify-green">{name}!</Text>
+              {/* One Text per line. The comma previously sat at the end of its own <Text>, so a long
+                  name wrapped it onto a line by itself — "Congratulations" / "," / "Gideon!". */}
+              <Text className="font-text text-h3 font-bold text-ink">Congratulations</Text>
+              <Text numberOfLines={2} className="font-text text-h2 font-bold text-gamify-green">
+                {name}!
+              </Text>
               <Text className="mt-2 font-text text-body text-text-secondary">
                 You&apos;ve completed {set.title}.
               </Text>
@@ -127,7 +179,7 @@ export default function Congratulations() {
         <Card>
           <Text className="mb-4 font-text text-h3 font-bold text-ink">Your final results</Text>
           <View className="flex-row">
-            {STATS.map((s) => (
+            {stats.map((s) => (
               <StatTile key={s.label} stat={s} />
             ))}
           </View>

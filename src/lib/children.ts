@@ -2,6 +2,8 @@ import { useUser } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
 import { useCallback, useMemo } from "react"
 
+import { useActiveChildId } from "./active-child"
+
 // Children are stored on the parent's Clerk user under `unsafeMetadata`. It is the only
 // user-writable store the client is allowed to touch (AGENTS.md: the app never talks to
 // Postgres directly). When Neon/Drizzle land, this hook is the single seam to swap over to
@@ -22,6 +24,25 @@ export function yearLabel(yearGroup: string) {
   return yearGroup === "Rec" ? "Reception" : `Year ${yearGroup.slice(1)}`
 }
 
+/**
+ * The seven per-child card washes (design/GoKid-design-system.png §07 → Child Profile Card, where
+ * Amara and Rufus carry different tints). Stored as the token name, never the hex: the palette lives
+ * in design/tokens.js and a stored hex would fossilise today's value into every child's profile.
+ */
+export const CARD_TINTS = ["lavender", "cream", "mint", "sky", "blush", "peach", "sage"] as const
+
+export type CardTint = (typeof CARD_TINTS)[number]
+
+const TINT_CLASS: Record<CardTint, string> = {
+  lavender: "bg-card-wash-lavender",
+  cream: "bg-card-wash-cream",
+  mint: "bg-card-wash-mint",
+  sky: "bg-card-wash-sky",
+  blush: "bg-card-wash-blush",
+  peach: "bg-card-wash-peach",
+  sage: "bg-card-wash-sage",
+}
+
 export type Child = {
   id: string
   name: string
@@ -30,27 +51,53 @@ export type Child = {
   birthMonth: string
   birthYear: string
   avatar: Avatar
+  /** Card colour, chosen in add-child. Absent on children created before it was offered — those
+   *  keep the hashed colour they have always had (see `washFor`). */
+  tint?: CardTint
+}
+
+/**
+ * Fallback tint for a child who has never been given one. Keyed on the id rather than the list
+ * index so a card keeps its colour when a sibling above it is deleted — the tint is part of how a
+ * child recognises their own card, and it must not shuffle.
+ */
+function hashedTint(id: string): CardTint {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return CARD_TINTS[hash % CARD_TINTS.length]
+}
+
+/**
+ * The NativeWind class for a child's card wash — their own choice if they have one, otherwise the
+ * colour they have always had. Never derive this from list position.
+ */
+export function washFor(child: Pick<Child, "id" | "tint">): string {
+  return TINT_CLASS[child.tint ?? hashedTint(child.id)]
+}
+
+/** Same lookup for a bare tint — used by the picker to render its own swatches. */
+export function tintClass(tint: CardTint): string {
+  return TINT_CLASS[tint]
+}
+
+/**
+ * The colour to pre-select in the add-child form.
+ *
+ * Editing an existing child: whatever they already have — their stored choice, or the hashed colour
+ * their card has always carried, so opening the form never silently repaints it.
+ *
+ * Adding a new one: the first tint no sibling is using. Two children in the same house with the same
+ * card colour defeats the point of the colour, and the old hash could easily collide.
+ */
+export function suggestTint(existing: Pick<Child, "id" | "tint"> | undefined, siblings: Child[]): CardTint {
+  if (existing) return existing.tint ?? hashedTint(existing.id)
+  const taken = new Set(siblings.map((c) => c.tint ?? hashedTint(c.id)))
+  return CARD_TINTS.find((t) => !taken.has(t)) ?? CARD_TINTS[siblings.length % CARD_TINTS.length]
 }
 
 type ChildrenMetadata = {
   children?: Child[]
 }
-
-/**
- * Demo children — one per year group, Reception → Year 6, so every age in the curriculum
- * (src/lib/study.ts) has a profile that resolves to real sets via `getStudySetsForYear`. Ages are
- * consistent with a mid-2026 school year. Used to seed the who's-studying / dashboard flow before a
- * real parent has added anyone; the wiring layer decides when to fall back to these.
- */
-export const DEMO_CHILDREN: Child[] = [
-  { id: "demo-leo", name: "Leo", yearGroup: "Rec", birthMonth: "September", birthYear: "2021", avatar: { kind: "preset", value: "lion" } },
-  { id: "demo-mia", name: "Mia", yearGroup: "Y1", birthMonth: "October", birthYear: "2020", avatar: { kind: "emoji", value: "🐰" } },
-  { id: "demo-noah", name: "Noah", yearGroup: "Y2", birthMonth: "March", birthYear: "2019", avatar: { kind: "preset", value: "elephant" } },
-  { id: "demo-amara", name: "Amara", yearGroup: "Y3", birthMonth: "June", birthYear: "2018", avatar: { kind: "preset", value: "fox" } },
-  { id: "demo-zara", name: "Zara", yearGroup: "Y4", birthMonth: "January", birthYear: "2017", avatar: { kind: "emoji", value: "🐨" } },
-  { id: "demo-rufus", name: "Rufus", yearGroup: "Y5", birthMonth: "November", birthYear: "2016", avatar: { kind: "emoji", value: "🐻" } },
-  { id: "demo-elsie", name: "Elsie", yearGroup: "Y6", birthMonth: "April", birthYear: "2015", avatar: { kind: "emoji", value: "🦉" } },
-]
 
 export function useChildren() {
   const { user } = useUser()
@@ -104,20 +151,21 @@ export function useChildren() {
     [user, children]
   )
 
-  /**
-   * Replace the child list with DEMO_CHILDREN — one profile per year group, so every set in
-   * src/lib/study.ts is reachable without typing seven forms. Reached from the children manager;
-   * destructive, so callers confirm first.
-   */
-  const seedDemoChildren = useCallback(async () => {
-    if (!user) throw new Error("seedDemoChildren called before the user loaded")
-    try {
-      await user.update({ unsafeMetadata: { ...user.unsafeMetadata, children: DEMO_CHILDREN } })
-    } catch (error) {
-      Sentry.captureException(error, { tags: { flow: "seed-demo-children" } })
-      throw error
-    }
-  }, [user])
+  return { children, addChild, updateChild, removeChild }
+}
 
-  return { children, addChild, updateChild, removeChild, seedDemoChildren }
+/**
+ * The child a study/progress screen should act on. Prefers the explicitly-picked child, then the
+ * parent's first real child, and returns null only when there is genuinely no profile.
+ *
+ * This replaces the demo-profile fallback that was copy-pasted across a dozen screens.
+ * That fallback silently routed a deep-linked child's spaced-repetition ratings into a demo profile's
+ * bucket whenever the in-memory active id was unset (a cold start, a notification tap). Falling back
+ * to a real child instead means writes land on real data; a null result is a routing condition the
+ * write screens handle by sending the child back to who's-studying, not a value to write against.
+ */
+export function useStudyingChildId(): string | null {
+  const activeId = useActiveChildId()
+  const { children } = useChildren()
+  return activeId ?? children[0]?.id ?? null
 }

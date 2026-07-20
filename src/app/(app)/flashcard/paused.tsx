@@ -6,7 +6,7 @@ import { Pressable, Text, View } from "react-native"
 
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useActiveChildId } from "@/lib/active-child"
+import { useStudyingChildId } from "@/lib/children"
 import { useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
 
@@ -53,11 +53,13 @@ export default function SessionPaused() {
     seconds: string
   }>()
   const set = getStudySet(params.id)
-  const childId = useActiveChildId() ?? "demo-amara"
-  const { recordSession } = useProgress(childId)
+  // As in the runner: bank the session against the real active child, never a demo profile.
+  const childId = useStudyingChildId()
+  const { recordSession } = useProgress(childId ?? "")
   const [confirming, setConfirming] = useState(false)
 
   if (!set) return <Redirect href="/home" />
+  if (!childId) return <Redirect href="/home" />
 
   const total = set.cards.length
   // Params arrive as strings off a deep link, so every one is clamped rather than trusted — an

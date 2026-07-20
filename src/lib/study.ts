@@ -28,6 +28,54 @@ export type QuizQuestion = {
   topic?: string
 }
 
+/**
+ * Richer quiz question types (design/gokid-screens.md §7 — the mockup only ever drew a 4-option MCQ).
+ * These live on `StudySet.mixedQuiz`, a SEPARATE array from `quiz`, precisely so the study-session
+ * runner (which iterates `quiz` as pure MCQ) is never handed a shape it can't render. Only the quiz
+ * runner reads `mixedQuiz`.
+ *
+ * Every interaction is TAP-based, not literal drag: a 6-year-old drags poorly, VoiceOver drags worse,
+ * and a tap target is testable. "Drag & drop" from the brief is realised as `match` (tap a token,
+ * tap where it goes) and `order` (tap items into sequence).
+ */
+/**
+ * §7 "Image Questions". `illustration` used to sit on the `mcq` variant alone, so a fill-in-the-blank
+ * about a diagram, an ordering question about a life cycle, or a matching question about shapes could
+ * never carry a picture — the one question type that could was the one that needed it least. It is a
+ * property of *a question*, not of one answering mechanic, so it lives on the base and every kind
+ * renders it (see the `Illustration` component in app/(app)/quiz/[id].tsx).
+ */
+type MixedBase = {
+  id: string
+  prompt: string
+  explanation?: string
+  topic?: string
+  /** Picture shown above the prompt. Any question kind may have one. */
+  illustration?: number
+}
+export type MixedQuestion =
+  /** Single choice — the classic MCQ. `answer` indexes `options`. */
+  | (MixedBase & { kind: "mcq"; options: string[]; answer: number })
+  /** Multi-select — every index in `answers` must be chosen, and nothing else. */
+  | (MixedBase & { kind: "multi"; options: string[]; answers: number[] })
+  /** Fill in the blank — free text, matched case/space-insensitively against `accept`. `accept[0]`
+   *  is the canonical answer shown on review. */
+  | (MixedBase & { kind: "fill"; accept: string[] })
+  /** Put in order — `items` are given in the CORRECT order and shuffled for display. */
+  | (MixedBase & { kind: "order"; items: string[] })
+  /** Match pairs — `left` and `right` of each pair belong together; `right` is shuffled for display. */
+  | (MixedBase & { kind: "match"; pairs: { left: string; right: string }[] })
+
+/** A child's answer to a MixedQuestion, tagged to match. */
+export type QuizResponse =
+  | { kind: "mcq"; choice: number | null }
+  | { kind: "multi"; choices: number[] }
+  | { kind: "fill"; text: string }
+  /** The child's arrangement as indices into `items`. */
+  | { kind: "order"; order: number[] }
+  /** For each left index, the right index the child paired it with (-1 = unpaired). */
+  | { kind: "match"; pairs: number[] }
+
 /** Mastery split for the set-detail bar — three percentages that sum to 100. */
 export type Mastery = {
   learning: number
@@ -60,8 +108,12 @@ export type StudySet = {
   minutes: number
   mastery: Mastery
   cards: Flashcard[]
-  /** Demo MCQ quiz — powers the set → quiz → results flow. */
+  /** Demo MCQ quiz — powers the study SESSION (session/[id]) and the download preview. Always MCQ. */
   quiz: QuizQuestion[]
+  /** Optional richer quiz for the standalone quiz runner (§7 — MCQ + multi/fill/order/match). When
+   *  present the runner uses this instead of `quiz`; when absent it falls back to `quiz` as all-MCQ.
+   *  Kept separate so the session runner never receives a non-MCQ question. */
+  mixedQuiz?: MixedQuestion[]
   /** Topics the child has mastered / should revisit — shown on the results screen. */
   mastered: string[]
   revisit: string[]
@@ -130,6 +182,47 @@ const CORE_SETS: StudySet[] = [
       { id: "pvq4", prompt: "Which is larger?", options: ["405", "450", "Equal", "None"], answer: 1 },
       { id: "pvq5", prompt: "How many hundreds are in 1,000?", options: ["1", "10", "100", "1,000"], answer: 1 },
       { id: "pvq6", prompt: "What is 10 more than 291?", options: ["281", "292", "301", "391"], answer: 2 },
+    ],
+    // §7 demo: one question of each interaction type, so the quiz runner's mixed-question rendering
+    // and scoring can be exercised end to end. Only this set carries a mixedQuiz for now.
+    mixedQuiz: [
+      {
+        kind: "mcq",
+        id: "pv-m1",
+        prompt: "What is the value of the 4 in 452?",
+        options: ["4", "40", "400", "4,000"],
+        answer: 2,
+        illustration: require("../../assets/images/gokid-quiz-blocks.png"),
+      },
+      {
+        kind: "multi",
+        id: "pv-m2",
+        prompt: "Which of these are less than 500?",
+        options: ["490", "512", "308", "605"],
+        answers: [0, 2],
+      },
+      {
+        kind: "fill",
+        id: "pv-m3",
+        prompt: "Write six hundred and thirty-eight as a number.",
+        accept: ["638"],
+      },
+      {
+        kind: "order",
+        id: "pv-m4",
+        prompt: "Put these numbers in order, smallest first.",
+        items: ["216", "261", "612", "621"],
+      },
+      {
+        kind: "match",
+        id: "pv-m5",
+        prompt: "Match each number to how many hundreds it has.",
+        pairs: [
+          { left: "305", right: "3 hundreds" },
+          { left: "540", right: "5 hundreds" },
+          { left: "812", right: "8 hundreds" },
+        ],
+      },
     ],
   },
   {
@@ -1033,27 +1126,104 @@ const RAW_EXTRA: RawSet[] = [
   },
 ]
 
-export const STUDY_SETS: StudySet[] = [...CORE_SETS, ...RAW_EXTRA.map(resolve)]
+/**
+ * Force `cardsTotal` to the real card count and never let it be authored by hand. The demo literals
+ * carried `cardsTotal: 20` next to six flashcards, so the UI advertised "20 cards" while the runner
+ * counted "1 / 6" — a number a human typed, drifting from the array it describes. Deriving it here,
+ * at the one seam every set passes through, means the count on the lesson card, the download screen
+ * and the session header is always exactly what the child will study. `cardsDone` is clamped to it so
+ * an in-progress set can never claim more done than it has.
+ */
+function withTrueCardCount(set: StudySet): StudySet {
+  const cardsTotal = set.cards.length
+  // Keep the authored progress *proportion* (e.g. "60% done") but express it against the real card
+  // count, so a set the demo meant to be mid-progress still reads mid-progress instead of snapping to
+  // complete when its inflated total shrinks to the true one.
+  const ratio = set.cardsTotal > 0 ? set.cardsDone / set.cardsTotal : 0
+  const cardsDone = Math.min(cardsTotal, Math.round(ratio * cardsTotal))
+  return { ...set, cardsTotal, cardsDone }
+}
+
+export const STUDY_SETS: StudySet[] = [...CORE_SETS, ...RAW_EXTRA.map(resolve)].map(withTrueCardCount)
 
 export function getStudySet(id: string | undefined): StudySet | undefined {
   return STUDY_SETS.find((s) => s.id === id)
 }
 
-/** Sets for a child's year, by `yearCode` ("Rec".."Y6"). Empty array if the year has no demo content. */
+/**
+ * The documented seam (see the file header). Screens read the catalogue through this hook, never the
+ * `STUDY_SETS` array directly, so when the Neon/Drizzle content API lands only this function changes
+ * — it grows a fetch and a loading/error shape while every caller stays put. Today it is synchronous.
+ */
+export function useStudySets(): StudySet[] {
+  return STUDY_SETS
+}
+
+/** Seam variant scoped to a child's year. Same contract as `useStudySets`. */
+export function useStudySetsForYear(yearCode: string | undefined): StudySet[] {
+  return getStudySetsForYear(yearCode)
+}
+
+/** Sets for a child's year, by `yearCode` ("Rec".."Y6"). Empty array if the year has no demo content.
+ *  Data-tier selector — used by `useStudySetsForYear` and other lib modules, not by screens. */
 export function getStudySetsForYear(yearCode: string | undefined): StudySet[] {
   if (!yearCode) return []
   return STUDY_SETS.filter((s) => s.yearCode === yearCode)
 }
 
-/** The set the "Continue" card resumes — the one with cards in progress. */
-export const CONTINUE_SET = STUDY_SETS[0]
+/**
+ * Related sets for a set-detail screen (design/gokid-screens.md §5 → "Related Sets").
+ *
+ * Relatedness in a curriculum app is not a similarity score, it is the curriculum's own structure —
+ * so this is a stated ordering, most-related first:
+ *
+ *  1. Same subject *and* topic, same year — the closest thing to "more of exactly this".
+ *  2. Same subject and topic in another year — the same strand either side of where they are, which
+ *     is how a child stuck on a topic finds an easier run at it, or a stretch.
+ *  3. Same subject, same year, different topic — the rest of the strand list for their year.
+ *
+ * Each carries the reason it is there, for the same reason the Home recommendations do: a suggestion
+ * a child or parent cannot interrogate is just a nudge.
+ */
+export type RelatedSet = { set: StudySet; reason: string }
+
+export function relatedSets(set: StudySet, limit = 6): RelatedSet[] {
+  const out: RelatedSet[] = []
+  const taken = new Set<string>([set.id])
+
+  const push = (candidate: StudySet, reason: string) => {
+    if (taken.has(candidate.id) || out.length >= limit) return
+    taken.add(candidate.id)
+    out.push({ set: candidate, reason })
+  }
+
+  for (const other of STUDY_SETS.filter((s) => s.subject === set.subject && s.topic === set.topic && s.yearCode === set.yearCode)) {
+    push(other, "More on this topic")
+  }
+  for (const other of STUDY_SETS.filter((s) => s.subject === set.subject && s.topic === set.topic)) {
+    push(other, other.yearGroup)
+  }
+  for (const other of STUDY_SETS.filter((s) => s.subject === set.subject && s.yearCode === set.yearCode)) {
+    push(other, other.topic)
+  }
+  return out
+}
+
+/** The set to offer after finishing `afterId` — the next in catalogue order, wrapping to the first.
+ *  Keeps the "what next" ordering owned by the content layer instead of index math in a screen. */
+export function nextSetId(afterId: string): string {
+  const idx = STUDY_SETS.findIndex((s) => s.id === afterId)
+  return STUDY_SETS[(idx + 1) % STUDY_SETS.length].id
+}
+
 
 /** Pre-quiz summary shown on the Quiz Instructions screen. */
 export type QuizBrief = {
   questions: number
   /** Estimated minutes to finish, rounded up. */
   minutes: number
-  difficulty: "Easy" | "Steady" | "Tricky"
+  /** How hard this quiz is for THIS child — see `quizBrief`. Null until they have seen a card. */
+  difficulty: "Easy" | "Steady" | "Tricky" | null
   /** Curriculum topics the questions draw on — the "What it covers" chips. */
   topics: string[]
   /** Art for the pre-quiz hero — the quiz's own illustration where it has one. */
@@ -1063,20 +1233,28 @@ export type QuizBrief = {
 }
 
 /**
- * Derives the quiz brief from a set. Demo sets carry no authored difficulty or per-question topic,
- * so both are inferred from data the set already has: mastery (a set the child has mastered reads
- * Easy; one they are still learning reads Tricky) and the `mastered` / `revisit` topic lists that
- * the results screen uses. When the content API lands these become authored fields.
+ * Derives the quiz brief from a set, for a given child.
+ *
+ * `difficulty` used to read `set.mastery` — three authored percentages baked into the catalogue, so
+ * every child was told the same quiz was "Easy" regardless of whether they had ever opened it. It is
+ * now computed from that child's own spaced-repetition record: how much of this set they have
+ * actually retained. A child who has not started the set gets `null`, and the screen says so, rather
+ * than being told a quiz is Easy before they have seen a single card.
  */
-export function quizBrief(set: StudySet): QuizBrief {
-  const questions = set.quiz.length
+export function quizBrief(set: StudySet, retainedPct?: number | null): QuizBrief {
+  const items = quizItems(set)
+  const questions = items.length
   // ~45s per question, floor of 1 minute — matches the pace of the demo MCQs.
   const minutes = Math.max(1, Math.ceil((questions * 45) / 60))
-  const difficulty = set.mastery.mastered >= 50 ? "Easy" : set.mastery.learning >= 40 ? "Tricky" : "Steady"
+  const difficulty: QuizBrief["difficulty"] =
+    retainedPct === null || retainedPct === undefined ? null : retainedPct >= 60 ? "Easy" : retainedPct >= 25 ? "Steady" : "Tricky"
   const topics = [...new Set([...set.mastered, ...set.revisit])].slice(0, 6)
   // The blocks art is drawn on the peach quiz wash, so it seams into the instructions hero; a set
   // whose quiz carries no illustration falls back to its own hero (a white-background thumbnail).
-  const art = set.quiz.find((q) => q.illustration)?.illustration
+  const mcqArt = items.find(
+    (q): q is Extract<MixedQuestion, { kind: "mcq" }> => q.kind === "mcq" && q.illustration !== undefined
+  )
+  const art = mcqArt?.illustration
   return {
     questions,
     minutes,
@@ -1087,15 +1265,104 @@ export function quizBrief(set: StudySet): QuizBrief {
   }
 }
 
+/** The questions the quiz RUNNER plays: the richer `mixedQuiz` when a set has one, otherwise the MCQ
+ *  `quiz` lifted into the mixed shape. One entry point so the runner and the review always agree. */
+export function quizItems(set: StudySet): MixedQuestion[] {
+  if (set.mixedQuiz) return set.mixedQuiz
+  return set.quiz.map((q) => ({
+    kind: "mcq" as const,
+    id: q.id,
+    prompt: q.prompt,
+    options: q.options,
+    answer: q.answer,
+    illustration: q.illustration,
+    explanation: q.explanation,
+    topic: q.topic,
+  }))
+}
+
+/** An empty response of the right shape for a question — the runner's initial state per question. */
+export function blankResponse(q: MixedQuestion): QuizResponse {
+  switch (q.kind) {
+    case "mcq":
+      return { kind: "mcq", choice: null }
+    case "multi":
+      return { kind: "multi", choices: [] }
+    case "fill":
+      return { kind: "fill", text: "" }
+    case "order":
+      return { kind: "order", order: [] }
+    case "match":
+      return { kind: "match", pairs: q.pairs.map(() => -1) }
+  }
+}
+
+const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ")
+const sameSet = (a: number[], b: number[]) => a.length === b.length && [...a].sort().join(",") === [...b].sort().join(",")
+
+/** Whether a response answers its question correctly. Pure — the single source of truth for scoring
+ *  in the runner AND the review, so a score can never disagree with what the review shows. */
+export function isResponseCorrect(q: MixedQuestion, r: QuizResponse | undefined): boolean {
+  if (!r || r.kind !== q.kind) return false
+  switch (q.kind) {
+    case "mcq":
+      return r.kind === "mcq" && r.choice === q.answer
+    case "multi":
+      return r.kind === "multi" && sameSet(r.choices, q.answers)
+    case "fill":
+      return r.kind === "fill" && q.accept.some((a) => norm(a) === norm(r.text))
+    case "order":
+      // Correct when the arranged indices are 0,1,2,… (items were authored in the right order).
+      return r.kind === "order" && r.order.length === q.items.length && r.order.every((v, i) => v === i)
+    case "match":
+      // Right index j is correct for left i when it maps to the same pair after the display shuffle;
+      // the runner records the ORIGINAL right index it paired, so correctness is pairs[i] === i.
+      return r.kind === "match" && r.pairs.length === q.pairs.length && r.pairs.every((v, i) => v === i)
+  }
+}
+
+/** The canonical correct answer, as one display string. */
+export function correctLabel(q: MixedQuestion): string {
+  switch (q.kind) {
+    case "mcq":
+      return q.options[q.answer]
+    case "multi":
+      return q.answers.map((i) => q.options[i]).join(", ")
+    case "fill":
+      return q.accept[0]
+    case "order":
+      return q.items.join(" → ")
+    case "match":
+      return q.pairs.map((p) => `${p.left} → ${p.right}`).join(", ")
+  }
+}
+
+/** The child's answer, as one display string ("Skipped" when they left it blank). */
+export function responseLabel(q: MixedQuestion, r: QuizResponse | undefined): string {
+  if (!r || r.kind !== q.kind) return "Skipped"
+  switch (q.kind) {
+    case "mcq":
+      return r.kind === "mcq" && r.choice !== null ? q.options[r.choice] : "Skipped"
+    case "multi":
+      return r.kind === "multi" && r.choices.length ? r.choices.map((i) => q.options[i]).join(", ") : "Skipped"
+    case "fill":
+      return r.kind === "fill" && r.text.trim() ? r.text.trim() : "Skipped"
+    case "order":
+      return r.kind === "order" && r.order.length ? r.order.map((i) => q.items[i]).join(" → ") : "Skipped"
+    case "match":
+      return r.kind === "match" && r.pairs.some((v) => v >= 0)
+        ? q.pairs.map((p, i) => `${p.left} → ${r.pairs[i] >= 0 ? q.pairs[r.pairs[i]].right : "?"}`).join(", ")
+        : "Skipped"
+  }
+}
+
 /** One question as replayed on the Incorrect Answers review. */
 export type QuizReviewRow = {
-  question: QuizQuestion
+  question: MixedQuestion
   /** 1-based position in the quiz — the review's "Question 3" label. */
   number: number
-  /** Index into `question.options` the child picked, or null if they ran out / skipped. */
-  picked: number | null
   correct: boolean
-  /** What the child answered, ready to render ("Skipped" when they picked nothing). */
+  /** What the child answered, ready to render ("Skipped" when they left it blank). */
   pickedLabel: string
   correctLabel: string
   explanation: string
@@ -1113,32 +1380,28 @@ export type QuizAttempt = {
 }
 
 /**
- * Replays an attempt against a set's quiz. `answers` is the option index the child picked per
- * question, in order; -1 or a missing entry reads as skipped, so a partial attempt still reviews.
+ * Replays an attempt against a set's quiz. `responses` is the child's answer per question in order;
+ * a missing entry reads as skipped, so a partial attempt still reviews. Uses `quizItems`, so a mixed
+ * quiz reviews as faithfully as an MCQ one.
  *
- * Demo seam: `explanation` and `topic` are optional on `QuizQuestion` and no demo set authors them
- * yet, so both fall back to values derived from data the set already carries — every set therefore
- * renders a complete review today, and authoring the fields later needs no screen change.
+ * Demo seam: `explanation` and `topic` are optional on the question and no demo set authors them yet,
+ * so both fall back to values derived from data the set already carries.
  */
-export function quizAttempt(set: StudySet, answers: number[]): QuizAttempt {
+export function quizAttempt(set: StudySet, responses: QuizResponse[]): QuizAttempt {
   const revisit = set.revisit.length > 0 ? set.revisit : [set.topic]
 
-  const rows: QuizReviewRow[] = set.quiz.map((question, i) => {
-    const raw = answers[i]
-    const picked = raw === undefined || raw < 0 || raw >= question.options.length ? null : raw
-    const correctLabel = question.options[question.answer]
+  const rows: QuizReviewRow[] = quizItems(set).map((question, i) => {
+    const response = responses[i]
+    const label = correctLabel(question)
     return {
       question,
       number: i + 1,
-      picked,
-      correct: picked === question.answer,
-      pickedLabel: picked === null ? "Skipped" : question.options[picked],
-      correctLabel,
+      correct: isResponseCorrect(question, response),
+      pickedLabel: responseLabel(question, response),
+      correctLabel: label,
       explanation:
         question.explanation ??
-        `“${correctLabel}” is the answer. Look back at the ${set.topic.toLowerCase()} cards in ${set.title} — the same idea comes up there.`,
-      // No per-question topic tags on the demo sets; cycle the set's revisit list so each wrong
-      // answer still names a strand to go back to.
+        `“${label}” is the answer. Look back at the ${set.topic.toLowerCase()} cards in ${set.title} — the same idea comes up there.`,
       topic: question.topic ?? revisit[i % revisit.length],
     }
   })
@@ -1153,16 +1416,21 @@ export function quizAttempt(set: StudySet, answers: number[]): QuizAttempt {
   }
 }
 
-/** Serialises picked-option indices for the `answers` route param ("2,0,-1,3"). */
-export function encodeAnswers(answers: (number | null)[]): string {
-  return answers.map((a) => (a === null ? -1 : a)).join(",")
+/** Serialises the child's responses for the `answers` route param — JSON, URL-encoded so commas and
+ *  free text survive. Replaces the old comma-joined option-index codec. */
+export function encodeAnswers(responses: QuizResponse[]): string {
+  return encodeURIComponent(JSON.stringify(responses))
 }
 
-/** Parses the `answers` route param. Non-numeric junk reads as skipped, never throws. */
-export function decodeAnswers(param: string | undefined): number[] {
+/** Parses the `answers` route param back to responses. Malformed input reads as an empty attempt,
+ *  never throws. */
+export function decodeAnswers(param: string | undefined): QuizResponse[] {
   if (!param) return []
-  return param.split(",").map((s) => {
-    const n = Number(s)
-    return Number.isFinite(n) ? n : -1
-  })
+  try {
+    const parsed = JSON.parse(decodeURIComponent(param))
+    return Array.isArray(parsed) ? (parsed as QuizResponse[]) : []
+  } catch {
+    return []
+  }
 }
+

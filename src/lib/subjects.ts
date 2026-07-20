@@ -19,11 +19,6 @@ import { STUDY_SETS, type StudySet } from "./study"
 /** One curriculum strand — a row in the hub's "Curriculum strands" card. */
 export type Strand = {
   name: string
-  /** Sets the child has finished in this strand, of the strand's total. */
-  done: number
-  total: number
-  /** Mastery across the strand, 0–100. */
-  pct: number
   icon: SFSymbol
 }
 
@@ -75,12 +70,12 @@ export const SUBJECTS: Subject[] = [
     symbol: "number",
     focus: "{child} could use more practice with Geometry and Measurement to build confidence.",
     strands: [
-      { name: "Number and place value", done: 8, total: 10, pct: 80, icon: "number" },
-      { name: "Addition and subtraction", done: 7, total: 9, pct: 78, icon: "plus.forwardslash.minus" },
-      { name: "Multiplication and division", done: 5, total: 8, pct: 63, icon: "multiply" },
-      { name: "Fractions", done: 3, total: 6, pct: 50, icon: "chart.pie.fill" },
-      { name: "Measurement", done: 2, total: 5, pct: 40, icon: "ruler.fill" },
-      { name: "Geometry", done: 1, total: 4, pct: 25, icon: "triangle.fill" },
+      { name: "Number and place value", icon: "number" },
+      { name: "Addition and subtraction", icon: "plus.forwardslash.minus" },
+      { name: "Multiplication and division", icon: "multiply" },
+      { name: "Fractions", icon: "chart.pie.fill" },
+      { name: "Measurement", icon: "ruler.fill" },
+      { name: "Geometry", icon: "triangle.fill" },
     ],
   },
   {
@@ -94,11 +89,11 @@ export const SUBJECTS: Subject[] = [
     symbol: "text.book.closed.fill",
     focus: "{child} is flying through reading — a few more spelling sets would round it out.",
     strands: [
-      { name: "Reading", done: 6, total: 8, pct: 75, icon: "book.fill" },
-      { name: "Phonics", done: 5, total: 6, pct: 84, icon: "textformat.abc" },
-      { name: "Writing", done: 3, total: 7, pct: 45, icon: "pencil.and.outline" },
-      { name: "Grammar and punctuation", done: 4, total: 7, pct: 58, icon: "text.quote" },
-      { name: "Spelling", done: 2, total: 6, pct: 34, icon: "character.cursor.ibeam" },
+      { name: "Reading", icon: "book.fill" },
+      { name: "Phonics", icon: "textformat.abc" },
+      { name: "Writing", icon: "pencil.and.outline" },
+      { name: "Grammar and punctuation", icon: "text.quote" },
+      { name: "Spelling", icon: "character.cursor.ibeam" },
     ],
   },
   {
@@ -112,12 +107,12 @@ export const SUBJECTS: Subject[] = [
     symbol: "leaf.fill",
     focus: "{child} knows the human body well — forces and magnets are the next gap to close.",
     strands: [
-      { name: "Plants", done: 5, total: 7, pct: 72, icon: "leaf.fill" },
-      { name: "Animals and humans", done: 6, total: 8, pct: 76, icon: "figure.walk" },
-      { name: "Materials", done: 3, total: 6, pct: 52, icon: "cube.fill" },
-      { name: "Forces and magnets", done: 2, total: 6, pct: 35, icon: "bolt.fill" },
-      { name: "Light and sound", done: 2, total: 5, pct: 42, icon: "lightbulb.fill" },
-      { name: "Earth and space", done: 3, total: 5, pct: 60, icon: "globe.europe.africa.fill" },
+      { name: "Plants", icon: "leaf.fill" },
+      { name: "Animals and humans", icon: "figure.walk" },
+      { name: "Materials", icon: "cube.fill" },
+      { name: "Forces and magnets", icon: "bolt.fill" },
+      { name: "Light and sound", icon: "lightbulb.fill" },
+      { name: "Earth and space", icon: "globe.europe.africa.fill" },
     ],
   },
   {
@@ -131,11 +126,11 @@ export const SUBJECTS: Subject[] = [
     symbol: "globe.europe.africa.fill",
     focus: "{child} has European capitals down — physical geography needs another pass.",
     strands: [
-      { name: "Locational knowledge", done: 4, total: 6, pct: 68, icon: "mappin.and.ellipse" },
-      { name: "Place knowledge", done: 3, total: 5, pct: 55, icon: "map.fill" },
-      { name: "Physical geography", done: 2, total: 6, pct: 38, icon: "mountain.2.fill" },
-      { name: "Human geography", done: 2, total: 5, pct: 44, icon: "building.2.fill" },
-      { name: "Maps and fieldwork", done: 1, total: 4, pct: 28, icon: "location.north.line.fill" },
+      { name: "Locational knowledge", icon: "mappin.and.ellipse" },
+      { name: "Place knowledge", icon: "map.fill" },
+      { name: "Physical geography", icon: "mountain.2.fill" },
+      { name: "Human geography", icon: "building.2.fill" },
+      { name: "Maps and fieldwork", icon: "location.north.line.fill" },
     ],
   },
   {
@@ -149,11 +144,11 @@ export const SUBJECTS: Subject[] = [
     symbol: "scroll.fill",
     focus: "{child} enjoys the Romans — chronology across periods is worth revisiting.",
     strands: [
-      { name: "Chronology", done: 2, total: 5, pct: 40, icon: "clock.fill" },
-      { name: "Stone Age to Iron Age", done: 3, total: 5, pct: 62, icon: "hammer.fill" },
-      { name: "Ancient Rome", done: 4, total: 6, pct: 70, icon: "building.columns.fill" },
-      { name: "Ancient civilisations", done: 2, total: 6, pct: 36, icon: "pyramid.fill" },
-      { name: "Historical enquiry", done: 1, total: 4, pct: 25, icon: "magnifyingglass" },
+      { name: "Chronology", icon: "clock.fill" },
+      { name: "Stone Age to Iron Age", icon: "hammer.fill" },
+      { name: "Ancient Rome", icon: "building.columns.fill" },
+      { name: "Ancient civilisations", icon: "pyramid.fill" },
+      { name: "Historical enquiry", icon: "magnifyingglass" },
     ],
   },
   {
@@ -167,11 +162,11 @@ export const SUBJECTS: Subject[] = [
     symbol: "chevron.left.forwardslash.chevron.right",
     focus: "{child} sequences algorithms well — debugging is the strand to push next.",
     strands: [
-      { name: "Algorithms", done: 3, total: 5, pct: 66, icon: "list.number" },
-      { name: "Programming", done: 2, total: 5, pct: 48, icon: "chevron.left.forwardslash.chevron.right" },
-      { name: "Debugging", done: 1, total: 4, pct: 30, icon: "ant.fill" },
-      { name: "Data", done: 2, total: 4, pct: 55, icon: "chart.bar.fill" },
-      { name: "Online safety", done: 3, total: 4, pct: 78, icon: "lock.shield.fill" },
+      { name: "Algorithms", icon: "list.number" },
+      { name: "Programming", icon: "chevron.left.forwardslash.chevron.right" },
+      { name: "Debugging", icon: "ant.fill" },
+      { name: "Data", icon: "chart.bar.fill" },
+      { name: "Online safety", icon: "lock.shield.fill" },
     ],
   },
   {
@@ -185,10 +180,10 @@ export const SUBJECTS: Subject[] = [
     symbol: "paintpalette.fill",
     focus: "{child} mixes colour confidently — try a set on famous artists next.",
     strands: [
-      { name: "Drawing", done: 3, total: 5, pct: 64, icon: "pencil.tip" },
-      { name: "Painting", done: 4, total: 5, pct: 80, icon: "paintbrush.fill" },
-      { name: "Sculpture", done: 1, total: 4, pct: 32, icon: "cube.transparent.fill" },
-      { name: "Great artists", done: 2, total: 5, pct: 46, icon: "photo.artframe" },
+      { name: "Drawing", icon: "pencil.tip" },
+      { name: "Painting", icon: "paintbrush.fill" },
+      { name: "Sculpture", icon: "cube.transparent.fill" },
+      { name: "Great artists", icon: "photo.artframe" },
     ],
   },
   {
@@ -201,10 +196,10 @@ export const SUBJECTS: Subject[] = [
     symbol: "music.note",
     focus: "{child} keeps a steady pulse — reading notation is the next step.",
     strands: [
-      { name: "Pulse and rhythm", done: 3, total: 4, pct: 74, icon: "metronome.fill" },
-      { name: "Pitch and melody", done: 2, total: 4, pct: 52, icon: "music.note" },
-      { name: "Notation", done: 1, total: 4, pct: 26, icon: "music.note.list" },
-      { name: "Listening", done: 2, total: 5, pct: 44, icon: "ear.fill" },
+      { name: "Pulse and rhythm", icon: "metronome.fill" },
+      { name: "Pitch and melody", icon: "music.note" },
+      { name: "Notation", icon: "music.note.list" },
+      { name: "Listening", icon: "ear.fill" },
     ],
   },
   {
@@ -218,10 +213,10 @@ export const SUBJECTS: Subject[] = [
     symbol: "character.bubble.fill",
     focus: "{child} greets well in French — numbers past twenty need another look.",
     strands: [
-      { name: "Greetings", done: 4, total: 5, pct: 82, icon: "hand.wave.fill" },
-      { name: "Numbers and colours", done: 2, total: 5, pct: 45, icon: "paintpalette.fill" },
-      { name: "Everyday phrases", done: 2, total: 4, pct: 50, icon: "character.bubble.fill" },
-      { name: "Listening and speaking", done: 1, total: 4, pct: 30, icon: "waveform" },
+      { name: "Greetings", icon: "hand.wave.fill" },
+      { name: "Numbers and colours", icon: "paintpalette.fill" },
+      { name: "Everyday phrases", icon: "character.bubble.fill" },
+      { name: "Listening and speaking", icon: "waveform" },
     ],
   },
   {
@@ -234,10 +229,10 @@ export const SUBJECTS: Subject[] = [
     symbol: "hands.sparkles.fill",
     focus: "{child} knows the major festivals — places of worship would build on that.",
     strands: [
-      { name: "Beliefs and teachings", done: 3, total: 5, pct: 60, icon: "book.closed.fill" },
-      { name: "Festivals", done: 4, total: 5, pct: 84, icon: "sparkles" },
-      { name: "Places of worship", done: 1, total: 4, pct: 28, icon: "building.columns.fill" },
-      { name: "Big questions", done: 2, total: 4, pct: 48, icon: "questionmark.circle.fill" },
+      { name: "Beliefs and teachings", icon: "book.closed.fill" },
+      { name: "Festivals", icon: "sparkles" },
+      { name: "Places of worship", icon: "building.columns.fill" },
+      { name: "Big questions", icon: "questionmark.circle.fill" },
     ],
   },
 ]
@@ -251,16 +246,9 @@ export function subjectSlug(name: string): string | undefined {
   return SUBJECTS.find((s) => s.name === name)?.slug
 }
 
-/** Overall mastery — the hub's ring. Mean of the strand percentages, matching how the design's
- *  Subject Progress ring reads against its topic rows. */
-export function subjectOverall(subject: Subject): number {
-  const total = subject.strands.reduce((sum, s) => sum + s.pct, 0)
-  return Math.round(total / subject.strands.length)
-}
-
 /** Sets finished across the subject — the hub's "N sets completed" pill. */
-export function subjectSetsDone(subject: Subject): number {
-  return subject.strands.reduce((sum, s) => sum + s.done, 0)
+export function subjectSetCount(subject: Subject): number {
+  return STUDY_SETS.filter((s) => s.subject === subject.name).length
 }
 
 /**

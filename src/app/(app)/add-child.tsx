@@ -1,6 +1,6 @@
 import { useAuth } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
-import { router, useLocalSearchParams } from "expo-router"
+import { Redirect, router, useLocalSearchParams } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
 import { StatusBar } from "expo-status-bar"
 import { SymbolView } from "expo-symbols"
@@ -11,7 +11,8 @@ import { ChildAvatar, PRESET_KEYS } from "@/components/child-avatar"
 import { RoundedHeading } from "@/components/rounded-heading"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { type Avatar, DEFAULT_AVATAR, useChildren } from "@/lib/children"
+import { type Avatar, type CardTint, CARD_TINTS, DEFAULT_AVATAR, suggestTint, tintClass, useChildren } from "@/lib/children"
+import { useParentGate } from "@/lib/parent-gate"
 
 const YEAR_GROUPS = ["Rec", "Y1", "Y2", "Y3", "Y4", "Y5", "Y6"] as const
 
@@ -221,6 +222,7 @@ type OpenSheet = "month" | "year" | null
 export default function AddChild() {
   const { addChild, updateChild, removeChild, children } = useChildren()
   const { signOut } = useAuth()
+  const { unlocked } = useParentGate()
 
   // Same screen serves add and edit. With an `id` param it edits that child (prefilled form,
   // "Save changes", delete option); without one it adds a new child.
@@ -252,6 +254,11 @@ export default function AddChild() {
   // State initializers run once — seed from the edited child when present.
   const [name, setName] = useState(existing?.name ?? "")
   const [avatar, setAvatar] = useState<Avatar>(existing?.avatar ?? DEFAULT_AVATAR)
+  // §2 "Avatar Customisation". The card colour used to be assigned by hashing the child's id, so a
+  // parent could pick the picture but not the card their child actually recognises. An existing
+  // child with no stored tint keeps the colour they have always had — `washFor` falls back to the
+  // same hash, so opening the form does not silently repaint their card.
+  const [tint, setTint] = useState<CardTint>(suggestTint(existing, children))
   const [yearGroup, setYearGroup] = useState<string | null>(existing?.yearGroup ?? null)
   const [birthMonth, setBirthMonth] = useState<string | null>(existing?.birthMonth ?? null)
   const [birthYear, setBirthYear] = useState<string | null>(existing?.birthYear ?? null)
@@ -272,6 +279,7 @@ export default function AddChild() {
       const fields = {
         name: name.trim(),
         avatar,
+        tint,
         yearGroup: yearGroup!,
         birthMonth: birthMonth!,
         birthYear: birthYear!,
@@ -311,6 +319,14 @@ export default function AddChild() {
       ]
     )
   }
+
+  // Child management is a parent action, so the only ungated entry to this form is first-run
+  // onboarding — creating the very first child, before a gate could even be set. Every other case
+  // (editing an existing child, which exposes "Delete child", or adding a second child, which opens
+  // the camera and photo library) requires the gate. A direct deep link to /add-child or
+  // /add-child?id=... while locked lands on the parent-gated children manager instead. Placed after
+  // every hook to keep hook order stable.
+  if (!onboarding && !unlocked) return <Redirect href="/children" />
 
   return (
     <SafeAreaView className="flex-1 bg-background px-8">
@@ -354,11 +370,11 @@ export default function AddChild() {
         )}
       </View>
 
-      {/* Avatar. The lavender ring holds the chosen picture; the camera badge opens the
-          picker (preset icon, emoji, or an uploaded photo). */}
+      {/* Avatar. The ring holds the chosen picture in the chosen card colour; the camera badge
+          opens the picker (preset icon, emoji, or an uploaded photo). */}
       <View className="mt-2 items-center">
-        <View className="h-avatar w-avatar">
-          <ChildAvatar avatar={avatar} />
+        <View className={`h-avatar w-avatar overflow-hidden rounded-full ${tintClass(tint)}`}>
+          <ChildAvatar avatar={avatar} className="h-full w-full bg-transparent" />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Change child's picture"
@@ -369,6 +385,32 @@ export default function AddChild() {
             <SymbolView name="camera.fill" size={20} tintColor={colors.ink} />
           </Pressable>
         </View>
+      </View>
+
+      {/* §2 "Avatar Customisation" — the card colour, which was previously assigned by hashing the
+          child's id and could not be chosen. Sits under the avatar so a tap shows its own result in
+          the ring above. Colour is a real recognition cue for a pre-reader picking their own card. */}
+      <View className="mt-4 flex-row items-center justify-center gap-3">
+        {CARD_TINTS.map((option) => {
+          const chosen = option === tint
+          return (
+            <Pressable
+              key={option}
+              accessibilityRole="button"
+              accessibilityLabel={`Card colour ${option}`}
+              accessibilityState={{ selected: chosen }}
+              className={`h-9 w-9 items-center justify-center rounded-full border-2 ${
+                chosen ? "border-primary" : "border-border"
+              } ${tintClass(option)} active:opacity-70`}
+              hitSlop={6}
+              onPress={() => setTint(option)}
+            >
+              {chosen ? (
+                <SymbolView name="checkmark" size={14} tintColor={colors.ink} weight="bold" />
+              ) : null}
+            </Pressable>
+          )
+        })}
       </View>
 
       {/* First name */}

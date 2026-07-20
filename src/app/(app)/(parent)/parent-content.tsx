@@ -4,46 +4,45 @@ import { StatusBar } from "expo-status-bar"
 import { type SFSymbol, SymbolView } from "expo-symbols"
 import { Alert, Pressable, ScrollView, Text, View } from "react-native"
 
+import { ChildAvatar } from "@/components/child-avatar"
+import { duration, useAnalytics } from "@/lib/analytics"
+import { BackButton } from "@/components/primitives"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { useChildren, yearLabel } from "@/lib/children"
+import { entitlementLabel, useEntitlement } from "@/lib/subscription"
+import { getSubject, subjectSlug } from "@/lib/subjects"
 
 /**
- * Parent Zone content (design/GoKid-parentcontent-screen.png, screen 12). Reached once the maths gate
+ * Parent Zone content (design/GoKid-parentcontent-screen.png, screen 12). Reached once the passcode gate
  * is passed. Child switcher, a time/sets overview, curriculum strengths + focus, and account rows.
- * All figures are demo data (the reporting API lands later — AGENTS.md). Subject thumbs and child
- * faces are cropped off the reference. The "12. Parent Zone" title is a mockup annotation — dropped.
+ * Every figure is the child's own: the roster comes from `useChildren` (the mockup hardcoded "Amara"
+ * and "Rufus", so a parent saw two children who were not theirs), and the time/sets tiles plus the
+ * strength/focus cards come from `useAnalytics` — the same real record the full report draws.
  *
  * Deviation from the reference: it specifies two account rows (Subscription, Account settings); a
  * third, Sign out, was added on request. Deliberate, not drift.
  */
 
-const CHILDREN = [
-  { name: "Amara", year: "Year 3", face: require("../../../assets/images/gokid-pc-amara.png") },
-  { name: "Rufus", year: "Year 1", face: require("../../../assets/images/gokid-pc-rufus.png") },
-]
-
-const STATS = [
-  { value: "2h 45m", top: "This week", sub: "Total time" },
-  { value: "8h 30m", top: "This month", sub: "Total time" },
-  { value: "24", top: "Sets completed", sub: "" },
-]
-
 function CurriculumCard({
-  thumb,
   subject,
   topic,
   badge,
   tone,
 }: {
-  thumb: number
   subject: string
   topic: string
   badge: string
   tone: "strong" | "practice"
 }) {
+  const art = getSubject(subjectSlug(subject) ?? "")?.art
   return (
     <View className="flex-row items-center rounded-2xl border border-border bg-white p-3">
-      <Image accessibilityIgnoresInvertColors className="h-14 w-14 rounded-lg" contentFit="cover" source={thumb} />
+      {art ? (
+        <Image accessibilityIgnoresInvertColors className="h-14 w-14 rounded-full" contentFit="cover" source={art} />
+      ) : (
+        <View className="h-14 w-14 rounded-full bg-study-wash" />
+      )}
       <View className="ml-3 flex-1">
         <Text className="font-text text-body-lg font-bold text-ink">{subject}</Text>
         <Text className="mt-0.5 font-text text-body text-text-secondary">{topic}</Text>
@@ -98,6 +97,17 @@ function AccountRow({
 
 export default function ParentContent() {
   const { signOut } = useAuth()
+  const { children } = useChildren()
+  const entitlement = useEntitlement()
+
+  // Real totals for the child shown, not the mockup's "2h 45m / 8h 30m / 24".
+  const week = useAnalytics(children[0], "week")
+  const month = useAnalytics(children[0], "month")
+  const stats = [
+    { value: duration(week.summary.minutes), top: "This week", sub: "Total time" },
+    { value: duration(month.summary.minutes), top: "This month", sub: "Total time" },
+    { value: String(month.summary.sets), top: "Sets completed", sub: "This month" },
+  ]
 
   function confirmSignOut() {
     Alert.alert("Sign out?", "You'll need to sign back in with Apple or Google.", [
@@ -112,35 +122,32 @@ export default function ParentContent() {
       {/* pb-10, matching settings: the account card is now the last thing on the page and this
           SafeAreaView only insets the top, so pb-8 left the new Sign out row tight against the
           home indicator at scroll-end. */}
-      {/* Back to the Parent tab. This is a pushed route reached through the maths gate, so it gets no
+      {/* Back to the Parent tab. This is a pushed route reached through the passcode gate, so it gets no
           tab bar and had no way out but the app switcher — the chevron every other pushed screen
           carries. Outside the ScrollView so it stays put while the page scrolls. */}
       <View className="mt-1 h-11 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="pb-10 pt-2" showsVerticalScrollIndicator={false}>
         <Text className="font-text text-h1 font-bold text-ink">Parent area</Text>
 
-        {/* Child switcher */}
-        <View className="mt-5 flex-row items-center">
-          {CHILDREN.map((c) => (
+        {/* Child switcher — the parent's real roster. */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mt-5 -mr-5"
+          contentContainerClassName="items-center pr-5"
+        >
+          {children.map((c) => (
             <View
-              key={c.name}
+              key={c.id}
               className="mr-3 flex-row items-center rounded-2xl border border-border bg-white py-2 pl-2 pr-4"
             >
-              <Image accessibilityIgnoresInvertColors className="h-11 w-11 rounded-full" contentFit="cover" source={c.face} />
+              <ChildAvatar avatar={c.avatar} className="h-11 w-11" />
               <View className="ml-2">
                 <Text className="font-text text-body-lg font-bold text-ink">{c.name}</Text>
-                <Text className="font-text text-body text-text-secondary">{c.year}</Text>
+                <Text className="font-text text-body text-text-secondary">{yearLabel(c.yearGroup)}</Text>
               </View>
             </View>
           ))}
@@ -152,7 +159,7 @@ export default function ParentContent() {
           >
             <SymbolView name="plus" size={24} tintColor={colors.ink} weight="medium" />
           </Pressable>
-        </View>
+        </ScrollView>
 
         {/* Progress overview. The reference draws three static tiles; "Analytics" opens the full
             report they summarise (design/gokid-screens.md §10 → Analytics), which is where the
@@ -170,7 +177,7 @@ export default function ParentContent() {
           </Pressable>
         </View>
         <View className="flex-row gap-3">
-          {STATS.map((s) => (
+          {stats.map((s) => (
             <View key={s.top} className="flex-1 rounded-2xl border border-border bg-white p-3">
               <Text
                 numberOfLines={1}
@@ -201,38 +208,48 @@ export default function ParentContent() {
             <Text className="font-text text-body font-bold text-primary">Browse</Text>
           </Pressable>
         </View>
-        <CurriculumCard
-          thumb={require("../../../assets/images/gokid-pc-maths.png")}
-          subject="Maths"
-          topic="Number and place value"
-          badge="Strong"
-          tone="strong"
-        />
+        {week.strong[0] ? (
+          <CurriculumCard
+            subject={week.strong[0].subject}
+            topic={week.strong[0].strand}
+            badge="Strong"
+            tone="strong"
+          />
+        ) : (
+          <Text className="font-text text-body text-text-secondary">
+            Not enough studying yet to call a strength.
+          </Text>
+        )}
 
         {/* Curriculum to focus on */}
         <Text className="mb-3 mt-8 font-text text-h3 font-bold text-ink">Curriculum to focus on</Text>
-        <CurriculumCard
-          thumb={require("../../../assets/images/gokid-pc-english.png")}
-          subject="English"
-          topic="Grammar and punctuation"
-          badge="Needs practice"
-          tone="practice"
-        />
+        {week.weak[0] ? (
+          <CurriculumCard
+            subject={week.weak[0].subject}
+            topic={week.weak[0].strand}
+            badge="Needs practice"
+            tone="practice"
+          />
+        ) : (
+          <Text className="font-text text-body text-text-secondary">
+            Nothing flagged — everything studied so far is sticking.
+          </Text>
+        )}
 
         {/* Account */}
         <View className="mt-8 rounded-2xl border border-border bg-white px-4">
           <AccountRow
             symbol="gearshape"
             label="Subscription"
-            value="GoKid Plus"
+            value={entitlementLabel(entitlement)}
             border
-            onPress={() => router.push("/paywall")}
+            onPress={() => router.push("/subscription")}
           />
           <AccountRow symbol="person.2" label="Children" border onPress={() => router.push("/children")} />
           <AccountRow symbol="person.circle" label="Account settings" border onPress={() => router.push("/settings")} />
           {/* Not in design/GoKid-parentcontent-screen.png, which specifies only Subscription and
               Account settings here — added on request. Safe on this screen (and not on the
-              child-facing ones) because it sits behind the parent zone's maths gate. */}
+              child-facing ones) because it sits behind the parent zone's passcode gate. */}
           <AccountRow
             symbol="rectangle.portrait.and.arrow.right"
             label="Sign out"

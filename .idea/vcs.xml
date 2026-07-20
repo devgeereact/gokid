@@ -2,5 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ios/build/SourcePackages/checkouts/Nuke" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ios/build/SourcePackages/checkouts/PhoneNumberKit" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ios/build/SourcePackages/checkouts/clerk-ios" vcs="Git" />
   </component>
 </project>

@@ -1,10 +1,14 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { type SFSymbol, SymbolView } from "expo-symbols"
+import { useState } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
+import { BackButton } from "@/components/primitives"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { useStudyingChildId } from "@/lib/children"
+import { masterySplit, useProgress } from "@/lib/reviews"
 import { getStudySet, quizBrief } from "@/lib/study"
 
 /**
@@ -66,26 +70,26 @@ function Rule({ symbol, title, body }: { symbol: SFSymbol; title: string; body: 
 
 export default function QuizInstructions() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const childId = useStudyingChildId() ?? ""
+  const { cards } = useProgress(childId)
   const set = getStudySet(id)
+  // §7 "Quiz Difficulty" — a real, selectable control rather than a read-only label. Practice keeps
+  // the instant feedback the runner has always had; Test defers it so the child answers everything,
+  // reviews, then scores. Practice leads because it is the right default for learning.
+  const [mode, setMode] = useState<"practice" | "test">("practice")
   if (!set) return <Redirect href="/home" />
 
   const setId = set.id
-  const brief = quizBrief(set)
+  // Difficulty is this child's retention of this set, not a catalogue constant.
+  const setCards = cards.filter((c) => c.setId === set.id)
+  const brief = quizBrief(set, setCards.length === 0 ? null : masterySplit(setCards).pctMastered)
 
   return (
     <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-background px-5">
       <StatusBar style="dark" />
 
       <View className="mt-1 h-11 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="pb-4" showsVerticalScrollIndicator={false}>
@@ -110,7 +114,45 @@ export default function QuizInstructions() {
         <View className="mt-6 flex-row gap-3">
           <Tile value={String(brief.questions)} label="Questions" />
           <Tile value={`~${brief.minutes}m`} label="Time" />
-          <Tile value={brief.difficulty} label="Difficulty" />
+          {/* Null until they have studied the set — being told a quiz is "Easy" before seeing a
+              single card is worse than being told nothing. */}
+          <Tile value={brief.difficulty ?? "—"} label={brief.difficulty ? "For you" : "Not started"} />
+        </View>
+
+        {/* §7 "Quiz Difficulty" as a control the child actually sets. */}
+        <Text className="mb-3 mt-8 font-text text-h3 font-bold text-ink">How do you want to do it?</Text>
+        <View className="flex-row gap-3">
+          {(
+            [
+              { key: "practice" as const, title: "Practice", body: "Check each answer as you go." },
+              { key: "test" as const, title: "Test", body: "Answer them all, then review before scoring." },
+            ]
+          ).map((option) => {
+            const active = mode === option.key
+            return (
+              <Pressable
+                key={option.key}
+                accessibilityRole="button"
+                accessibilityLabel={`${option.title}. ${option.body}`}
+                accessibilityState={{ selected: active }}
+                className={`flex-1 rounded-2xl border p-4 active:opacity-80 ${
+                  active ? "border-study-teal bg-quiz-option-sel" : "border-border bg-white"
+                }`}
+                onPress={() => setMode(option.key)}
+              >
+                <View className="flex-row items-center">
+                  <SymbolView
+                    name={active ? "largecircle.fill.circle" : "circle"}
+                    size={18}
+                    tintColor={active ? colors.study.teal : colors["text-secondary"]}
+                    weight="semibold"
+                  />
+                  <Text className="ml-2 font-text text-body-lg font-bold text-ink">{option.title}</Text>
+                </View>
+                <Text className="mt-2 font-text text-caption text-text-secondary">{option.body}</Text>
+              </Pressable>
+            )
+          })}
         </View>
 
         <Text className="mb-3 mt-8 font-text text-h3 font-bold text-ink">How it works</Text>
@@ -132,7 +174,7 @@ export default function QuizInstructions() {
         accessibilityRole="button"
         accessibilityLabel="Start quiz"
         className="mt-3 h-14 items-center justify-center rounded-full bg-study-teal active:opacity-90"
-        onPress={() => router.replace({ pathname: "/quiz/[id]", params: { id: setId } })}
+        onPress={() => router.replace({ pathname: "/quiz/[id]", params: { id: setId, mode } })}
       >
         <Text className="font-text text-body-lg font-bold text-white">Start quiz</Text>
       </Pressable>

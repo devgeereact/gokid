@@ -6,15 +6,14 @@ import { type SessionRecord, useProgress } from "./reviews"
  * Learning Calendar data (design/gokid-screens.md §8 — "Learning Calendar", and the Weekly / Monthly
  * / Yearly Progress rows the calendar's period switch stands in for).
  *
- * Every child's history here is a **demo**: a deterministic, seeded study record so the week, month
- * and year views all have something to draw before the Neon/Drizzle progress API lands (AGENTS.md).
- * Real sessions recorded by ./reviews.ts on this device are overlaid on top of the demo day, so a
- * day the child actually studied reads their real minutes rather than the seed's. Screens import the
- * hook, never the generator — this module is the single seam to swap when the API arrives.
+ * Every day is the child's own record. This module used to generate a deterministic *seeded* history
+ * so the grids had something to draw, with real sessions overlaid on top — which meant a parent read
+ * a month of studying that never happened. The generator is gone: a day with no sessions is a rest
+ * day, and an untouched calendar is honestly empty.
+ *
+ * Sessions come from ./reviews.ts (on-device today, the Neon progress API later — AGENTS.md); screens
+ * import the hook, never the builders.
  */
-
-/** How far back the demo record runs. Long enough for the year view plus a full previous year. */
-const HISTORY_DAYS = 800
 
 /** Local midnight for an epoch ms. */
 function startOfDay(ms: number) {
@@ -24,11 +23,14 @@ function startOfDay(ms: number) {
 }
 
 /**
- * Today, pinned at module load. Screens must not read the clock during render — the React Compiler
- * (on for this project) treats `Date.now()` in a component body as impure. Same rule as
- * `dueLabel` / `elapsedMinutes` in ./reviews.ts, which read the clock inside the module too.
+ * Today at local midnight, read per call rather than pinned at module load — an app left open past
+ * midnight used to keep yesterday's "today", so the highlight and the future-day cutoff silently
+ * drifted. The clock read lives inside this function, never in a component body, because the React
+ * Compiler treats a render-time `Date.now()` as impure (same rule as `dueLabel` in ./reviews.ts).
  */
-export const TODAY = startOfDay(Date.now())
+export function todayStart() {
+  return startOfDay(Date.now())
+}
 
 /** "2026-07-16" — a stable local-date key. `toISOString` would shift across the UTC boundary. */
 export function dayKey(at: number) {
@@ -37,23 +39,6 @@ export function dayKey(at: number) {
   const day = `${d.getDate()}`.padStart(2, "0")
   return `${d.getFullYear()}-${m}-${day}`
 }
-
-// FNV-1a over the seed string, then an avalanche mix — a stable 0–1 draw per (child, day, field).
-// A PRNG sequence would depend on iteration order; hashing the key means a day's numbers are the
-// same no matter which view asks for them.
-function rand01(seed: string) {
-  let h = 2166136261
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i)
-    h = Math.imul(h, 16777619)
-  }
-  h ^= h >>> 15
-  h = Math.imul(h, 2246822507)
-  h ^= h >>> 13
-  return (h >>> 0) / 4294967296
-}
-
-const DEMO_SUBJECTS = ["Maths", "English", "Science", "Geography", "History"]
 
 /** One day in any of the three grids. `minutes === 0` means a rest day. */
 export type DayCell = {
@@ -68,8 +53,6 @@ export type DayCell = {
   subjects: string[]
   /** Heat step, 0 (rest) … 4 (heaviest) — drives the swatch colour. */
   level: 0 | 1 | 2 | 3 | 4
-  /** True when this day carries sessions the child really finished, not the seeded demo. */
-  real: boolean
   isToday: boolean
   /** Days after today have no record and are drawn muted. */
   isFuture: boolean
@@ -83,28 +66,7 @@ function heatLevel(minutes: number): DayCell["level"] {
   return 4
 }
 
-/** The seeded demo day: rest days are likelier at the weekend, minutes cluster 8–60. */
-function demoDay(childId: string, at: number) {
-  const key = dayKey(at)
-  const dow = new Date(at).getDay()
-  const rest = dow === 0 ? 0.55 : dow === 6 ? 0.42 : 0.17
-  if (rand01(`${childId}:${key}:rest`) < rest) return { minutes: 0, sets: 0, cards: 0, accuracy: 0, subjects: [] }
-
-  const minutes = 8 + Math.round(rand01(`${childId}:${key}:min`) * 52)
-  const sets = Math.max(1, Math.round(minutes / 14))
-  const cards = sets * (6 + Math.round(rand01(`${childId}:${key}:cards`) * 8))
-  const accuracy = 58 + Math.round(rand01(`${childId}:${key}:acc`) * 38)
-
-  const first = Math.floor(rand01(`${childId}:${key}:s1`) * DEMO_SUBJECTS.length)
-  const subjects = [DEMO_SUBJECTS[first]]
-  if (rand01(`${childId}:${key}:s2`) > 0.45) {
-    const second = (first + 1 + Math.floor(rand01(`${childId}:${key}:s3`) * (DEMO_SUBJECTS.length - 1))) % DEMO_SUBJECTS.length
-    subjects.push(DEMO_SUBJECTS[second])
-  }
-  return { minutes, sets, cards, accuracy, subjects }
-}
-
-/** Real sessions win over the seed for the days they cover. */
+/** Totals for the sessions a child finished on one day. */
 function realDay(sessions: SessionRecord[]) {
   const minutes = sessions.reduce((sum, s) => sum + s.minutes, 0)
   const cards = sessions.reduce((sum, s) => sum + s.cardsReviewed, 0)
@@ -121,23 +83,20 @@ function realDay(sessions: SessionRecord[]) {
   }
 }
 
-function buildDay(childId: string, at: number, byDay: Map<string, SessionRecord[]>): DayCell {
+const REST_DAY = { minutes: 0, sets: 0, cards: 0, accuracy: 0, subjects: [] as string[] }
+
+function buildDay(at: number, byDay: Map<string, SessionRecord[]>, today: number): DayCell {
   const key = dayKey(at)
-  const isFuture = at > TODAY
   const sessions = byDay.get(key)
-  const base = isFuture
-    ? { minutes: 0, sets: 0, cards: 0, accuracy: 0, subjects: [] as string[] }
-    : sessions?.length
-      ? realDay(sessions)
-      : demoDay(childId, at)
+  // No sessions means no study — a rest day, not an invented one.
+  const base = sessions?.length ? realDay(sessions) : REST_DAY
   return {
     key,
     at,
     ...base,
     level: heatLevel(base.minutes),
-    real: Boolean(sessions?.length),
-    isToday: at === TODAY,
-    isFuture,
+    isToday: at === today,
+    isFuture: at > today,
   }
 }
 
@@ -205,10 +164,11 @@ function addDays(at: number, n: number) {
   return startOfDay(d.getTime())
 }
 
-/** `offset` counts periods back from the current one: 0 = this week / month / year, -1 = the last. */
-function weekView(childId: string, byDay: Map<string, SessionRecord[]>, offset: number): WeekView {
-  const monday = addDays(TODAY, -mondayIndex(TODAY) + offset * 7)
-  const days = Array.from({ length: 7 }, (_, i) => buildDay(childId, addDays(monday, i), byDay))
+/** `offset` counts periods back from the current one: 0 = this week / month / year, -1 = the last.
+ *  `today` is threaded in (rather than read from a module constant) so the grid never goes stale. */
+function weekView(byDay: Map<string, SessionRecord[]>, offset: number, today: number): WeekView {
+  const monday = addDays(today, -mondayIndex(today) + offset * 7)
+  const days = Array.from({ length: 7 }, (_, i) => buildDay(addDays(monday, i), byDay, today))
   const sunday = days[6].at
   const sameMonth = new Date(monday).getMonth() === new Date(sunday).getMonth()
   const from = new Date(monday).toLocaleDateString("en-GB", sameMonth ? { day: "numeric" } : { day: "numeric", month: "short" })
@@ -217,15 +177,15 @@ function weekView(childId: string, byDay: Map<string, SessionRecord[]>, offset: 
   return { kind: "week", label, days }
 }
 
-function monthView(childId: string, byDay: Map<string, SessionRecord[]>, offset: number): MonthView {
-  const anchor = new Date(TODAY)
+function monthView(byDay: Map<string, SessionRecord[]>, offset: number, today: number): MonthView {
+  const anchor = new Date(today)
   anchor.setDate(1)
   anchor.setMonth(anchor.getMonth() + offset)
   const first = startOfDay(anchor.getTime())
   const daysInMonth = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate()
 
   const cells: (DayCell | null)[] = Array.from({ length: mondayIndex(first) }, () => null)
-  for (let i = 0; i < daysInMonth; i++) cells.push(buildDay(childId, addDays(first, i), byDay))
+  for (let i = 0; i < daysInMonth; i++) cells.push(buildDay(addDays(first, i), byDay, today))
   while (cells.length % 7) cells.push(null)
 
   const weeks: (DayCell | null)[][] = []
@@ -234,18 +194,90 @@ function monthView(childId: string, byDay: Map<string, SessionRecord[]>, offset:
   return { kind: "month", label: anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" }), weeks }
 }
 
-function yearView(childId: string, byDay: Map<string, SessionRecord[]>, offset: number): YearView {
-  const year = new Date(TODAY).getFullYear() + offset
+function yearView(byDay: Map<string, SessionRecord[]>, offset: number, today: number): YearView {
+  const year = new Date(today).getFullYear() + offset
   const months: YearMonth[] = Array.from({ length: 12 }, (_, m) => {
     const first = startOfDay(new Date(year, m, 1).getTime())
     const count = new Date(year, m + 1, 0).getDate()
     return {
       label: new Date(year, m, 1).toLocaleDateString("en-GB", { month: "long" }),
       short: new Date(year, m, 1).toLocaleDateString("en-GB", { month: "short" }),
-      days: Array.from({ length: count }, (_, i) => buildDay(childId, addDays(first, i), byDay)),
+      days: Array.from({ length: count }, (_, i) => buildDay(addDays(first, i), byDay, today)),
     }
   })
   return { kind: "year", label: `${year}`, months }
+}
+
+/** One bar in the Progress Overview's daily-activity chart. */
+export type ActivityDay = { key: string; label: string; at: number; minutes: number; sets: number; isToday: boolean }
+
+/** Totals for one stretch of days. `accuracy` is the mean across scored sessions only. */
+export type PeriodTotals = { minutes: number; sets: number; accuracy: number; scored: boolean }
+
+function totalsFor(sessions: SessionRecord[]): PeriodTotals {
+  const scored = sessions.filter((s) => s.score !== undefined && s.scoreTotal)
+  return {
+    minutes: sessions.reduce((sum, s) => sum + s.minutes, 0),
+    sets: sessions.length,
+    accuracy: scored.length
+      ? Math.round((scored.reduce((sum, s) => sum + (s.score ?? 0) / (s.scoreTotal ?? 1), 0) / scored.length) * 100)
+      : 0,
+    scored: scored.length > 0,
+  }
+}
+
+/** Percent change, or null when there is no baseline to compare against — an honest "no trend yet"
+ *  beats reporting "+100%" against a week the child did not use the app. */
+function change(now: number, before: number): number | null {
+  if (before <= 0) return null
+  return Math.round(((now - before) / before) * 100)
+}
+
+/**
+ * The Progress Overview report: the last 7 days of real activity, the 7 before it as a baseline, and
+ * the trend between them. Everything is computed from sessions the child actually finished.
+ */
+export function useWeeklyReport(childId: string) {
+  const { sessions } = useProgress(childId)
+  const now = todayStart()
+
+  return useMemo(() => {
+    const inRange = (s: SessionRecord, fromDaysAgo: number, toDaysAgo: number) => {
+      const from = addDays(now, -fromDaysAgo)
+      const to = addDays(now, -toDaysAgo + 1)
+      return s.at >= from && s.at < to
+    }
+    const thisWeek = sessions.filter((s) => inRange(s, 6, 0))
+    const lastWeek = sessions.filter((s) => inRange(s, 13, 7))
+
+    const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    const days: ActivityDay[] = Array.from({ length: 7 }, (_, i) => {
+      const at = addDays(now, -(6 - i))
+      const key = dayKey(at)
+      const onDay = sessions.filter((s) => dayKey(s.at) === key)
+      return {
+        key,
+        label: labels[new Date(at).getDay()],
+        at,
+        minutes: onDay.reduce((sum, s) => sum + s.minutes, 0),
+        sets: onDay.length,
+        isToday: at === now,
+      }
+    })
+
+    const totals = totalsFor(thisWeek)
+    const previous = totalsFor(lastWeek)
+    return {
+      days,
+      totals,
+      previous,
+      trend: {
+        minutes: change(totals.minutes, previous.minutes),
+        sets: change(totals.sets, previous.sets),
+        accuracy: previous.scored && totals.scored ? totals.accuracy - previous.accuracy : null,
+      },
+    }
+  }, [sessions, now])
 }
 
 /** Every day in a view, flattened — what `summarize` takes. */
@@ -255,22 +287,13 @@ export function viewDays(view: CalendarView): DayCell[] {
   return view.months.flatMap((m) => m.days)
 }
 
-/** Consecutive studied days ending today or yesterday. Zero once a day is skipped. */
-function currentStreak(childId: string, byDay: Map<string, SessionRecord[]>) {
-  let streak = 0
-  for (let i = 0; i < HISTORY_DAYS; i++) {
-    const day = buildDay(childId, addDays(TODAY, -i), byDay)
-    if (day.minutes > 0) streak++
-    // Today not yet studied doesn't break a streak that ran up to yesterday.
-    else if (i > 0) break
-  }
-  return streak
-}
-
 /**
  * The calendar for one child at one period. `offset` counts periods back from the present.
- * Returns the grid, its totals, the child's current streak, and today's cell for the day sheet's
- * initial selection.
+ * Returns the grid, its totals, and today's cell for the day sheet's initial selection.
+ *
+ * Deliberately no streak. A streak counts *consecutive* days and resets to zero on a miss, which
+ * makes a broken chain the loudest fact on the screen — loss aversion, not learning. The grid and
+ * `summary.daysStudied` already say how much a child studied without punishing a day off.
  */
 export function useLearningCalendar(childId: string, period: Period, offset: number) {
   const { sessions } = useProgress(childId)
@@ -286,18 +309,20 @@ export function useLearningCalendar(childId: string, period: Period, offset: num
     return map
   }, [sessions])
 
+  // Read once per render pass and threaded down, so every cell in a grid agrees on what "today" is.
+  const now = todayStart()
+
   const view = useMemo<CalendarView>(() => {
-    if (period === "week") return weekView(childId, byDay, offset)
-    if (period === "month") return monthView(childId, byDay, offset)
-    return yearView(childId, byDay, offset)
-  }, [childId, byDay, period, offset])
+    if (period === "week") return weekView(byDay, offset, now)
+    if (period === "month") return monthView(byDay, offset, now)
+    return yearView(byDay, offset, now)
+  }, [byDay, period, offset, now])
 
   const summary = useMemo(() => summarize(viewDays(view)), [view])
-  const streak = useMemo(() => currentStreak(childId, byDay), [childId, byDay])
-  const today = useMemo(() => buildDay(childId, TODAY, byDay), [childId, byDay])
+  const today = useMemo(() => buildDay(now, byDay, now), [byDay, now])
 
-  /** Sessions the child really finished on a day — the day sheet's detail rows. Empty on a demo day. */
+  /** Sessions the child finished on a day — the day sheet's detail rows. Empty on a rest day. */
   const sessionsOn = useMemo(() => (key: string) => byDay.get(key) ?? [], [byDay])
 
-  return { view, summary, streak, today, sessionsOn }
+  return { view, summary, today, sessionsOn }
 }

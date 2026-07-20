@@ -43,3 +43,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Local design audit screenshots (38MB of simulator captures)
+design/.audit/

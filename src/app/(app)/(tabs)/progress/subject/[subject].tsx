@@ -4,23 +4,28 @@ import { type SFSymbol, SymbolView } from "expo-symbols"
 import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
-import { Image, SafeAreaView } from "@/components/styled"
+import { EmptyState } from "@/components/empty-state"
+import { BackButton } from "@/components/primitives"
+import { SubjectMark } from "@/components/subject-mark"
+import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useChildren } from "@/lib/children"
+import { useChildren, yearLabel } from "@/lib/children"
+import { plural, type StrandProgress, useSubjectProgress } from "@/lib/analytics"
+import { getSubject, recommendedSets, type Subject } from "@/lib/subjects"
 
 /**
  * Subject Progress (design/GoKid-subjectprogress-screen.png, screen 17). A subject summary card with
- * an 80% "Overall" ring, a per-topic breakdown with coloured mastery bars, a horizontal strip of
- * recent sets, and a focus suggestion. All values are demo constants (the Neon/Drizzle progress API
- * lands later — AGENTS.md). The "17. Subject Progress" title is a mockup annotation — dropped, as is
- * the drawn bottom tab bar (this is a pushed stack screen).
+ * an "Overall" ring, a per-topic breakdown with coloured mastery bars, a horizontal strip of recent
+ * sets, and a focus suggestion. The strand percentages are still demo values (the Neon/Drizzle
+ * progress API lands later — AGENTS.md), but they now come from the real subject the route names.
  *
- * Inferred: the header filter glyph is static/decorative. The topic-row icons and the focus lightbulb
- * are tinted SF Symbols (no per-topic illustration assets exist) — the round wash colours follow the
- * design's palette. The subject icon uses gokid-prog-maths.png per the task. Bar/percent colour is
- * taken from the design (Division at 50% is teal while Fractions at 50% is amber), so each topic
- * carries an explicit tone rather than deriving it purely from the percentage. "View all" has no
- * target screen yet, so it is an inert demo link.
+ * The screen previously hardcoded Maths topics and Maths sets and only re-cased the `subject` param
+ * for the title, so `/progress/subject/english` showed Maths data under an "English" heading —
+ * silently wrong, which is worse than an error. It now reads `getSubject(slug)` for the strands and
+ * `recommendedSets` for the recent strip, and shows an empty state for a slug with no subject.
+ *
+ * Inferred: the header filter glyph is static/decorative. Topic icons and the focus lightbulb are
+ * tinted SF Symbols. "View all" has no target screen yet, so it is an inert demo link.
  */
 
 type Tone = "teal" | "amber" | "red"
@@ -31,50 +36,38 @@ const TONE: Record<Tone, { bar: string; text: string }> = {
   red: { bar: "bg-error", text: "text-error" },
 }
 
-// Bar widths are a known, small set — listed as literal classes so NativeWind's compiler emits them
-// (it scans source text), keeping the bar data-driven with no inline `style`.
+// Bar widths rounded to the nearest 5% — listed as literal classes so NativeWind's compiler emits
+// them (it scans source text), keeping the bar data-driven with no inline `style`.
 const PCT: Record<number, string> = {
-  25: "w-[25%]",
-  40: "w-[40%]",
-  50: "w-[50%]",
-  63: "w-[63%]",
-  78: "w-[78%]",
-  80: "w-[80%]",
+  0: "w-[0%]", 5: "w-[5%]", 10: "w-[10%]", 15: "w-[15%]", 20: "w-[20%]", 25: "w-[25%]",
+  30: "w-[30%]", 35: "w-[35%]", 40: "w-[40%]", 45: "w-[45%]", 50: "w-[50%]", 55: "w-[55%]",
+  60: "w-[60%]", 65: "w-[65%]", 70: "w-[70%]", 75: "w-[75%]", 80: "w-[80%]", 85: "w-[85%]",
+  90: "w-[90%]", 95: "w-[95%]", 100: "w-[100%]",
 }
 
-type Topic = {
-  name: string
-  sets: string
-  pct: number
-  tone: Tone
-  icon: SFSymbol
-  tint: string
-  wash: string
-}
+const barWidth = (pct: number) => PCT[Math.max(0, Math.min(100, Math.round(pct / 5) * 5))]
 
-const TOPICS: Topic[] = [
-  { name: "Number and place value", sets: "8 of 10 sets", pct: 80, tone: "teal", icon: "number", tint: colors.gamify.green, wash: "bg-gamify-green-wash" },
-  { name: "Addition and subtraction", sets: "7 of 9 sets", pct: 78, tone: "teal", icon: "plus.forwardslash.minus", tint: colors.accent, wash: "bg-gamify-amber-wash" },
-  { name: "Multiplication", sets: "5 of 8 sets", pct: 63, tone: "teal", icon: "multiply", tint: colors.gamify.blue, wash: "bg-gamify-blue-wash" },
-  { name: "Division", sets: "4 of 8 sets", pct: 50, tone: "teal", icon: "divide", tint: colors.gamify.purple, wash: "bg-gamify-purple-wash" },
-  { name: "Fractions", sets: "3 of 6 sets", pct: 50, tone: "amber", icon: "chart.pie.fill", tint: colors.error, wash: "bg-gamify-red-wash" },
-  { name: "Measurement", sets: "2 of 5 sets", pct: 40, tone: "amber", icon: "chart.bar.fill", tint: colors.gamify.purple, wash: "bg-gamify-purple-wash" },
-  { name: "Geometry", sets: "1 of 4 sets", pct: 25, tone: "red", icon: "triangle.fill", tint: colors.primary, wash: "bg-subject-maths" },
-]
+// A pct maps to a tone: strong (teal), building (amber), needs-work (red). Derived, not authored, so
+// it is consistent across every subject rather than hand-set per Maths topic.
+const toneFor = (pct: number): Tone => (pct >= 65 ? "teal" : pct >= 45 ? "amber" : "red")
 
-type Recent = { title: string; cards: string; score: number; when: string }
+// Rotating icon wash so stacked topic rows read as distinct, the way the mockup varied them.
+const WASHES = ["bg-gamify-green-wash", "bg-gamify-amber-wash", "bg-gamify-blue-wash", "bg-gamify-purple-wash", "bg-gamify-red-wash"]
 
-const RECENT: Recent[] = [
-  { title: "Place Value to 1,000", cards: "20 cards", score: 92, when: "Today" },
-  { title: "Add 2-Digit Numbers", cards: "15 cards", score: 85, when: "Yesterday" },
-  { title: "Multiply by 2, 5, 10", cards: "18 cards", score: 70, when: "2 days ago" },
-  { title: "Divide by 2", cards: "12 cards", score: 55, when: "3 days ago" },
-]
+type Topic = { name: string; sets: string; pct: number | null; tone: Tone; icon: SFSymbol; tint: string; wash: string }
 
-function scoreBadge(score: number): { bg: string; text: string } {
-  if (score >= 80) return { bg: "bg-gamify-green-wash", text: "text-success" }
-  if (score >= 60) return { bg: "bg-gamify-amber-wash", text: "text-status-learning" }
-  return { bg: "bg-gamify-red-wash", text: "text-error" }
+// A topic row for the child in front of us. `pct` is null until they have seen a card in the strand;
+// the row then shows "not started" rather than a 0% bar, which would read as failure.
+function topicsFor(subject: Subject, strands: StrandProgress[]): Topic[] {
+  return strands.map((s, i) => ({
+    name: s.name,
+    sets: s.pct === null ? `${plural(s.sets, "set")} · not started` : `${s.setsDone} of ${plural(s.sets, "set")}`,
+    pct: s.pct,
+    tone: toneFor(s.pct ?? 0),
+    icon: s.icon,
+    tint: subject.ink,
+    wash: WASHES[i % WASHES.length],
+  }))
 }
 
 // Single teal "Overall" arc — one Circle with strokeDasharray over a full track ring.
@@ -124,9 +117,30 @@ export default function SubjectProgress() {
   const { subject } = useLocalSearchParams<{ subject: string }>()
   const { children } = useChildren()
 
-  const raw = subject ?? "maths"
-  const display = raw.charAt(0).toUpperCase() + raw.slice(1)
-  const childName = children[0]?.name ?? "Amara"
+  const subj = getSubject(subject ?? "maths")
+  const child = children[0]
+  const progress = useSubjectProgress(subj, child?.id ?? "")
+  const childName = child?.name ?? "your child"
+
+  // Unknown slug — an honest empty state beats rendering another subject's data under this heading.
+  if (!subj) {
+    return (
+      <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
+        <StatusBar style="dark" />
+        <View className="mt-1 flex-row items-center">
+          <BackButton />
+        </View>
+        <EmptyState symbol="questionmark.circle" title="Subject not found" body="We couldn't find progress for that subject." />
+      </SafeAreaView>
+    )
+  }
+
+  const topics = topicsFor(subj, progress.strands)
+  const overall = progress.pct ?? 0
+  const setsDone = progress.setsDone
+  const recent = recommendedSets(subj, child?.yearGroup).slice(0, 6)
+  const focus = subj.focus.replace("{child}", childName)
+  const strong = overall >= 65
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
@@ -134,15 +148,7 @@ export default function SubjectProgress() {
 
       {/* Header */}
       <View className="mt-1 flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text className="flex-1 text-center font-text text-h3 font-bold text-ink">Subject Progress</Text>
         <View className="h-11 w-11 items-center justify-center">
           <SymbolView name="line.3.horizontal.decrease.circle" size={24} tintColor={colors.ink} weight="regular" />
@@ -155,33 +161,28 @@ export default function SubjectProgress() {
           <View className="flex-row items-center">
             <View className="flex-1">
               <View className="flex-row items-center">
-                <View className="h-16 w-16 items-center justify-center rounded-full bg-subject-maths">
-                  <Image
-                    accessibilityIgnoresInvertColors
-                    className="h-12 w-12"
-                    contentFit="contain"
-                    source={require("../../../../../../assets/images/gokid-prog-maths.png")}
-                  />
-                </View>
+                <SubjectMark subject={subj} className="h-16 w-16" symbolSize={30} />
                 <View className="ml-4 flex-1">
                   <View className="flex-row items-center">
-                    <Text className="font-text text-h3 font-bold text-ink">{display}</Text>
-                    <View className="ml-3 rounded-full bg-badge-strong px-3 py-1">
-                      <Text className="font-text text-caption font-bold text-badge-strong-ink">Strong</Text>
+                    <Text className="font-text text-h3 font-bold text-ink">{subj.name}</Text>
+                    <View className={`ml-3 rounded-full px-3 py-1 ${strong ? "bg-badge-strong" : "bg-badge-practice"}`}>
+                      <Text
+                        className={`font-text text-caption font-bold ${strong ? "text-badge-strong-ink" : "text-badge-practice-ink"}`}
+                      >
+                        {strong ? "Strong" : "Building"}
+                      </Text>
                     </View>
                   </View>
-                  <Text className="mt-1 font-text text-body text-text-secondary">
-                    Number and place value, addition, subtraction, multiplication, division and more.
-                  </Text>
+                  <Text className="mt-1 font-text text-body text-text-secondary">{subj.blurb}</Text>
                 </View>
               </View>
               <View className="mt-4 flex-row gap-3">
-                <MetaPill symbol="graduationcap.fill" label="Year 3" />
-                <MetaPill symbol="target" label="15 Sets Completed" />
+                {child ? <MetaPill symbol="graduationcap.fill" label={yearLabel(child.yearGroup)} /> : null}
+                <MetaPill symbol="target" label={`${setsDone} Sets Completed`} />
               </View>
             </View>
             <View className="ml-3">
-              <Ring pct={80} />
+              <Ring pct={overall} />
             </View>
           </View>
         </View>
@@ -207,13 +208,13 @@ export default function SubjectProgress() {
           </View>
 
           <View className="mt-2">
-            {TOPICS.map((t, i) => (
+            {topics.map((t, i) => (
               <Pressable
                 key={t.name}
                 accessibilityRole="button"
                 accessibilityLabel={`${t.name}, ${t.pct} percent, ${t.sets}`}
                 className={`flex-row items-center py-3 active:opacity-70 ${i > 0 ? "border-t border-border" : ""}`}
-                onPress={() => router.push({ pathname: "/study/session/[id]", params: { id: "place-value" } })}
+                onPress={() => (recent[0] ? router.push({ pathname: "/lesson/[id]", params: { id: recent[0].id } }) : undefined)}
               >
                 <View className={`h-10 w-10 items-center justify-center rounded-full ${t.wash}`}>
                   <SymbolView name={t.icon} size={18} tintColor={t.tint} weight="semibold" />
@@ -223,10 +224,16 @@ export default function SubjectProgress() {
                   <Text className="mt-0.5 font-text text-caption text-text-secondary">{t.sets}</Text>
                 </View>
                 <View className="mx-3 h-2 w-20 overflow-hidden rounded-full bg-gamify-track">
-                  <View className={`h-full rounded-full ${TONE[t.tone].bar} ${PCT[t.pct]}`} />
+                  {t.pct === null ? null : (
+                    <View className={`h-full rounded-full ${TONE[t.tone].bar} ${barWidth(t.pct)}`} />
+                  )}
                 </View>
-                <Text className={`w-10 text-right font-text text-body-lg font-bold ${TONE[t.tone].text}`}>
-                  {t.pct}%
+                <Text
+                  className={`w-10 text-right font-text text-body-lg font-bold ${
+                    t.pct === null ? "text-text-secondary" : TONE[t.tone].text
+                  }`}
+                >
+                  {t.pct === null ? "—" : `${t.pct}%`}
                 </Text>
                 <SymbolView
                   name="chevron.right"
@@ -261,27 +268,27 @@ export default function SubjectProgress() {
             contentContainerClassName="px-1"
             showsHorizontalScrollIndicator={false}
           >
-            {RECENT.map((r) => {
-              const badge = scoreBadge(r.score)
+            {recent.map((set) => {
+              const badge =
+                set.status === "getting"
+                  ? { bg: "bg-gamify-green-wash", text: "text-success" }
+                  : { bg: "bg-gamify-amber-wash", text: "text-status-learning" }
               return (
                 <Pressable
-                  key={r.title}
+                  key={set.id}
                   accessibilityRole="button"
-                  accessibilityLabel={`${r.title}, ${r.score} percent, ${r.when}`}
+                  accessibilityLabel={`${set.title}, ${set.statusLabel}`}
                   className="mr-3 h-32 w-40 justify-between rounded-2xl border border-border bg-white p-4 active:opacity-80"
-                  onPress={() => router.push({ pathname: "/study/set-result/[id]", params: { id: "place-value" } })}
+                  onPress={() => router.push({ pathname: "/lesson/[id]", params: { id: set.id } })}
                 >
                   <View>
                     <Text numberOfLines={2} className="font-text text-body font-bold text-ink">
-                      {r.title}
+                      {set.title}
                     </Text>
-                    <Text className="mt-1 font-text text-caption text-text-secondary">{r.cards}</Text>
+                    <Text className="mt-1 font-text text-caption text-text-secondary">{set.cardsTotal} cards</Text>
                   </View>
-                  <View className="flex-row items-center gap-2">
-                    <View className={`rounded-full px-2 py-1 ${badge.bg}`}>
-                      <Text className={`font-text text-caption font-bold ${badge.text}`}>{r.score}%</Text>
-                    </View>
-                    <Text className="font-text text-caption text-text-secondary">{r.when}</Text>
+                  <View className={`self-start rounded-full px-2 py-1 ${badge.bg}`}>
+                    <Text className={`font-text text-caption font-bold ${badge.text}`}>{set.statusLabel}</Text>
                   </View>
                 </Pressable>
               )
@@ -297,19 +304,19 @@ export default function SubjectProgress() {
             </View>
             <View className="ml-4 flex-1">
               <Text className="font-text text-body-lg font-bold text-ink">Focus suggestion</Text>
-              <Text className="mt-1 font-text text-body text-text-secondary">
-                {childName} could use more practice with Geometry and Measurement to build confidence.
-              </Text>
+              <Text className="mt-1 font-text text-body text-text-secondary">{focus}</Text>
             </View>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Start practice"
-            className="mt-4 h-12 items-center justify-center rounded-full border border-primary bg-white active:opacity-70"
-            onPress={() => router.push({ pathname: "/study/session/[id]", params: { id: "place-value" } })}
-          >
-            <Text className="font-text text-body-lg font-bold text-primary">Start practice</Text>
-          </Pressable>
+          {recent[0] ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Start practice"
+              className="mt-4 h-12 items-center justify-center rounded-full border border-primary bg-white active:opacity-70"
+              onPress={() => router.push({ pathname: "/lesson/[id]", params: { id: recent[0].id } })}
+            >
+              <Text className="font-text text-body-lg font-bold text-primary">Start practice</Text>
+            </Pressable>
+          ) : null}
         </Card>
       </ScrollView>
     </SafeAreaView>

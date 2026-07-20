@@ -6,94 +6,67 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Line, Polygon, Polyline, Rect, Text as SvgText } from "react-native-svg"
 
 import { ChildAvatar } from "@/components/child-avatar"
-import { Image, SafeAreaView } from "@/components/styled"
+import { EmptyState } from "@/components/empty-state"
+import { SubjectMark } from "@/components/subject-mark"
+import { BackButton } from "@/components/primitives"
+import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/children"
+import { useSets } from "@/lib/api"
+import { type ActivityDay, formatMinutes, useWeeklyReport } from "@/lib/calendar"
+import { DEFAULT_AVATAR, useChildren, useStudyingChildId, yearLabel } from "@/lib/children"
+import { useProgress } from "@/lib/reviews"
+import { getSubject, subjectSlug } from "@/lib/subjects"
 
 /**
  * Progress Overview (design/GoKid-progressoverview-screen.png, screen 16) — the parent-facing weekly
- * report: three summary tiles, a combined bar+line "Daily activity" chart, per-subject bars with
- * trend chips, recent-achievement badges, and the entry into detailed progress. All numbers are demo
- * constants (the Neon/Drizzle progress API lands later — AGENTS.md); they match the reference PNG. The
- * "16. Progress Overview" title is a mockup annotation — dropped. The "This week ⌄" period pill and
- * the header calendar icon are static (no picker wired yet). Subject / achievement icons: the four
- * gokid-prog-*.png assets for subjects; achievement badges are tinted SF Symbols on an SVG hexagon
- * (no illustration assets exist for them — inferred).
+ * report: three summary tiles, a combined bar+line "Daily activity" chart, per-subject bars, recent
+ * achievements, and the entry into detailed progress.
+ *
+ * Every figure is the child's own. The tiles and the chart come from the sessions they actually
+ * finished in the last 7 days (`useWeeklyReport`), the subject bars from their spaced-repetition
+ * record joined to the real set catalogue, and the achievement counts from both. The screen was
+ * previously a fully-authored report — a parent reading "2h 45m, 24 sets, 78%" was reading fiction.
+ *
+ * Trends compare against the previous 7 days and are HIDDEN when there is no baseline: reporting
+ * "+100%" against a week the child never opened the app would be worse than saying nothing.
+ *
+ * The "16. Progress Overview" title is a mockup annotation — dropped. Achievement badges are tinted
+ * SF Symbols on an SVG hexagon (no illustration assets exist for them — inferred).
  */
 
-// Data-driven bar/subject widths as literal classes so NativeWind's compiler emits them (it scans
-// source text — a `w-[${x}%]` template would never be seen). Same pattern as lesson/[id].tsx.
+// Data-driven bar widths as literal classes so NativeWind's compiler emits them (it scans source
+// text — a `w-[${x}%]` template would never be seen). Same pattern as lesson/[id].tsx.
 const PCT: Record<number, string> = {
-  55: "w-[55%]",
-  65: "w-[65%]",
-  70: "w-[70%]",
-  80: "w-[80%]",
+  0: "w-[0%]", 5: "w-[5%]", 10: "w-[10%]", 15: "w-[15%]", 20: "w-[20%]", 25: "w-[25%]",
+  30: "w-[30%]", 35: "w-[35%]", 40: "w-[40%]", 45: "w-[45%]", 50: "w-[50%]", 55: "w-[55%]",
+  60: "w-[60%]", 65: "w-[65%]", 70: "w-[70%]", 75: "w-[75%]", 80: "w-[80%]", 85: "w-[85%]",
+  90: "w-[90%]", 95: "w-[95%]", 100: "w-[100%]",
 }
+const barWidth = (pct: number) => PCT[Math.max(0, Math.min(100, Math.round(pct / 5) * 5))]
 
-type Stat = { label: string; value: string; trend: string; wash: string; disc: string; icon: SFSymbol }
-
-const STATS: Stat[] = [
-  { label: "Total study time", value: "2h 45m", trend: "35m", wash: "bg-gamify-green-wash", disc: "bg-gamify-green", icon: "clock.fill" },
-  { label: "Sets completed", value: "24", trend: "6", wash: "bg-gamify-purple-wash", disc: "bg-gamify-purple", icon: "target" },
-  { label: "Accuracy", value: "78%", trend: "12%", wash: "bg-gamify-amber-wash", disc: "bg-accent", icon: "star.fill" },
-]
-
-type Subject = { name: string; key: string; pct: number; trend: number; up: boolean; icon: number }
-
-const SUBJECTS: Subject[] = [
-  { name: "Maths", key: "maths", pct: 80, trend: 15, up: true, icon: require("../../../../../assets/images/gokid-prog-maths.png") },
-  { name: "English", key: "english", pct: 65, trend: 8, up: true, icon: require("../../../../../assets/images/gokid-prog-english.png") },
-  { name: "Science", key: "science", pct: 55, trend: 5, up: false, icon: require("../../../../../assets/images/gokid-prog-science.png") },
-  { name: "Geography", key: "geography", pct: 70, trend: 10, up: true, icon: require("../../../../../assets/images/gokid-prog-geography.png") },
-]
-
-type Achievement = { title: string; sub: string; fill: string; icon: SFSymbol }
-
-const ACHIEVEMENTS: Achievement[] = [
-  { title: "7-Day Streak", sub: "Studied 7 days in a row", fill: colors.gamify.green, icon: "checkmark" },
-  { title: "Accuracy Pro", sub: "Scored 80% or higher 5 times", fill: colors.gamify.purple, icon: "target" },
-  { title: "Set Champion", sub: "Completed 20 sets this week", fill: colors.accent, icon: "trophy.fill" },
-]
-
-// --- Daily activity chart geometry (precomputed at module scope) ------------------------------
-// Two series over Mon–Sun: study minutes as teal bars (left axis 0–100) and sets completed as a
-// grey line (right axis 0–25). Coordinates live in the SVG's 320×200 viewBox; the SVG stretches to
-// the card width.
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-const STUDY = [25, 40, 55, 30, 60, 35, 20]
-const SETS = [8, 12, 15, 9, 18, 11, 7]
-
+// --- Daily activity chart geometry ------------------------------------------------------------
+// Two series over the last 7 days: study minutes as teal bars (left axis) and sets completed as a
+// grey line (right axis). Coordinates live in the SVG's 320×200 viewBox; the SVG stretches to the
+// card width. Both axes now scale to the child's real data instead of a fixed 0–100 / 0–25.
 const VB_W = 320
 const VB_H = 200
 const PLOT_L = 30
 const PLOT_R = 300
-const PLOT_T = 16
 const PLOT_B = 168
+const PLOT_T = 16
 const PLOT_H = PLOT_B - PLOT_T
-const STEP = (PLOT_R - PLOT_L) / DAY_LABELS.length
 const BAR_W = 16
 
-const CX = DAY_LABELS.map((_, i) => PLOT_L + STEP * i + STEP / 2)
-const BARS = STUDY.map((v, i) => {
-  const h = (v / 100) * PLOT_H
-  return { x: CX[i] - BAR_W / 2, y: PLOT_B - h, h, v, cx: CX[i] }
-})
-const POINTS = SETS.map((s, i) => ({ x: CX[i], y: PLOT_B - (s / 25) * PLOT_H, s }))
-const LINE = POINTS.map((p) => `${p.x},${p.y}`).join(" ")
-const LEFT_TICKS = [0, 20, 40, 60, 80, 100]
-const RIGHT_TICKS = [0, 5, 10, 15, 20, 25]
+/** Round an axis maximum up to four whole steps so the ticks read 0/15/30/45/60 rather than
+ *  0/14/27/41/54. Scaling to the data keeps a quiet week readable; a fixed axis would flatten it. */
+const TICK_STEPS = [5, 10, 15, 20, 25, 30, 50, 75, 100, 150, 200]
+function niceMax(max: number) {
+  const step = TICK_STEPS.find((s) => s * 4 >= max) ?? Math.ceil(max / 4)
+  return step * 4
+}
 
 function Card({ children }: { children: ReactNode }) {
   return <View className="mt-4 rounded-2xl border border-border bg-white p-5">{children}</View>
-}
-
-function TrendChip({ up, value }: { up: boolean; value: number }) {
-  return (
-    <View className={`flex-row items-center gap-1 rounded-md px-2 py-1 ${up ? "bg-gamify-green-wash" : "bg-gamify-red-wash"}`}>
-      <SymbolView name={up ? "arrow.up" : "arrow.down"} size={12} tintColor={up ? colors.success : colors.error} weight="bold" />
-      <Text className={`font-text text-caption font-bold ${up ? "text-success" : "text-error"}`}>{value}%</Text>
-    </View>
-  )
 }
 
 function Hexagon({ fill, icon }: { fill: string; icon: SFSymbol }) {
@@ -109,50 +82,75 @@ function Hexagon({ fill, icon }: { fill: string; icon: SFSymbol }) {
   )
 }
 
-function DailyActivityChart() {
+function DailyActivityChart({ days }: { days: ActivityDay[] }) {
+  const step = (PLOT_R - PLOT_L) / days.length
+  const cx = days.map((_, i) => PLOT_L + step * i + step / 2)
+  const maxMinutes = niceMax(Math.max(...days.map((d) => d.minutes), 1))
+  const maxSets = niceMax(Math.max(...days.map((d) => d.sets), 1))
+
+  const bars = days.map((d, i) => {
+    const h = (d.minutes / maxMinutes) * PLOT_H
+    return { x: cx[i] - BAR_W / 2, y: PLOT_B - h, h, v: d.minutes, cx: cx[i] }
+  })
+  const points = days.map((d, i) => ({ x: cx[i], y: PLOT_B - (d.sets / maxSets) * PLOT_H, s: d.sets }))
+  const line = points.map((p) => `${p.x},${p.y}`).join(" ")
+  const ticks = [0, 0.25, 0.5, 0.75, 1]
+
   return (
     <Svg width="100%" height={200} viewBox={`0 0 ${VB_W} ${VB_H}`}>
-      {/* gridlines + left/right axis ticks */}
-      {LEFT_TICKS.map((t, i) => {
-        const y = PLOT_B - (t / 100) * PLOT_H
+      {/* gridlines + left (minutes) / right (sets) axis ticks, both scaled to the real data */}
+      {ticks.map((t) => {
+        const y = PLOT_B - t * PLOT_H
         return (
           <Fragment key={t}>
             <Line x1={PLOT_L} y1={y} x2={PLOT_R} y2={y} stroke={colors.gamify.track} strokeWidth={1} strokeDasharray="3 3" />
             <SvgText x={PLOT_L - 6} y={y + 3} fontSize={8} fill={colors["text-secondary"]} textAnchor="end">
-              {t}
+              {Math.round(t * maxMinutes)}
             </SvgText>
             <SvgText x={PLOT_R + 6} y={y + 3} fontSize={8} fill={colors["text-secondary"]} textAnchor="start">
-              {RIGHT_TICKS[i]}
+              {Math.round(t * maxSets)}
             </SvgText>
           </Fragment>
         )
       })}
 
-      {/* study-time bars + value labels */}
-      {BARS.map((b, i) => (
-        <Fragment key={`bar-${i}`}>
-          <Rect x={b.x} y={b.y} width={BAR_W} height={b.h} rx={3} fill={colors.study.teal} />
-          <SvgText x={b.cx} y={b.y - 4} fontSize={9} fontWeight="bold" fill={colors.ink} textAnchor="middle">
-            {b.v}
-          </SvgText>
+      {/* study-time bars + value labels (a zero day draws no bar and no label) */}
+      {bars.map((b, i) => (
+        <Fragment key={`bar-${days[i].key}`}>
+          {b.h > 0 ? <Rect x={b.x} y={b.y} width={BAR_W} height={b.h} rx={3} fill={colors.study.teal} /> : null}
+          {b.v > 0 ? (
+            <SvgText x={b.cx} y={b.y - 4} fontSize={9} fontWeight="bold" fill={colors.ink} textAnchor="middle">
+              {b.v}
+            </SvgText>
+          ) : null}
         </Fragment>
       ))}
 
-      {/* sets-completed line + markers + value labels */}
-      <Polyline points={LINE} fill="none" stroke={colors.border} strokeWidth={2} strokeLinejoin="round" />
-      {POINTS.map((p, i) => (
-        <Fragment key={`pt-${i}`}>
+      {/* sets-completed line + markers */}
+      <Polyline points={line} fill="none" stroke={colors.border} strokeWidth={2} strokeLinejoin="round" />
+      {points.map((p, i) => (
+        <Fragment key={`pt-${days[i].key}`}>
           <Rect x={p.x - 3} y={p.y - 3} width={6} height={6} rx={3} fill={colors.border} />
-          <SvgText x={p.x} y={p.y - 8} fontSize={9} fontWeight="bold" fill={colors.ink} textAnchor="middle">
-            {p.s}
-          </SvgText>
+          {p.s > 0 ? (
+            <SvgText x={p.x} y={p.y - 8} fontSize={9} fontWeight="bold" fill={colors.ink} textAnchor="middle">
+              {p.s}
+            </SvgText>
+          ) : null}
         </Fragment>
       ))}
 
-      {/* day labels */}
-      {DAY_LABELS.map((d, i) => (
-        <SvgText key={d} x={CX[i]} y={PLOT_B + 16} fontSize={10} fill={colors["text-secondary"]} textAnchor="middle">
-          {d}
+      {/* day labels — today is emphasised */}
+      {days.map((d, i) => (
+        <SvgText
+          key={d.key}
+          x={cx[i]}
+          y={PLOT_B + 16}
+          fontSize={10}
+          fontWeight={d.isToday ? "bold" : "normal"}
+          fill={d.isToday ? colors.primary : colors["text-secondary"]}
+          textAnchor="middle"
+        >
+          {d.label}
         </SvgText>
       ))}
     </Svg>
@@ -161,7 +159,92 @@ function DailyActivityChart() {
 
 export default function ProgressOverview() {
   const { children } = useChildren()
-  const child = children[0]
+  const childId = useStudyingChildId() ?? ""
+  const child = children.find((c) => c.id === childId) ?? children[0]
+
+  const { days, totals, trend } = useWeeklyReport(childId)
+  const { cards, sessions } = useProgress(childId)
+  const { sets } = useSets()
+  const setById = new Map(sets.map((s) => [s.id, s]))
+
+  // Summary tiles — the last 7 days of real sessions. `trend` is null with no baseline week.
+  const stats = [
+    {
+      label: "Total study time",
+      value: formatMinutes(totals.minutes),
+      trend: trend.minutes,
+      suffix: "%",
+      wash: "bg-gamify-green-wash",
+      disc: "bg-gamify-green",
+      icon: "clock.fill" as SFSymbol,
+    },
+    {
+      label: "Sets completed",
+      value: String(totals.sets),
+      trend: trend.sets,
+      suffix: "%",
+      wash: "bg-gamify-purple-wash",
+      disc: "bg-gamify-purple",
+      icon: "target" as SFSymbol,
+    },
+    {
+      label: "Accuracy",
+      value: totals.scored ? `${totals.accuracy}%` : "—",
+      trend: trend.accuracy,
+      suffix: "pts",
+      wash: "bg-gamify-amber-wash",
+      disc: "bg-accent",
+      icon: "star.fill" as SFSymbol,
+    },
+  ]
+
+  // Per subject: of the cards rated in that subject, how many are retained (box 2+). Mastery has no
+  // week-over-week history to compare against, so these carry no trend chip — only a real figure.
+  const bySubject = new Map<string, { seen: number; learned: number }>()
+  for (const card of cards) {
+    const subject = setById.get(card.setId)?.subject
+    if (!subject) continue
+    const row = bySubject.get(subject) ?? { seen: 0, learned: 0 }
+    row.seen += 1
+    if (card.box >= 2) row.learned += 1
+    bySubject.set(subject, row)
+  }
+  const subjectRows = [...bySubject.entries()]
+    .map(([name, { seen, learned }]) => ({
+      name,
+      slug: subjectSlug(name),
+      pct: seen === 0 ? 0 : Math.round((learned / seen) * 100),
+      // The whole subject, so SubjectMark can fall back to wash + symbol where there is no art.
+      subject: getSubject(subjectSlug(name) ?? ""),
+    }))
+    .sort((a, b) => b.pct - a.pct)
+
+  // Achievements as counts of things the child actually did.
+  const achievements = [
+    {
+      title: "Cards learned",
+      value: cards.filter((c) => c.box >= 2).length,
+      sub: "Remembered across widening gaps",
+      fill: colors.gamify.green,
+      icon: "brain.head.profile" as SFSymbol,
+    },
+    {
+      title: "Sets finished",
+      value: new Set(sessions.map((s) => s.setId)).size,
+      sub: "Study sets completed",
+      fill: colors.accent,
+      icon: "checkmark.seal.fill" as SFSymbol,
+    },
+    {
+      title: "Subjects explored",
+      value: bySubject.size,
+      sub: "Subjects with cards studied",
+      fill: colors.gamify.purple,
+      icon: "circle.grid.2x2.fill" as SFSymbol,
+    },
+  ]
+
+  const hasAnything = sessions.length > 0 || cards.length > 0
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
@@ -169,15 +252,7 @@ export default function ProgressOverview() {
 
       {/* Header */}
       <View className="flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          className="-ml-2 h-11 w-11 items-center justify-center active:opacity-60"
-          hitSlop={8}
-          onPress={() => router.back()}
-        >
-          <SymbolView name="chevron.left" size={24} tintColor={colors.ink} weight="semibold" />
-        </Pressable>
+        <BackButton />
         <Text className="flex-1 text-center font-text text-h3 font-bold text-ink">Progress Overview</Text>
         <Pressable
           accessibilityRole="button"
@@ -211,21 +286,51 @@ export default function ProgressOverview() {
           </Pressable>
         </View>
 
-        {/* Summary stat tiles */}
+        {!hasAnything ? (
+          <EmptyState
+            symbol="chart.bar"
+            title="No report yet"
+            body="Once your child studies, this week's time, sets and accuracy appear here — with last week to compare against."
+            actionLabel="Go to study"
+            onAction={() => router.push("/study")}
+          />
+        ) : (
+          <>
+        {/* Summary stat tiles — the last 7 days. */}
         <View className="mt-5 flex-row gap-3">
-          {STATS.map((s) => (
+          {stats.map((s) => (
             <View key={s.label} className={`flex-1 rounded-2xl p-3 ${s.wash}`}>
               <View className="flex-row items-center gap-2">
                 <View className={`h-8 w-8 items-center justify-center rounded-full ${s.disc}`}>
                   <SymbolView name={s.icon} size={16} tintColor={colors.white} weight="semibold" />
                 </View>
-                <Text className="flex-1 font-text text-caption text-text-secondary">{s.label}</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} className="flex-1 font-text text-caption text-text-secondary">
+                  {s.label}
+                </Text>
               </View>
               <Text className="mt-2 font-text text-h3 font-bold text-ink">{s.value}</Text>
-              <View className="mt-1 flex-row items-center gap-1">
-                <SymbolView name="arrow.up" size={11} tintColor={colors.success} weight="bold" />
-                <Text className="font-text text-caption font-semibold text-success">{s.trend} vs last week</Text>
-              </View>
+              {/* No baseline week → no trend line, rather than a fabricated "+100%". */}
+              {s.trend === null ? (
+                <Text className="mt-1 font-text text-caption text-text-secondary">First week</Text>
+              ) : (
+                // Arrow + delta only: "vs last week" did not fit a third-width tile and truncated to
+                // "57% vs la…". The period pill above already says which week this is.
+                <View className="mt-1 flex-row items-center gap-1">
+                  <SymbolView
+                    name={s.trend >= 0 ? "arrow.up" : "arrow.down"}
+                    size={11}
+                    tintColor={s.trend >= 0 ? colors.success : colors.error}
+                    weight="bold"
+                  />
+                  <Text
+                    numberOfLines={1}
+                    className={`font-text text-caption font-semibold ${s.trend >= 0 ? "text-success" : "text-error"}`}
+                  >
+                    {Math.abs(s.trend)}
+                    {s.suffix}
+                  </Text>
+                </View>
+              )}
             </View>
           ))}
         </View>
@@ -245,42 +350,42 @@ export default function ProgressOverview() {
               <Text className="font-text text-caption text-text-secondary">Sets completed</Text>
             </View>
           </View>
-          <DailyActivityChart />
+          <DailyActivityChart days={days} />
         </Card>
 
-        {/* By subject */}
-        <Card>
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="font-text text-h3 font-bold text-ink">By subject</Text>
-            <Text className="font-text text-body font-semibold text-primary">View all</Text>
-          </View>
-          {SUBJECTS.map((s) => (
-            <Pressable
-              key={s.key}
-              accessibilityRole="button"
-              accessibilityLabel={`${s.name} progress`}
-              className="mb-4 flex-row items-center last:mb-0 active:opacity-70"
-              onPress={() => router.push({ pathname: "/progress/subject/[subject]", params: { subject: s.key } })}
-            >
-              <Image
-                accessibilityIgnoresInvertColors
-                className="h-9 w-9 rounded-full"
-                contentFit="cover"
-                source={s.icon}
-              />
-              <Text numberOfLines={1} className="ml-3 w-20 font-text text-body-lg text-ink">
-                {s.name}
-              </Text>
-              <View className="mx-2 h-2 flex-1 overflow-hidden rounded-full bg-gamify-track">
-                <View className={`h-full rounded-full bg-study-teal ${PCT[s.pct]}`} />
-              </View>
-              <Text className="w-11 text-right font-text text-body-lg font-bold text-ink">{s.pct}%</Text>
-              <View className="ml-2 w-14 items-end">
-                <TrendChip up={s.up} value={s.trend} />
-              </View>
-            </Pressable>
-          ))}
-        </Card>
+        {/* By subject — only subjects this child has actually studied. */}
+        {subjectRows.length > 0 ? (
+          <Card>
+            <Text className="mb-4 font-text text-h3 font-bold text-ink">By subject</Text>
+            {subjectRows.map((s) => (
+              <Pressable
+                key={s.name}
+                accessibilityRole="button"
+                accessibilityLabel={`${s.name} progress, ${s.pct} percent`}
+                className="mb-4 flex-row items-center last:mb-0 active:opacity-70"
+                disabled={!s.slug}
+                onPress={() =>
+                  s.slug ? router.push({ pathname: "/progress/subject/[subject]", params: { subject: s.slug } }) : undefined
+                }
+              >
+                {s.subject ? (
+                  <SubjectMark subject={s.subject} className="h-9 w-9" symbolSize={16} />
+                ) : (
+                  <View className="h-9 w-9 rounded-full bg-study-wash" />
+                )}
+                <Text numberOfLines={1} className="ml-3 w-24 font-text text-body-lg text-ink">
+                  {s.name}
+                </Text>
+                <View className="mx-2 h-2 flex-1 overflow-hidden rounded-full bg-gamify-track">
+                  <View className={`h-full rounded-full bg-study-teal ${barWidth(s.pct)}`} />
+                </View>
+                <Text numberOfLines={1} className="w-14 text-right font-text text-body-lg font-bold text-ink">
+                  {s.pct}%
+                </Text>
+              </Pressable>
+            ))}
+          </Card>
+        ) : null}
 
         {/* Recent achievements */}
         <Card>
@@ -296,10 +401,11 @@ export default function ProgressOverview() {
             </Pressable>
           </View>
           <View className="flex-row gap-3">
-            {ACHIEVEMENTS.map((a) => (
+            {achievements.map((a) => (
               <View key={a.title} className="flex-1 flex-row items-start gap-2">
                 <Hexagon fill={a.fill} icon={a.icon} />
                 <View className="flex-1">
+                  <Text className="font-text text-h3 font-bold text-ink">{a.value}</Text>
                   <Text className="font-text text-caption font-bold text-ink">{a.title}</Text>
                   <Text className="mt-0.5 font-text text-caption text-text-secondary">{a.sub}</Text>
                 </View>
@@ -308,16 +414,22 @@ export default function ProgressOverview() {
           </View>
         </Card>
 
-        {/* View detailed progress */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="View detailed progress"
-          className="mt-4 h-14 flex-row items-center justify-center gap-2 rounded-full bg-study-teal active:opacity-90"
-          onPress={() => router.push({ pathname: "/progress/subject/[subject]", params: { subject: "maths" } })}
-        >
-          <SymbolView name="chart.bar" size={20} tintColor={colors.white} weight="semibold" />
-          <Text className="font-text text-body-lg font-bold text-white">View detailed progress</Text>
-        </Pressable>
+        {/* Into the subject the child has studied most — not a hard-coded "maths". */}
+        {subjectRows[0]?.slug ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`View detailed ${subjectRows[0].name} progress`}
+            className="mt-4 h-14 flex-row items-center justify-center gap-2 rounded-full bg-study-teal active:opacity-90"
+            onPress={() =>
+              router.push({ pathname: "/progress/subject/[subject]", params: { subject: subjectRows[0].slug! } })
+            }
+          >
+            <SymbolView name="chart.bar" size={20} tintColor={colors.white} weight="semibold" />
+            <Text className="font-text text-body-lg font-bold text-white">View detailed progress</Text>
+          </Pressable>
+        ) : null}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
