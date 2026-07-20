@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm"
 
+import { isAdmin } from "@/db/admin-auth"
 import { db } from "@/db/client"
 import { cards, quizQuestions, studySets } from "@/db/schema"
 import { STUDY_SETS } from "@/lib/study"
@@ -12,21 +13,12 @@ import { STUDY_SETS } from "@/lib/study"
  * only text lands in the DB.
  *
  * Idempotent — every insert is `onConflictDoNothing`, so re-running tops up without duplicating.
- * Guarded: a seed endpoint must never be openly writable, so it only runs on a local dev server or
- * with the admin token. This is scaffolding for the migration, not a public route.
+ * Guarded by the shared admin token (see db/admin-auth.ts): a seed endpoint must never be openly
+ * writable. This is scaffolding for the migration, not a public route.
  */
-function authorised(request: Request): boolean {
-  // Fail closed. Keying the open path off `NODE_ENV !== "production"` would leave the route
-  // world-writable on any hosted deployment whose runtime does not set NODE_ENV to exactly
-  // "production" — a preview deploy, say. Only an explicit "development" opens it, and once
-  // ADMIN_SEED_TOKEN is set the token is required everywhere, including locally.
-  const token = process.env.ADMIN_SEED_TOKEN
-  if (token) return request.headers.get("x-admin-token") === token
-  return process.env.NODE_ENV === "development"
-}
 
 export async function POST(request: Request): Promise<Response> {
-  if (!authorised(request)) return Response.json({ ok: false, error: "unauthorised" }, { status: 401 })
+  if (!isAdmin(request)) return Response.json({ ok: false, error: "unauthorised" }, { status: 401 })
 
   try {
     // Collect every row first, then bulk-insert each table in ONE statement. The neon-http driver
