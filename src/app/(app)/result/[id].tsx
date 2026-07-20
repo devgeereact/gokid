@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useChildren } from "@/lib/children"
+import { resolveItems } from "@/lib/served-quiz"
 import { getStudySet, quizItems } from "@/lib/study"
 
 /**
@@ -40,7 +41,9 @@ export default function Result() {
 
   if (!set) return <Redirect href="/home" />
 
-  const total = quizItems(set).length
+  // The served list when the child took a no-repeat quiz, else the local set — must match the length
+  // the runner scored against, or the ring shows "5 / 8" against the wrong denominator.
+  const total = resolveItems(id, quizItems(set)).length
   const correct = Math.min(Number(score ?? 0) || 0, total)
   const childName = children[0]?.name ?? user?.firstName ?? "you"
 

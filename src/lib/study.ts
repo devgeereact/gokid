@@ -1387,10 +1387,19 @@ export type QuizAttempt = {
  * Demo seam: `explanation` and `topic` are optional on the question and no demo set authors them yet,
  * so both fall back to values derived from data the set already carries.
  */
-export function quizAttempt(set: StudySet, responses: QuizResponse[]): QuizAttempt {
+/**
+ * `items` defaults to the set's local questions but can be overridden with the exact list the child
+ * was served (see lib/served-quiz.ts) — the review must grade the questions actually shown, not a
+ * freshly-derived local list, which for a no-repeat server quiz would be a different set entirely.
+ */
+export function quizAttempt(
+  set: StudySet,
+  responses: QuizResponse[],
+  items: MixedQuestion[] = quizItems(set)
+): QuizAttempt {
   const revisit = set.revisit.length > 0 ? set.revisit : [set.topic]
 
-  const rows: QuizReviewRow[] = quizItems(set).map((question, i) => {
+  const rows: QuizReviewRow[] = items.map((question, i) => {
     const response = responses[i]
     const label = correctLabel(question)
     return {

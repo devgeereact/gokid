@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { resolveItems } from "@/lib/served-quiz"
 import {
   decodeAnswers,
   encodeAnswers,
@@ -95,7 +96,8 @@ function ReviewRow({
 export default function FinalReview() {
   const { id, answers } = useLocalSearchParams<{ id: string; answers?: string }>()
   const set = getStudySet(id)
-  const items = useMemo(() => (set ? quizItems(set) : []), [set])
+  // The exact questions the runner served this child (from the store), else the local set.
+  const items = useMemo(() => (set ? resolveItems(set.id, quizItems(set)) : []), [set])
   const responses = useMemo(() => decodeAnswers(answers), [answers])
 
   if (!set) return <Redirect href="/home" />
