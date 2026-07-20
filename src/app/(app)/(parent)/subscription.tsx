@@ -85,6 +85,11 @@ export default function Subscription() {
 
         <Text className="mb-3 mt-8 font-text text-h3 font-bold text-ink">Manage</Text>
         <View className="rounded-2xl border border-border bg-white px-4">
+          {/* The offer screen, and the only route into it. Settings used to open /paywall directly —
+              an offer to buy what the parent had just been told they already had. Reaching it from
+              here instead reads correctly ("what would I get?") and keeps the route from becoming
+              unreachable dead code, which it was until this row existed. */}
+          <Row symbol="sparkles" label="What's included" border onPress={() => router.push("/paywall")} />
           {/* Works today and after billing lands: Apple and Google require cancellation to go
               through their own settings, so this is where it belongs either way. */}
           <Row
