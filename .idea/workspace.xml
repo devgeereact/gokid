@@ -4,32 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="76d70c52-0a79-461d-890f-a3f24b8003e2" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(parent)/delete-account.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(parent)/delete-account.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(parent)/faq.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(parent)/faq.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(parent)/parent-analytics.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(parent)/parent-analytics.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(parent)/parent-content.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(parent)/parent-content.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/achievements.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/achievements.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/calendar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/calendar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/history.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/history.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/journey.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/journey.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/mastery-timeline.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/mastery-timeline.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/overview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/overview.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/statistics.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/statistics.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/subject/[subject].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/progress/subject/[subject].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/answer-result/[id].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/answer-result/[id].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/congratulations/[id].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/congratulations/[id].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/session-summary/[id].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/session-summary/[id].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/session/[id].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/session/[id].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/set-result/[id].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/(tabs)/study/set-result/[id].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/certificate/[id].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/certificate/[id].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/flashcard/paused.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/flashcard/paused.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/(app)/result/[id].tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/(app)/result/[id].tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/progress+api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/progress+api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/api/quiz+api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/quiz+api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tailwind.config.js" beforeDir="false" afterPath="$PROJECT_DIR$/tailwind.config.js" afterDir="false" />
-    </list>
+    <list default="true" id="76d70c52-0a79-461d-890f-a3f24b8003e2" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
