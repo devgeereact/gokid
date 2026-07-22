@@ -9,7 +9,7 @@ import { BackButton } from "@/components/primitives"
 import { SubjectMark } from "@/components/subject-mark"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useChildren, yearLabel } from "@/lib/children"
+import { useChildren, useStudyingChildId, yearLabel } from "@/lib/children"
 import { plural, type StrandProgress, useSubjectProgress } from "@/lib/analytics"
 import { getSubject, recommendedSets, type Subject } from "@/lib/subjects"
 
@@ -117,8 +117,13 @@ export default function SubjectProgress() {
   const { subject } = useLocalSearchParams<{ subject: string }>()
   const { children } = useChildren()
 
-  const subj = getSubject(subject ?? "maths")
-  const child = children[0]
+  // An absent slug must fall through to the "Subject not found" state below, not silently render
+  // Maths under the generic heading. The `!subj` guard catches "" (getSubject returns undefined).
+  const subj = getSubject(subject ?? "")
+  // The child who is studying, not whoever is first in the roster — every sibling progress screen
+  // keys on the studying child, and a two-child household was showing child[0]'s data here.
+  const childId = useStudyingChildId() ?? ""
+  const child = children.find((c) => c.id === childId) ?? children[0]
   const progress = useSubjectProgress(subj, child?.id ?? "")
   const childName = child?.name ?? "your child"
 
@@ -155,7 +160,7 @@ export default function SubjectProgress() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Subject summary */}
         <View className="rounded-2xl border border-border bg-white p-5">
           <View className="flex-row items-center">
@@ -209,12 +214,13 @@ export default function SubjectProgress() {
 
           <View className="mt-2">
             {topics.map((t, i) => (
-              <Pressable
+              // Strand-level summary rows. They carry no per-strand set id, so a tap used to open
+              // recent[0] for EVERY strand while the label named a specific one — a promise the row
+              // can't keep. Presented as read-only until a real per-strand destination exists.
+              <View
                 key={t.name}
-                accessibilityRole="button"
                 accessibilityLabel={`${t.name}, ${t.pct} percent, ${t.sets}`}
-                className={`flex-row items-center py-3 active:opacity-70 ${i > 0 ? "border-t border-border" : ""}`}
-                onPress={() => (recent[0] ? router.push({ pathname: "/lesson/[id]", params: { id: recent[0].id } }) : undefined)}
+                className={`flex-row items-center py-3 ${i > 0 ? "border-t border-border" : ""}`}
               >
                 <View className={`h-10 w-10 items-center justify-center rounded-full ${t.wash}`}>
                   <SymbolView name={t.icon} size={18} tintColor={t.tint} weight="semibold" />
@@ -235,14 +241,7 @@ export default function SubjectProgress() {
                 >
                   {t.pct === null ? "—" : `${t.pct}%`}
                 </Text>
-                <SymbolView
-                  name="chevron.right"
-                  size={14}
-                  tintColor={colors["text-secondary"]}
-                  weight="semibold"
-                  style={{ marginLeft: 8 }}
-                />
-              </Pressable>
+              </View>
             ))}
           </View>
         </Card>

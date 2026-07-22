@@ -91,7 +91,7 @@ export default function History() {
         <Text className="ml-1 font-text text-h3 font-bold text-ink">Study history</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-8" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35" showsVerticalScrollIndicator={false}>
         {/* Totals — computed from the recorded sessions, so an empty history reads zero, not a fake. */}
         <View className="mt-4 flex-row gap-3">
           <View className="flex-1 rounded-2xl border border-border bg-white p-3">

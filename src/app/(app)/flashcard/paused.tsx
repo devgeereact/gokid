@@ -73,10 +73,10 @@ export default function SessionPaused() {
   const accuracy = reviewed === 0 ? 0 : Math.round((gotit / reviewed) * 100)
 
   const tiles: Tile[] = [
-    { label: "Time spent", value: clock(seconds), symbol: "clock.fill", tint: colors.success, wash: colors.gamify["green-wash"] },
-    { label: "Cards studied", value: `${reviewed}`, symbol: "rectangle.on.rectangle", tint: colors.gamify.purple, wash: colors.gamify["purple-wash"] },
-    { label: "Got it", value: `${accuracy}%`, symbol: "target", tint: colors.gamify.blue, wash: colors.gamify["blue-wash"] },
-    { label: "Tricky", value: `${tricky}`, symbol: "flame.fill", tint: colors.gamify.flame, wash: colors.gamify["flame-wash"] },
+    { label: "Time spent", value: clock(seconds), symbol: "clock.fill", tint: colors.success, wash: "bg-gamify-green-wash" },
+    { label: "Cards studied", value: `${reviewed}`, symbol: "rectangle.on.rectangle", tint: colors.gamify.purple, wash: "bg-gamify-purple-wash" },
+    { label: "Got it", value: `${accuracy}%`, symbol: "target", tint: colors.gamify.blue, wash: "bg-gamify-blue-wash" },
+    { label: "Tricky", value: `${tricky}`, symbol: "flame.fill", tint: colors.gamify.flame, wash: "bg-gamify-flame-wash" },
   ]
 
   /** Bank the cards already rated, then drop back to the set the child came from. */
@@ -148,7 +148,7 @@ export default function SessionPaused() {
         <View className="mt-3 flex-row gap-2">
           {tiles.map((t) => (
             <View key={t.label} className="flex-1 items-center rounded-lg border border-border bg-white py-4">
-              <View className="h-9 w-9 items-center justify-center rounded-full" style={{ backgroundColor: t.wash }}>
+              <View className={`h-9 w-9 items-center justify-center rounded-full ${t.wash}`}>
                 <SymbolView name={t.symbol as never} size={18} tintColor={t.tint} weight="semibold" />
               </View>
               <Text className="mt-2 text-center font-text text-tile text-text-secondary" numberOfLines={1}>

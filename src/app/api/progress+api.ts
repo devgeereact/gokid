@@ -100,10 +100,10 @@ export async function GET(request: Request): Promise<Response> {
       })),
     })
   } catch (error) {
-    return Response.json(
-      { ok: false, message: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    // Log server-side; return generic copy. A raw error string is a data-shape leak on a route that
+    // serves a named child's record.
+    console.error("[api/progress GET] 500", error)
+    return Response.json({ ok: false, message: "Couldn’t load progress." }, { status: 500 })
   }
 }
 
@@ -161,17 +161,14 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     if (incomingSessions.length > 0) {
-      // Sessions carry a client-generated id; inserting on conflict-do-nothing makes a retry a no-op
-      // instead of double-counting study time.
-      const existing = await db
-        .select({ clientId: sessions.clientId })
-        .from(sessions)
-        .where(eq(sessions.childId, child.id))
-      const known = new Set(existing.map((s) => s.clientId))
-      const fresh = incomingSessions.filter((s) => !known.has(s.id))
-      if (fresh.length > 0) {
-        await db.insert(sessions).values(
-          fresh.map((s) => ({
+      // Sessions carry a client-generated id; the DB deduplicates on (childId, clientId). Do it in
+      // the insert with onConflictDoNothing rather than a read-then-filter: the old select-known-ids
+      // approach was check-then-act, so two concurrent retries could both pass the filter and the
+      // second insert would hit the unique index and 500 instead of being the intended no-op.
+      await db
+        .insert(sessions)
+        .values(
+          incomingSessions.map((s) => ({
             // `id` is a server-side uuid; the device's own id goes in `clientId`, which is what
             // deduplicates a replayed batch. Passing the client id as `id` fails outright — the
             // column is a uuid — and that failure is how sessions silently never synced.
@@ -187,14 +184,12 @@ export async function POST(request: Request): Promise<Response> {
             scoreTotal: s.scoreTotal ?? null,
           }))
         )
-      }
+        .onConflictDoNothing({ target: [sessions.childId, sessions.clientId] })
     }
 
     return Response.json({ ok: true, syncedAt: Date.now() })
   } catch (error) {
-    return Response.json(
-      { ok: false, message: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    console.error("[api/progress POST] 500", error)
+    return Response.json({ ok: false, message: "Couldn’t sync progress." }, { status: 500 })
   }
 }

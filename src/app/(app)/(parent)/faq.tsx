@@ -38,7 +38,7 @@ const FAQS: QA[] = [
   },
   {
     q: "What is the Parent area for?",
-    a: "It's where you manage children, see progress and analytics, and handle your subscription. A quick maths question keeps it for the grown-ups.",
+    a: "It's where you manage children, see progress and analytics, and handle your subscription. A passcode keeps it for the grown-ups.",
   },
   {
     q: "How do I cancel my subscription?",

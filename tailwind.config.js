@@ -43,11 +43,19 @@ module.exports = {
         14: "56px",
         16: "64px",
         20: "80px",
-        // Clearance for the iOS 26 native floating tab bar (Study · Progress · Parent). Pushed
-        // screens inside a tab's Stack (session, set-result, achievements, …) don't get the tab
-        // bar's automatic scroll inset, so their scroll content / pinned buttons pad past it.
         24: "96px",
         28: "112px",
+        // Clearance for the iOS 26 native floating tab bar (Study · Progress · Parent).
+        //
+        // Only a tab's *root* screen (study/index, progress/index) gets UIKit's automatic scroll
+        // inset; screens pushed onto a tab's own Stack (session, set-result, achievements, the
+        // pushed progress screens) do not, so they must pad their own scroll content past the bar
+        // or its last row clips behind the floating pill when scrolled to the bottom. `pb-28`
+        // (112px) was the hand-guessed value and measured ~one text line short on iPhone 17 /
+        // iOS 26.5 — the clipping seen in the smoke test. 140px (= 35 × 4px, staying on the same
+        // numeric 4pt step the rest of this scale uses) clears the pill plus the home-indicator
+        // inset with headroom. Every pushed (tabs) screen uses `pb-35` so this is one value to tune.
+        35: "140px",
         // Add-a-child fields. Text input measures 52pt tall on the reference; not on the
         // 8pt grid (48/56 bracket it), so pinned as an inferred step.
         13: "52px",

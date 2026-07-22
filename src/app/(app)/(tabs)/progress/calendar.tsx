@@ -276,12 +276,12 @@ export default function LearningCalendar() {
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Child + cards retained. Not a streak: this only ever goes up, so a day off costs nothing. */}
         <View className="flex-row items-center">
           <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-14 w-14" />
           <View className="ml-3 flex-1">
-            <Text className="font-text text-h3 font-bold text-ink">{child?.name ?? "Amara"}</Text>
+            <Text className="font-text text-h3 font-bold text-ink">{child?.name ?? "your child"}</Text>
             <Text className="font-text text-body text-text-secondary">{yearLabel(child?.yearGroup ?? "Y3")}</Text>
           </View>
           <View className="flex-row items-center gap-2 rounded-full bg-gamify-green-wash px-4 py-2">
