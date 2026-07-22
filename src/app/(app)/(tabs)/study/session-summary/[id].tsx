@@ -22,15 +22,17 @@ import { getStudySet } from "@/lib/study"
  * Symbols (the mock draws bespoke illustrations) — inferred.
  */
 
-// Data-driven bar/segment widths as literal classes so NativeWind's compiler emits them (it scans
-// source text — an interpolated `w-[${n}%]` would never be generated).
-const PCT: Record<number, string> = {
-  40: "w-[40%]",
-  50: "w-[50%]",
-  88: "w-[88%]",
-  95: "w-[95%]",
-  100: "w-[100%]",
+// Data-driven bar widths as literal classes so NativeWind's compiler emits them (it scans source
+// text — an interpolated `w-[${n}%]` would never be generated). The old map only held {40,50,88,95,
+// 100}, so any real percentage (e.g. 33, 67) fell through to undefined and the bar rendered empty.
+// This mirrors `barWidth` in study/index.tsx: round to the nearest 5% and clamp to a full ladder.
+const BAR: Record<number, string> = {
+  0: "w-[0%]", 5: "w-[5%]", 10: "w-[10%]", 15: "w-[15%]", 20: "w-[20%]", 25: "w-[25%]",
+  30: "w-[30%]", 35: "w-[35%]", 40: "w-[40%]", 45: "w-[45%]", 50: "w-[50%]", 55: "w-[55%]",
+  60: "w-[60%]", 65: "w-[65%]", 70: "w-[70%]", 75: "w-[75%]", 80: "w-[80%]", 85: "w-[85%]",
+  90: "w-[90%]", 95: "w-[95%]", 100: "w-[100%]",
 }
+const barWidth = (pct: number) => BAR[Math.max(0, Math.min(100, Math.round(pct / 5) * 5))]
 
 type Stat = { symbol: SFSymbol; wash: string; tint: string; label: string; value: string }
 
@@ -60,7 +62,7 @@ function BarList({ rows, title }: { rows: BarRow[]; title: string }) {
               {r.label}
             </Text>
             <View className="mt-2 h-2 overflow-hidden rounded-full bg-gamify-track">
-              <View className={`h-full rounded-full ${r.bar} ${PCT[r.pct]}`} />
+              <View className={`h-full rounded-full ${r.bar} ${barWidth(r.pct)}`} />
             </View>
           </View>
           <Text className="ml-3 w-11 text-right font-text text-body-lg font-bold text-ink">{r.pct}%</Text>
@@ -79,8 +81,8 @@ export default function SessionSummary() {
 
   if (!set) return <Redirect href="/home" />
 
-  const child = children[0]
-  const name = child?.name ?? "Amara"
+  const child = children.find((c) => c.id === childId) ?? children[0]
+  const name = child?.name ?? "your child"
 
   // Real outcomes from the spaced-repetition record. Box 2+ means recalled correctly at least twice
   // across widening gaps — the engine's own definition of "learned", not a display constant.
@@ -160,7 +162,7 @@ export default function SessionSummary() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View className="flex-row items-center rounded-2xl bg-gamify-green-wash p-4">
           <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-16 w-16" />

@@ -44,10 +44,17 @@ export default function DeleteAccount() {
   async function reallyDelete() {
     setBusy(true)
     setFailed(false)
+    // No session means we cannot delete the Clerk account — and wiping the on-device stores anyway
+    // would destroy the child's history while the account survives. Surface the failure, wipe nothing.
+    if (!user) {
+      setFailed(true)
+      setBusy(false)
+      return
+    }
     try {
       // Clerk first: this is the step that can fail, and the one that must succeed for the rest to
       // be safe. It removes the account, the children in unsafeMetadata, and the session with it.
-      await user?.delete()
+      await user.delete()
       // Only now is destroying the on-device data correct. Every on-device store has to be listed
       // here — a store added later and not added here leaves a child's data behind after a deletion
       // the parent was told was complete.

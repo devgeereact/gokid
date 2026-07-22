@@ -150,7 +150,7 @@ export default function Congratulations() {
         </Pressable>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Hero — celebrating child, congratulations copy and a trophy */}
         <View className="rounded-2xl bg-gamify-green-wash p-4">
           <View className="flex-row items-center">
@@ -193,7 +193,7 @@ export default function Congratulations() {
               accessibilityRole="button"
               accessibilityLabel="Review all mastered topics"
               className="active:opacity-60"
-              onPress={() => {}}
+              onPress={() => router.push("/progress/mastery-timeline")}
             >
               <Text className="font-text text-body font-semibold text-study-teal">Review all</Text>
             </Pressable>

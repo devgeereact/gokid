@@ -155,9 +155,9 @@ export async function GET(request: Request): Promise<Response> {
       })),
     })
   } catch (error) {
-    return Response.json(
-      { ok: false, message: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    // Log the real error to the server console (captured by the host's logs); never return it to the
+    // client — a raw DB/driver message is an information leak on an unauthenticated-reachable route.
+    console.error("[api/quiz] 500", error)
+    return Response.json({ ok: false, message: "Something went wrong serving this quiz." }, { status: 500 })
   }
 }

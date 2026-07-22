@@ -6,9 +6,9 @@ import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useChildren } from "@/lib/children"
+import { useChildren, useStudyingChildId } from "@/lib/children"
 import { resolveItems } from "@/lib/served-quiz"
-import { getStudySet, quizItems } from "@/lib/study"
+import { getStudySet, nextSetId, quizItems } from "@/lib/study"
 
 /**
  * Quiz results (design/GoKid-result-screen.png, screen 9). Celebrating child, a score ring, then two
@@ -37,6 +37,7 @@ export default function Result() {
   const { id, score, answers } = useLocalSearchParams<{ id: string; score?: string; answers?: string }>()
   const { user } = useUser()
   const { children } = useChildren()
+  const childId = useStudyingChildId() ?? ""
   const set = getStudySet(id)
 
   if (!set) return <Redirect href="/home" />
@@ -45,15 +46,12 @@ export default function Result() {
   // the runner scored against, or the ring shows "5 / 8" against the wrong denominator.
   const total = resolveItems(id, quizItems(set)).length
   const correct = Math.min(Number(score ?? 0) || 0, total)
-  const childName = children[0]?.name ?? user?.firstName ?? "you"
+  // The child who actually studied this set, not whoever is first in the roster.
+  const childName = children.find((c) => c.id === childId)?.name ?? user?.firstName ?? "you"
 
-  // Advance to the next set in the list (wraps to the first).
-  const nextIndex = () => {
-    const cur = set.id
-    const list = ["place-value", "capital-cities", "human-skeleton"]
-    const i = list.indexOf(cur)
-    return list[(i + 1) % list.length]
-  }
+  // Advance to the next set in curriculum order (shared with congratulations), instead of an
+  // unrelated hardcoded 3-set list that misrouted 18 of the 21 sets to "place-value".
+  const nextId = nextSetId(set.id)
 
   return (
     <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-background px-5">
@@ -125,7 +123,7 @@ export default function Result() {
           accessibilityRole="button"
           accessibilityLabel="Next set"
           className="mt-6 h-14 items-center justify-center rounded-full bg-primary active:opacity-90"
-          onPress={() => router.replace({ pathname: "/lesson/[id]", params: { id: nextIndex() } })}
+          onPress={() => router.replace({ pathname: "/lesson/[id]", params: { id: nextId } })}
         >
           <Text className="font-text text-body-lg font-bold text-white">Next set</Text>
         </Pressable>

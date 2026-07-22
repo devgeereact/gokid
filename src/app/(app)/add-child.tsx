@@ -13,6 +13,7 @@ import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { type Avatar, type CardTint, CARD_TINTS, DEFAULT_AVATAR, suggestTint, tintClass, useChildren } from "@/lib/children"
 import { useParentGate } from "@/lib/parent-gate"
+import { useParentPasscode } from "@/lib/parent-passcode"
 
 const YEAR_GROUPS = ["Rec", "Y1", "Y2", "Y3", "Y4", "Y5", "Y6"] as const
 
@@ -230,11 +231,13 @@ export default function AddChild() {
   const existing = children.find((c) => c.id === id)
   const editing = !!existing
 
-  // Onboarding: signed in, first child not created yet. The back control is deliberately hidden
-  // here (a child is required to proceed), which leaves a parent who signed in with the wrong
-  // Apple ID with no way forward and no way out. Sign out is that escape hatch — the only reason
-  // it appears on this screen and not on the other child-facing ones.
-  const onboarding = !editing && children.length === 0
+  // Onboarding: genuine first run — no child yet AND no passcode set, so there is no gate to pass
+  // because the parent hasn't created one. Keyed on "no passcode" rather than "no children": a
+  // parent who set a passcode and then deleted their last child would otherwise flip back to
+  // onboarding and re-open ungated child creation. `isLoaded` fails closed while the passcode store
+  // reads — an unloaded state is treated as "gated", never as onboarding.
+  const { isLoaded: passcodeLoaded, hasPasscode } = useParentPasscode()
+  const onboarding = !editing && children.length === 0 && passcodeLoaded && !hasPasscode
 
   function confirmSignOut() {
     Alert.alert("Sign out?", "You'll need to sign back in with Apple or Google.", [

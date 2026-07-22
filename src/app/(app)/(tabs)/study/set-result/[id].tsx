@@ -124,7 +124,7 @@ export default function SetResult() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Summary card */}
         <View className="rounded-2xl border border-border bg-white p-4">
           <View className="flex-row">

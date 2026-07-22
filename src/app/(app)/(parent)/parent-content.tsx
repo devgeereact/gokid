@@ -9,7 +9,7 @@ import { duration, useAnalytics } from "@/lib/analytics"
 import { BackButton } from "@/components/primitives"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { useChildren, yearLabel } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/children"
 import { entitlementLabel, useEntitlement } from "@/lib/subscription"
 import { getSubject, subjectSlug } from "@/lib/subjects"
 
@@ -144,7 +144,7 @@ export default function ParentContent() {
               key={c.id}
               className="mr-3 flex-row items-center rounded-2xl border border-border bg-white py-2 pl-2 pr-4"
             >
-              <ChildAvatar avatar={c.avatar} className="h-11 w-11" />
+              <ChildAvatar avatar={c.avatar ?? DEFAULT_AVATAR} className="h-11 w-11" />
               <View className="ml-2">
                 <Text className="font-text text-body-lg font-bold text-ink">{c.name}</Text>
                 <Text className="font-text text-body text-text-secondary">{yearLabel(c.yearGroup)}</Text>

@@ -161,7 +161,7 @@ export default function AnswerResult() {
   const set = getStudySet(id)
   if (!set) return <Redirect href="/home" />
 
-  const name = children[0]?.name ?? "there"
+  const name = (children.find((c) => c.id === childId) ?? children[0])?.name ?? "there"
 
   const i = Number(index ?? 0) || 0
   const q = set.quiz[i % set.quiz.length]
@@ -209,7 +209,7 @@ export default function AnswerResult() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Result + reward */}
         <View className="mt-2 overflow-hidden rounded-2xl border border-border bg-white p-5">
           <View className="flex-row items-start">

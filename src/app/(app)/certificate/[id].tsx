@@ -10,7 +10,7 @@ import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { certificateHtml } from "@/lib/certificate-print"
 import { shareAboutChild } from "@/lib/share"
-import { useChildren } from "@/lib/children"
+import { useChildren, useStudyingChildId } from "@/lib/children"
 import { useParentGate } from "@/lib/parent-gate"
 import { getCertificate } from "@/lib/rewards"
 import { getStudySet } from "@/lib/study"
@@ -37,11 +37,14 @@ export default function CertificateEarned() {
   const set = getStudySet(id)
   const cert = getCertificate(id)
   const { children } = useChildren()
+  const childId = useStudyingChildId() ?? ""
   const { unlocked } = useParentGate()
 
   if (!set || !cert) return <Redirect href="/home" />
 
-  const name = children[0]?.name ?? "Amara"
+  // The child who earned it — this certificate is printed and shared with a real name on it, so a
+  // two-child household must not put the wrong child on the artefact. Was `children[0]`.
+  const name = (children.find((c) => c.id === childId) ?? children[0])?.name ?? "Your child"
 
   // The certificate is reached at the end of the child's own study flow, and Share.share posts the
   // child's name and year group to any app on the device — a child publishing their own identifying

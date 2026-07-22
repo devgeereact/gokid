@@ -112,7 +112,7 @@ export default function Statistics() {
         <Text className="ml-1 font-text text-h3 font-bold text-ink">Statistics</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-10 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {!hasData ? (
           <EmptyState
             symbol="chart.bar"

@@ -12,7 +12,7 @@ import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { type AreaRow, duration, type Insight, type Period, useAnalytics } from "@/lib/analytics"
-import { useChildren, yearLabel } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/children"
 
 /**
  * Parent Analytics (design/gokid-screens.md §10 → Analytics). One screen carrying all eight items
@@ -298,7 +298,7 @@ export default function ParentAnalytics() {
                 }`}
                 onPress={() => setChildId(c.id)}
               >
-                <ChildAvatar avatar={c.avatar} className="h-11 w-11" />
+                <ChildAvatar avatar={c.avatar ?? DEFAULT_AVATAR} className="h-11 w-11" />
                 <View className="ml-2">
                   <Text className="font-text text-body-lg font-bold text-ink">{c.name}</Text>
                   <Text className="font-text text-body text-text-secondary">{yearLabel(c.yearGroup)}</Text>

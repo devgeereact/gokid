@@ -104,16 +104,13 @@ export default function StudySession() {
           <Text className="ml-1 font-text text-body-lg font-semibold text-ink">Back</Text>
         </Pressable>
         <Text className="flex-1 text-center font-text text-body-lg font-bold text-ink">Study Session</Text>
-        <View
-          className="-mr-2 h-11 w-11 items-center justify-center"
-          accessibilityRole="image"
-          accessibilityLabel="Session settings"
-        >
-          <SymbolView name="gearshape" size={24} tintColor={colors.ink} weight="regular" />
-        </View>
+        {/* Balances the back button so the title stays centred. There is no session-settings screen,
+            so a gear here was a control that looked tappable, did nothing, and announced itself to
+            VoiceOver as "Session settings" — removed rather than faked. */}
+        <View className="h-11 w-11" />
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Set summary + progress */}
         <View className="flex-row items-center rounded-2xl border border-border bg-white p-4">
           <View className="flex-1">

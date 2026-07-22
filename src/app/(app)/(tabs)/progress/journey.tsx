@@ -99,7 +99,7 @@ export default function LearningJourney() {
         <Text className="ml-1 font-text text-h3 font-bold text-ink">Learning journey</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-10 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {!journey.hasData ? (
           <EmptyState
             symbol="map"

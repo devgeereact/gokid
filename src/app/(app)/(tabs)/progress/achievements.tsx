@@ -93,7 +93,7 @@ export default function Milestones() {
           onAction={() => router.push("/study")}
         />
       ) : (
-        <ScrollView className="flex-1" contentContainerClassName="pb-28 pt-2" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
           {/* Hero — cards learned. Cumulative, so a day off never reduces it. */}
           <View className="mt-2 rounded-2xl bg-gamify-green-wash p-5">
             <Text className="font-text text-h1 font-bold text-primary">{retained}</Text>
