@@ -76,6 +76,10 @@ export const SUBJECTS: Subject[] = [
       { name: "Fractions", icon: "chart.pie.fill" },
       { name: "Measurement", icon: "ruler.fill" },
       { name: "Geometry", icon: "triangle.fill" },
+      // Both are KS2 domains in the National Curriculum in their own right, not sub-topics of the
+      // rows above. "Ratio and proportion" already had an authored Y6 set with nowhere to land.
+      { name: "Ratio and proportion", icon: "percent" },
+      { name: "Algebra", icon: "x.squareroot" },
     ],
   },
   {
@@ -106,13 +110,25 @@ export const SUBJECTS: Subject[] = [
     art: ART.science,
     symbol: "leaf.fill",
     focus: "{child} knows the human body well — forces and magnets are the next gap to close.",
+    // These names are matched against `StudySet.topic` by exact string equality (lib/analytics.ts),
+    // so a strand missing here does not merely omit a row — it makes real, correctly-authored content
+    // invisible to the subject hub, to search, and to the strong/weak-area nudges. Two statutory KS1
+    // units had authored sets and no strand to land in; they are added below.
+    //
+    // "Animals, including humans" is the DfE's actual programme-of-study wording, not a tidier
+    // paraphrase of it. The NC phrase deliberately classifies humans as animals, which is the exact
+    // KS1/KS2 misconception it exists to correct; "Animals and humans" coordinates them as two
+    // separate categories and teaches the misconception back.
     strands: [
       { name: "Plants", icon: "leaf.fill" },
-      { name: "Animals and humans", icon: "figure.walk" },
+      { name: "Animals, including humans", icon: "figure.walk" },
+      { name: "Seasonal changes", icon: "cloud.sun.fill" },
+      { name: "Living things and their habitats", icon: "ladybug.fill" },
       { name: "Materials", icon: "cube.fill" },
       { name: "Forces and magnets", icon: "bolt.fill" },
       { name: "Light and sound", icon: "lightbulb.fill" },
       { name: "Earth and space", icon: "globe.europe.africa.fill" },
+      { name: "Evolution and inheritance", icon: "arrow.triangle.branch" },
     ],
   },
   {
