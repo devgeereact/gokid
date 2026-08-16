@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm"
+import { and, asc, eq } from "drizzle-orm"
 
 import { cards, quizQuestions, studySets } from "@/db/schema"
 import { db } from "@/db/client"
@@ -14,6 +14,13 @@ import { db } from "@/db/client"
  * Server-side only (Expo Router `+api.ts`), so the Neon connection string never reaches the bundle.
  * Cards and questions come back in their stored `position` order — a set whose cards arrive shuffled
  * would teach a different lesson offline than online.
+ *
+ * The quiz query filters `status = "published"`, matching `GET /api/quiz`. `admin/generate` writes AI
+ * questions as `draft` specifically so nothing unreviewed reaches a child — but `lib/downloads.ts`
+ * builds an offline download straight from this route's response, and an offline download has no
+ * server round-trip to re-check status later. Without this filter, a draft that failed nothing except
+ * "not yet reviewed by a human" could still ship to a child's device the moment it existed, even
+ * though the live no-repeat quiz path already excludes it correctly.
  */
 export async function GET(request: Request, { id }: { id: string }): Promise<Response> {
   try {
@@ -24,7 +31,11 @@ export async function GET(request: Request, { id }: { id: string }): Promise<Res
 
     const [setCards, setQuestions] = await Promise.all([
       db.select().from(cards).where(eq(cards.setId, id)).orderBy(asc(cards.position)),
-      db.select().from(quizQuestions).where(eq(quizQuestions.setId, id)).orderBy(asc(quizQuestions.position)),
+      db
+        .select()
+        .from(quizQuestions)
+        .where(and(eq(quizQuestions.setId, id), eq(quizQuestions.status, "published")))
+        .orderBy(asc(quizQuestions.position)),
     ])
 
     return Response.json({
@@ -44,9 +55,9 @@ export async function GET(request: Request, { id }: { id: string }): Promise<Res
       quiz: setQuestions.map((q) => ({ id: q.id, kind: q.kind, payload: q.payload })),
     })
   } catch (error) {
-    return Response.json(
-      { ok: false, message: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    // Log server-side; return generic copy — this is public content with no per-user secrets in it,
+    // but the raw driver message still leaks the query/schema shape for no benefit to the caller.
+    console.error("[api/sets/:id] 500", error)
+    return Response.json({ ok: false, message: "Couldn’t load this set." }, { status: 500 })
   }
 }

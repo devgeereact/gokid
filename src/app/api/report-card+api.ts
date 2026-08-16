@@ -1,3 +1,4 @@
+import { authenticate } from "@/db/auth"
 import { cardReports } from "@/db/schema"
 import { db } from "@/db/client"
 
@@ -12,6 +13,16 @@ import { db } from "@/db/client"
  * bundle. No child identifier is accepted or stored: knowing who reported a card adds nothing to
  * fixing it. The reason must be one of the offered options — free text from a child-facing screen is
  * not accepted, and the optional detail field is length-capped rather than trusted.
+ *
+ * Requires a signed-in parent (`authenticate()` — any valid Clerk session, not a specific one). This
+ * was the only content-write route in the API with no auth and no rate limit: an unauthenticated
+ * caller could fill `card_reports` with fabricated ids indefinitely. Authentication and
+ * identification are two different things, and only one of them was ever the design decision here —
+ * the docstring above ("no child identifier… adds nothing") argues against *identification*, not
+ * against requiring *a* valid session. Gating on `authenticate()` closes the anonymous-spam surface
+ * without storing anything about who reported, which parent it was, or which of their children hit
+ * the flashcard: the insert below still carries only `cardId`/`setId`/`reason`/`detail`, exactly as
+ * before.
  */
 
 /** Must match the options offered in the report sheet. */
@@ -21,6 +32,9 @@ const MAX_DETAIL = 500
 
 export async function POST(request: Request): Promise<Response> {
   try {
+    const parent = await authenticate(request)
+    if (!parent) return Response.json({ ok: false, message: "Not signed in." }, { status: 401 })
+
     const body: unknown = await request.json()
     if (typeof body !== "object" || body === null) {
       return Response.json({ ok: false, message: "Expected a JSON object." }, { status: 400 })
@@ -47,9 +61,9 @@ export async function POST(request: Request): Promise<Response> {
 
     return Response.json({ ok: true })
   } catch (error) {
-    return Response.json(
-      { ok: false, message: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    // Log server-side; return generic copy — same discipline as progress+api.ts/quiz+api.ts. A raw
+    // driver error string would leak the query shape for no benefit to the caller.
+    console.error("[api/report-card] 500", error)
+    return Response.json({ ok: false, message: "Couldn’t submit this report." }, { status: 500 })
   }
 }
