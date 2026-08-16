@@ -9,7 +9,7 @@ import { RoundedHeading } from "@/components/rounded-heading"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { setActiveChild, useActiveChildId } from "@/lib/active-child"
-import { type Child, DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/children"
+import { type Child, DEFAULT_AVATAR, useChildren, yearLabel, washFor} from "@/lib/children"
 
 /**
  * Children manager (gokid-screens.md §2 "Multiple Children Manager"). No mockup exists for it, so
@@ -44,7 +44,7 @@ function ChildRow({
       onPress={() => router.push({ pathname: "/child/[id]", params: { id: child.id } })}
     >
       {/* Children added before the avatar field existed have no `avatar` — same fallback as home. */}
-      <ChildAvatar avatar={child.avatar ?? DEFAULT_AVATAR} className="h-11 w-11" />
+      <ChildAvatar avatar={child.avatar ?? DEFAULT_AVATAR} className="h-11 w-11" wash={washFor(child)} />
 
       <View className="ml-3 flex-1">
         <Text className="font-text text-body-lg font-bold text-ink">{child.name}</Text>

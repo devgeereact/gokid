@@ -177,7 +177,7 @@ export default function CertificateEarned() {
           <View className="flex-row">
             {cert.stats.map((s) => (
               <View key={s.label} className="flex-1 items-center">
-                <Text numberOfLines={1} className="font-text text-tile text-text-secondary">
+                <Text numberOfLines={2} className="font-text text-tile text-text-secondary">
                   {s.label}
                 </Text>
                 <Text className="mt-1 font-text text-h3 font-bold text-ink">{s.value}</Text>

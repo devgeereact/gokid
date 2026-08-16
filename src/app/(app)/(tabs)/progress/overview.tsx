@@ -13,7 +13,7 @@ import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useSets } from "@/lib/api"
 import { type ActivityDay, formatMinutes, useWeeklyReport } from "@/lib/calendar"
-import { DEFAULT_AVATAR, useChildren, useStudyingChildId, yearLabel } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, useStudyingChildId, yearLabel, washFor} from "@/lib/children"
 import { useProgress } from "@/lib/reviews"
 import { getSubject, subjectSlug } from "@/lib/subjects"
 
@@ -268,7 +268,7 @@ export default function ProgressOverview() {
       <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Child row + period pill */}
         <View className="flex-row items-center">
-          <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-14 w-14" />
+          <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-14 w-14" wash={child ? washFor(child) : undefined} />
           <View className="ml-3 flex-1">
             <Text className="font-text text-h3 font-bold text-ink">{child?.name ?? "your child"}</Text>
             <Text className="font-text text-body text-text-secondary">{yearLabel(child?.yearGroup ?? "Y3")}</Text>

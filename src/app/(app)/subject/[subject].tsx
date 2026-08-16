@@ -146,7 +146,7 @@ function StrandRow({ strand, subject, first }: { strand: StrandProgress; subject
         size={14}
         tintColor={colors["text-secondary"]}
         weight="semibold"
-        style={{ marginLeft: 8 }}
+        className="ml-2"
       />
     </Pressable>
   )
@@ -160,7 +160,7 @@ function SetCard({ set, mine }: { set: StudySet; mine: boolean }) {
       className="mr-3 h-40 w-40 justify-between rounded-2xl border border-border bg-white p-4 active:opacity-80"
       onPress={() => router.push({ pathname: "/lesson/[id]", params: { id: set.id } })}
     >
-      <Image accessibilityIgnoresInvertColors className="h-12 w-12 rounded-md" contentFit="cover" source={set.thumb} />
+      <Image accessible={false} accessibilityIgnoresInvertColors className="h-12 w-12 rounded-md" contentFit="cover" source={set.thumb} />
       <View>
         <Text numberOfLines={2} className="font-text text-body font-bold text-ink">
           {set.title}
@@ -301,7 +301,7 @@ export default function SubjectHub() {
               size={10}
               tintColor={colors["text-secondary"]}
               weight="semibold"
-              style={{ marginLeft: 4 }}
+              className="ml-1"
             />
           </Pressable>
           <View className="mt-2">

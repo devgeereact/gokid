@@ -50,15 +50,32 @@ function glyphFor(width: number) {
  *   for a small disc, where a whole bust would be unreadable.
  * - `"contain"` fits the whole animal inside, centred and uncropped. Right for a large disc,
  *   where cover reads as a zoomed-in crop of the face.
+ *
+ * The rendered picture is always marked decorative (`accessible={false}`) — every caller shows it
+ * beside the child's name (a proper `<Text>`) or inside a `Pressable` that carries its own
+ * `accessibilityLabel` (the avatar picker in add-child.tsx). VoiceOver announcing a second,
+ * redundant "image"/raw emoji glyph stop for the same child would be noise, not information.
  */
 export function ChildAvatar({
   avatar,
   className = "h-full w-full",
   fit = "cover",
+  wash = "bg-card-wash-lavender",
 }: {
   avatar: Avatar
   className?: string
   fit?: "cover" | "contain"
+  /**
+   * The disc behind the picture, as a Tailwind class. Pass `washFor(child)` so a child's disc matches
+   * the card colour they already carry everywhere else, or `bg-transparent` where the surface behind
+   * the avatar is already tinted (the who's-studying card, the add-child ring).
+   *
+   * The default used to be `bg-subject-geography` — the Geography subject's teal. Nothing about a
+   * child is geographical; it was an arbitrary colour that happened to be to hand, and it put a
+   * teal disc behind children whose own tint was sage or blush on seven screens. A per-child colour
+   * system already existed (`CARD_TINTS` / `washFor`) and this component simply was not using it.
+   */
+  wash?: string
 }) {
   // Measured, not declared: the disc is sized by a caller's className, which this component cannot
   // read. Only emoji need it — the other two kinds scale themselves.
@@ -69,12 +86,13 @@ export function ChildAvatar({
 
   return (
     <View
-      className={`items-center justify-center overflow-hidden rounded-full bg-subject-geography ${className}`}
+      className={`items-center justify-center overflow-hidden rounded-full ${wash} ${className}`}
       onLayout={avatar.kind === "emoji" ? onLayout : undefined}
     >
       {avatar.kind === "image" ? (
         // A photo is always cropped to fill — a contained photo would letterbox inside the circle.
         <Image
+          accessible={false}
           accessibilityIgnoresInvertColors
           className="h-full w-full"
           contentFit="cover"
@@ -84,10 +102,13 @@ export function ChildAvatar({
         // Hidden until measured: rendering at a default size first would show one frame of a
         // clipped glyph snapping to size on every mount.
         discWidth > 0 ? (
-          <Text className={`${glyphFor(discWidth)} leading-none`}>{avatar.value}</Text>
+          <Text accessible={false} className={`${glyphFor(discWidth)} leading-none`}>
+            {avatar.value}
+          </Text>
         ) : null
       ) : (
         <Image
+          accessible={false}
           accessibilityIgnoresInvertColors
           className="h-full w-full"
           contentFit={fit}

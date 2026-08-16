@@ -84,6 +84,7 @@ export default function Paywall() {
         {/* Hero — headline over the illustration */}
         <View className="h-72">
           <Image
+            accessible={false}
             accessibilityIgnoresInvertColors
             className="absolute right-0 top-0 h-72 w-[62%]"
             contentFit="contain"

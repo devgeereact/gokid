@@ -15,7 +15,7 @@ import {
   useLearningCalendar,
   viewDays,
 } from "@/lib/calendar"
-import { DEFAULT_AVATAR, useChildren, useStudyingChildId, yearLabel } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, useStudyingChildId, yearLabel, washFor} from "@/lib/children"
 import { useProgress } from "@/lib/reviews"
 
 /**
@@ -73,7 +73,7 @@ function StatTile({ icon, wash, disc, label, value }: { icon: SFSymbol; wash: st
         </View>
         {/* text-tile, not overview.tsx's text-caption: three tiles across leave ~60pt of label
             width here, and at 13px "Accuracy" breaks mid-word. */}
-        <Text numberOfLines={1} className="flex-1 font-text text-tile text-text-secondary">
+        <Text numberOfLines={2} className="flex-1 font-text text-tile text-text-secondary">
           {label}
         </Text>
       </View>
@@ -88,7 +88,7 @@ function StatTile({ icon, wash, disc, label, value }: { icon: SFSymbol; wash: st
 function DayStat({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-1 rounded-lg bg-gamify-tile p-2">
-      <Text numberOfLines={1} className="font-text text-tile text-text-secondary">
+      <Text numberOfLines={2} className="font-text text-tile text-text-secondary">
         {label}
       </Text>
       <Text numberOfLines={1} className="mt-1 font-text text-body-lg font-bold text-ink">
@@ -279,7 +279,7 @@ export default function LearningCalendar() {
       <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Child + cards retained. Not a streak: this only ever goes up, so a day off costs nothing. */}
         <View className="flex-row items-center">
-          <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-14 w-14" />
+          <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-14 w-14" wash={child ? washFor(child) : undefined} />
           <View className="ml-3 flex-1">
             <Text className="font-text text-h3 font-bold text-ink">{child?.name ?? "your child"}</Text>
             <Text className="font-text text-body text-text-secondary">{yearLabel(child?.yearGroup ?? "Y3")}</Text>
@@ -300,7 +300,10 @@ export default function LearningCalendar() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={`${p.label} view`}
+                // 36px tall — below Apple's 44pt minimum. hitSlop pads the touch target without
+                // resizing the segment (same h-9/hitSlop=6 pattern used elsewhere in the app).
                 className={`h-9 flex-1 items-center justify-center rounded-full ${active ? "bg-study-teal" : ""} active:opacity-70`}
+                hitSlop={6}
                 onPress={() => choosePeriod(p.key)}
               >
                 <Text className={`font-text text-body font-bold ${active ? "text-white" : "text-text-secondary"}`}>{p.label}</Text>
@@ -334,7 +337,10 @@ export default function LearningCalendar() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Previous ${period}`}
+              // 36px square — below Apple's 44pt minimum. hitSlop pads the touch target without
+              // resizing the control (same h-9/hitSlop=6 pattern used elsewhere in the app).
               className="h-9 w-9 items-center justify-center rounded-full bg-background active:opacity-60"
+              hitSlop={6}
               onPress={() => setOffset(offset - 1)}
             >
               <SymbolView name="chevron.left" size={16} tintColor={colors.ink} weight="semibold" />
@@ -344,8 +350,10 @@ export default function LearningCalendar() {
               accessibilityRole="button"
               accessibilityLabel={`Next ${period}`}
               // The future has no record — stepping past the present is disabled, not empty.
+              // 36px square, hitSlop-padded like Previous above.
               className={`h-9 w-9 items-center justify-center rounded-full bg-background active:opacity-60 ${offset >= 0 ? "opacity-30" : ""}`}
               disabled={offset >= 0}
+              hitSlop={6}
               onPress={() => setOffset(offset + 1)}
             >
               <SymbolView name="chevron.right" size={16} tintColor={colors.ink} weight="semibold" />

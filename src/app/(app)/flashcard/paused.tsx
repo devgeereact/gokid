@@ -151,7 +151,7 @@ export default function SessionPaused() {
               <View className={`h-9 w-9 items-center justify-center rounded-full ${t.wash}`}>
                 <SymbolView name={t.symbol as never} size={18} tintColor={t.tint} weight="semibold" />
               </View>
-              <Text className="mt-2 text-center font-text text-tile text-text-secondary" numberOfLines={1}>
+              <Text className="mt-2 text-center font-text text-tile text-text-secondary" numberOfLines={2}>
                 {t.label}
               </Text>
               <Text className="mt-1 font-text text-body-lg font-bold text-ink">{t.value}</Text>

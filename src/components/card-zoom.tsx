@@ -49,6 +49,7 @@ export function CardZoom({
             child reaches for first. */}
         <Pressable accessibilityRole="button" accessibilityLabel="Close picture" className="flex-1" onPress={onClose}>
           <Image
+            accessible={false}
             accessibilityIgnoresInvertColors
             className="h-full w-full"
             contentFit="contain"
