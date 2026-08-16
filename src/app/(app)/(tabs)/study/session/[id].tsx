@@ -1,7 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { SymbolView } from "expo-symbols"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { Image, SafeAreaView } from "@/components/styled"
@@ -11,6 +11,7 @@ import { useStudyingChildId } from "@/lib/children"
 import { hintFor } from "@/lib/hints"
 import { useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
+import { beginSession } from "@/lib/study-session"
 
 /**
  * Study Session (design/GoKid-studysection-screen.png, screen 19). A single MCQ card inside a
@@ -67,10 +68,19 @@ export default function StudySession() {
   const childId = useStudyingChildId() ?? ""
   // §6 "Mark Favourite" — this glyph was accessibilityRole="image" and stored nothing.
   const { toggle: toggleFavourite, isBookmarked } = useBookmarks(childId, "card")
-  const { cards } = useProgress(childId)
+  // `rateCard` is what makes this flow count. Until it was wired here, the study session was the one
+  // study mode that wrote nothing: a child could answer every question correctly, be congratulated by
+  // five screens, and leave no trace in the spaced-repetition record. Only the flashcard runner ever
+  // called it, which is why ceoaudit.md could describe that runner as "the one honest data path".
+  const { cards, rateCard } = useProgress(childId)
   const set = getStudySet(id)
   const [selected, setSelected] = useState<number | null>(null)
   const [showAnswer, setShowAnswer] = useState(false)
+
+  // The session spans one screen per card, so the clock cannot live in a ref here — see lib/study-session.
+  useEffect(() => {
+    if (set) beginSession(set.id, Date.now())
+  }, [set])
 
   if (!set) return <Redirect href="/home" />
 
@@ -116,6 +126,7 @@ export default function StudySession() {
           <View className="flex-1">
             <View className="flex-row items-center">
               <Image
+                accessible={false}
                 accessibilityIgnoresInvertColors
                 className="h-16 w-16 rounded-xl"
                 contentFit="cover"
@@ -266,12 +277,17 @@ export default function StudySession() {
               accessibilityRole="button"
               accessibilityLabel="Next card"
               className="h-12 flex-row items-center justify-center rounded-full bg-study-teal px-6 active:opacity-90"
-              onPress={() =>
+              onPress={() => {
+                // Rate the card this question tested before leaving the screen. A right answer is a
+                // recall ("gotit"), a wrong or skipped one is "tricky" — the same two ratings the
+                // flashcard runner records, so both study modes feed one schedule rather than two.
+                const card = set.cards[i]
+                if (card) rateCard(set.id, card.id, selected === q.answer ? "gotit" : "tricky")
                 router.push({
                   pathname: "/study/answer-result/[id]",
                   params: { id: set.id, index: String(i), choice: String(selected ?? -1) },
                 })
-              }
+              }}
             >
               <Text className="mr-1.5 font-text text-body font-bold text-white">Next</Text>
               <SymbolView name="arrow.right" size={16} tintColor={colors.white} weight="bold" />

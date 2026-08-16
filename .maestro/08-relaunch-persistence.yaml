@@ -1,0 +1,8 @@
+appId: com.gokid.app
+name: 08 - Relaunch persistence check (after cold terminate+launch done via simctl)
+---
+- launchApp:
+    clearState: false
+- tapOn: "Jacob K, Year 4"
+- tapOn: "Progress"
+- takeScreenshot: 08a-progress-after-relaunch

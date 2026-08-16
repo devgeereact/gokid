@@ -1,0 +1,10 @@
+appId: com.gokid.app
+name: 01 - Who's studying -> pick child -> study home
+---
+# Assumes the app is already running and signed in (SSO session). Does not clear state.
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Jacob K, Year 4"
+- assertVisible: "Study"
+- takeScreenshot: 01-study-home-jacob
