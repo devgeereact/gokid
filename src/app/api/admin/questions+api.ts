@@ -60,10 +60,9 @@ export async function GET(request: Request): Promise<Response> {
       })),
     })
   } catch (error) {
-    return Response.json(
-      { ok: false, error: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    // Log server-side; return generic copy — same discipline as progress+api.ts/quiz+api.ts.
+    console.error("[api/admin/questions GET] 500", error)
+    return Response.json({ ok: false, error: "Couldn’t list questions." }, { status: 500 })
   }
 }
 
@@ -114,9 +113,8 @@ export async function POST(request: Request): Promise<Response> {
       { status: 400 }
     )
   } catch (error) {
-    return Response.json(
-      { ok: false, error: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    // Log server-side; return generic copy — same discipline as progress+api.ts/quiz+api.ts.
+    console.error("[api/admin/questions POST] 500", error)
+    return Response.json({ ok: false, error: "Update failed." }, { status: 500 })
   }
 }

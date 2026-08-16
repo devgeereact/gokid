@@ -130,9 +130,10 @@ export async function POST(request: Request): Promise<Response> {
       note: "Inserted as draft — review and publish before children see them.",
     })
   } catch (error) {
-    return Response.json(
-      { ok: false, error: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    // Log server-side; return generic copy — same discipline as progress+api.ts/quiz+api.ts. This
+    // route talks to OpenRouter as well as Postgres, so a raw error string here could leak either the
+    // SQL shape or provider-side error detail; neither belongs in a client-facing response.
+    console.error("[api/admin/generate] 500", error)
+    return Response.json({ ok: false, error: "Generation failed." }, { status: 500 })
   }
 }

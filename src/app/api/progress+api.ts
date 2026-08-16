@@ -24,6 +24,18 @@ import { reviews, sessions } from "@/db/schema"
  * figure in the Progress section.
  *
  * Every row is scoped to a child resolved from the *verified* parent id. See db/auth.ts.
+ *
+ * ## Runtime validation
+ *
+ * The incoming batch used to be cast straight from `unknown` JSON with `as` and inserted as-is: `box`
+ * went in unclamped even though the client's own `schedule()` (lib/reviews.ts) never lets it leave
+ * `[0, MAX_BOX]`, `dueAt`/`lastReviewedAt` went to `new Date(n)` with no check that `n` was even a
+ * real number, and a bad `lastRating` was only ever caught by the Postgres enum constraint — which
+ * throws and lands in the same generic 500 as a genuine server fault, giving a caller no way to tell
+ * "you sent bad data" from "we broke". `validateReview`/`validateSession` below mirror the style of
+ * `lib/quiz-validate.ts` (throw naming the field, one bad item fails the whole request with a 400
+ * rather than silently corrupting a row) so a malformed batch is rejected with a specific, actionable
+ * message instead of a blanket failure.
  */
 
 type IncomingReview = {
@@ -45,6 +57,88 @@ type IncomingSession = {
   minutes: number
   score?: number
   scoreTotal?: number
+}
+
+class ProgressValidationError extends Error {}
+
+function fail(msg: string): never {
+  throw new ProgressValidationError(msg)
+}
+
+function asRecord(raw: unknown, field: string): Record<string, unknown> {
+  if (typeof raw !== "object" || raw === null) fail(`${field} must be an object`)
+  return raw as Record<string, unknown>
+}
+
+function asNonEmptyString(v: unknown, field: string): string {
+  if (typeof v !== "string" || v.trim() === "") fail(`${field} must be a non-empty string`)
+  return v
+}
+
+// Mirrors the interval ladder in lib/reviews.ts ([1, 5, 12, 30, 90] days — 5 boxes, indices 0..4).
+// Duplicated as a constant rather than imported: lib/reviews.ts is a client module (expo-secure-store,
+// React hooks) and has no business being pulled into a server route's bundle for one number.
+const MAX_BOX = 4
+
+function asBox(v: unknown, field: string): number {
+  if (typeof v !== "number" || !Number.isInteger(v) || v < 0 || v > MAX_BOX) {
+    fail(`${field} must be an integer between 0 and ${MAX_BOX}`)
+  }
+  return v
+}
+
+// Generous upper bound (50 years out) so this only catches genuinely broken input — a unit mixup
+// (seconds sent where milliseconds were expected), a client clock reset to the epoch, `NaN` from a
+// bad `Date` — not a legitimately distant due date.
+const MAX_FUTURE_MS = 50 * 365 * 24 * 60 * 60 * 1000
+
+function asTimestamp(v: unknown, field: string): number {
+  if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || v > Date.now() + MAX_FUTURE_MS) {
+    fail(`${field} must be a timestamp in milliseconds since epoch`)
+  }
+  return v
+}
+
+function asRating(v: unknown, field: string): "tricky" | "gotit" {
+  if (v !== "tricky" && v !== "gotit") fail(`${field} must be "tricky" or "gotit"`)
+  return v
+}
+
+function asNonNegativeInt(v: unknown, field: string): number {
+  if (typeof v !== "number" || !Number.isInteger(v) || v < 0) fail(`${field} must be a non-negative integer`)
+  return v
+}
+
+function asOptionalNonNegativeInt(v: unknown, field: string): number | undefined {
+  if (v === undefined) return undefined
+  return asNonNegativeInt(v, field)
+}
+
+function validateReview(raw: unknown, i: number): IncomingReview {
+  const r = asRecord(raw, `reviews[${i}]`)
+  return {
+    setId: asNonEmptyString(r.setId, `reviews[${i}].setId`),
+    cardId: asNonEmptyString(r.cardId, `reviews[${i}].cardId`),
+    box: asBox(r.box, `reviews[${i}].box`),
+    dueAt: asTimestamp(r.dueAt, `reviews[${i}].dueAt`),
+    lastRating: asRating(r.lastRating, `reviews[${i}].lastRating`),
+    lastReviewedAt: asTimestamp(r.lastReviewedAt, `reviews[${i}].lastReviewedAt`),
+  }
+}
+
+function validateSession(raw: unknown, i: number): IncomingSession {
+  const r = asRecord(raw, `sessions[${i}]`)
+  return {
+    id: asNonEmptyString(r.id, `sessions[${i}].id`),
+    setId: asNonEmptyString(r.setId, `sessions[${i}].setId`),
+    setTitle: asNonEmptyString(r.setTitle, `sessions[${i}].setTitle`),
+    subject: asNonEmptyString(r.subject, `sessions[${i}].subject`),
+    at: asTimestamp(r.at, `sessions[${i}].at`),
+    cardsReviewed: asNonNegativeInt(r.cardsReviewed, `sessions[${i}].cardsReviewed`),
+    minutes: asNonNegativeInt(r.minutes, `sessions[${i}].minutes`),
+    score: asOptionalNonNegativeInt(r.score, `sessions[${i}].score`),
+    scoreTotal: asOptionalNonNegativeInt(r.scoreTotal, `sessions[${i}].scoreTotal`),
+  }
 }
 
 // Small helpers so the conflict clause below reads as SQL rather than as Drizzle plumbing.
@@ -113,24 +207,40 @@ export async function POST(request: Request): Promise<Response> {
     const parent = await authenticate(request)
     if (!parent) return unauthorised()
 
-    const body = (await request.json()) as {
-      child?: { clientId?: string; name?: string; yearCode?: string }
-      reviews?: IncomingReview[]
-      sessions?: IncomingSession[]
+    let rawBody: unknown
+    try {
+      rawBody = await request.json()
+    } catch {
+      return Response.json({ ok: false, message: "Expected a JSON body." }, { status: 400 })
+    }
+    if (typeof rawBody !== "object" || rawBody === null) {
+      return Response.json({ ok: false, message: "Expected a JSON object." }, { status: 400 })
+    }
+    const body = rawBody as {
+      child?: { clientId?: unknown; name?: unknown; yearCode?: unknown }
+      reviews?: unknown
+      sessions?: unknown
     }
 
-    const clientId = body.child?.clientId ?? ""
-    const child = await childFor(
-      parent,
-      clientId,
-      body.child?.name && body.child?.yearCode
-        ? { name: body.child.name, yearCode: body.child.yearCode }
-        : undefined
-    )
+    const clientId = typeof body.child?.clientId === "string" ? body.child.clientId : ""
+    const name = typeof body.child?.name === "string" ? body.child.name : undefined
+    const yearCode = typeof body.child?.yearCode === "string" ? body.child.yearCode : undefined
+    const child = await childFor(parent, clientId, name && yearCode ? { name, yearCode } : undefined)
     if (!child) return Response.json({ ok: false, message: "Unknown child." }, { status: 400 })
 
-    const incomingReviews = Array.isArray(body.reviews) ? body.reviews : []
-    const incomingSessions = Array.isArray(body.sessions) ? body.sessions : []
+    let incomingReviews: IncomingReview[]
+    let incomingSessions: IncomingSession[]
+    try {
+      incomingReviews = Array.isArray(body.reviews) ? body.reviews.map((r, i) => validateReview(r, i)) : []
+      incomingSessions = Array.isArray(body.sessions)
+        ? body.sessions.map((s, i) => validateSession(s, i))
+        : []
+    } catch (error) {
+      if (error instanceof ProgressValidationError) {
+        return Response.json({ ok: false, message: error.message }, { status: 400 })
+      }
+      throw error
+    }
 
     if (incomingReviews.length > 0) {
       await db
