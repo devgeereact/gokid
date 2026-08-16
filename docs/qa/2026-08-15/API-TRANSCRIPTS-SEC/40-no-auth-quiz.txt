@@ -1,0 +1,5 @@
+GET /api/quiz?setId=place-value&clientId=x (no Authorization header)
+
+--- response ---
+status: 401
+{"ok":false,"message":"Not signed in."}

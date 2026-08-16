@@ -1,0 +1,5 @@
+POST /api/progress (as T1) creating quiz test child clientId=qa-sec-t1-quiz-child-1786811804512
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811866644}

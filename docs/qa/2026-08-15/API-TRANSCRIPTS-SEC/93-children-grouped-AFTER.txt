@@ -1,0 +1,18 @@
+[
+  {
+    "clerk_user_id": "user_3GfluIuX8y4459zRbDlZg5PR51i",
+    "n": 1,
+    "names": [
+      "Jacob K"
+    ]
+  }
+]
+Jacob K row (untouched check): [
+  {
+    "id": "9603e598-69e3-48c6-a791-d18ad62723db",
+    "name": "Jacob K",
+    "year_code": "Y4",
+    "client_id": "1784371811718",
+    "avatar_value": "fox"
+  }
+]

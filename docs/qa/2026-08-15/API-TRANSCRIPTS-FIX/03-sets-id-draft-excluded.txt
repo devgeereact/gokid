@@ -1,0 +1,16 @@
+GET /api/sets/rec-numbers-to-10  (after inserting one synthetic 'draft' quiz question directly
+into Postgres for this set — simulates admin/generate output before human review)
+--- response ---
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Sat, 15 Aug 2026 09:20:42 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"set":{"id":"rec-numbers-to-10","title":"Numbers to 10","subject":"Maths","topic":"Number and place value","yearCode":"Rec","description":"Reception • Maths • Number and place value — count and name numbers from 0 to 10.","minutes":10,"cardsTotal":6,"quizCount":5},"cards":[{"id":"rec-num-c1","question":"How many fingers are on one hand?","answer":"5"},{"id":"rec-num-c2","question":"What number comes after 3?","answer":"4"},{"id":"rec-num-c3","question":"What number comes before 2?","answer":"1"},{"id":"rec-num-c4","question":"Count the dots: • • . How many?","answer":"2"},{"id":"rec-num-c5","question":"Which number is bigger, 5 or 8?","answer":"8"},{"id":"rec-num-c6","question":"How many toes are on two feet?","answer":"10"}],"quiz":[{"id":"rec-num-q1","kind":"mcq","payload":{"answer":1,"options":["1","2","3","4"]}},{"id":"rec-num-q2","kind":"mcq","payload":{"answer":2,"options":["5","6","7","8"]}},{"id":"rec-num-q3","kind":"mcq","payload":{"answer":0,"options":["0","1","2","3"]}},{"id":"rec-num-q4","kind":"mcq","payload":{"answer":1,"options":["3","4","5","6"]}},{"id":"rec-num-q5","kind":"mcq","payload":{"answer":1,"options":["8","9","10","11"]}}]}

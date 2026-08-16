@@ -1,0 +1,30 @@
+[
+  {
+    "id": "c02f76b1-b3a0-4613-8c0a-ce0629365508",
+    "clerk_user_id": "user_3HxZiC0FcsMWWmuRfFOEhNqCvEb",
+    "client_id": "qa-sec-t1-child-1786811804512",
+    "name": "QA T1 Kid",
+    "year_code": "Y3"
+  },
+  {
+    "id": "67c52a7b-a06f-4d75-8c87-f80764f2f9c1",
+    "clerk_user_id": "user_3HxZi9T6YVQdO3WI8NnCTJd2Uxk",
+    "client_id": "qa-sec-t2-child-1786811804512",
+    "name": "QA T2 Kid",
+    "year_code": "Y5"
+  },
+  {
+    "id": "f41f9669-c17f-4731-9f6d-80a336315640",
+    "clerk_user_id": "user_3HxZiC0FcsMWWmuRfFOEhNqCvEb",
+    "client_id": "qa-sec-t2-child-1786811804512",
+    "name": "HACKED",
+    "year_code": "Y6"
+  },
+  {
+    "id": "c9a5dfe1-4da2-40a8-a012-c82b570ebff3",
+    "clerk_user_id": "user_3HxZi9T6YVQdO3WI8NnCTJd2Uxk",
+    "client_id": "qa-sec-unknown-1786811804512",
+    "name": "QA Unknown Kid",
+    "year_code": "Y2"
+  }
+]

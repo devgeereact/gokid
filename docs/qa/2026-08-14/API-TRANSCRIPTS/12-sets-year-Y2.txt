@@ -1,0 +1,14 @@
+REQUEST: GET /api/sets?year=Y2
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Fri, 14 Aug 2026 22:35:51 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"count":3,"sets":[{"id":"y2-word-classes","title":"Nouns, Verbs and Adjectives","subject":"English","topic":"Grammar and punctuation","yearCode":"Y2","description":"Year 2 • English • Grammar and punctuation — spot nouns, verbs and adjectives in sentences.","minutes":10,"cardsTotal":6,"quizCount":5},{"id":"y2-times-tables","title":"2, 5 and 10 Times Tables","subject":"Maths","topic":"Multiplication and division","yearCode":"Y2","description":"Year 2 • Maths • Multiplication and division — count in 2s, 5s and 10s and recall the tables.","minutes":12,"cardsTotal":6,"quizCount":5},{"id":"y2-habitats","title":"Living Things and Their Habitats","subject":"Science","topic":"Living things and their habitats","yearCode":"Y2","description":"Year 2 • Science • Living things and their habitats — how animals and plants suit where they live.","minutes":11,"cardsTotal":6,"quizCount":5}]}

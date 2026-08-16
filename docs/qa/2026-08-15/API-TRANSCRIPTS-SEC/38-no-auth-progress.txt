@@ -1,0 +1,5 @@
+GET /api/progress?child=x (no Authorization header)
+
+--- response ---
+status: 401
+{"ok":false,"message":"Not signed in."}

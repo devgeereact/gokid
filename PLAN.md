@@ -150,7 +150,7 @@ Governing principle:
 
 ### ⬜ Phase 0 — Runtime spike (1–2 days). Highest-value work in the project; do not skip.
 
-**Local-first: no EAS Hosting deploy at this stage.** Development runs against `npx expo start` (API routes served locally) plus the **Inngest Dev Server** (`npx inngest-cli@latest dev -u http://localhost:8081/api/inngest`), which auto-discovers functions, requires no signing keys, and gives a local run-history UI. Neon is reachable over HTTPS from localhost, so no tunnel is needed. EAS Hosting deployment is deferred to Phase 8.
+**Local-first: no EAS Hosting deploy at this stage.** Development runs against `npx expo start` (API routes served locally) plus the **Inngest Dev Server** (`npx inngest-cli@latest dev -u http://localhost:5062/api/inngest`), which auto-discovers functions, requires no signing keys, and gives a local run-history UI. Neon is reachable over HTTPS from localhost, so no tunnel is needed. EAS Hosting deployment is deferred to Phase 8.
 
 - [ ] Run `secure-init` (`.env`, `.gitignore`, `.env.example`); confirm `.env` is git-ignored
 - [ ] Install server deps: `@neondatabase/serverless`, `@clerk/backend`, `inngest`, `drizzle-orm`, `drizzle-kit`, `zod`
@@ -162,7 +162,7 @@ Governing principle:
 
 ⚠️ **The local dev server runs API routes in Node, not workerd.** It will therefore *not* surface the Cloudflare-specific failures (`node:worker_threads`, the single-file CommonJS bundle). Those only appear at export time. So the Phase 0 gate is two checks, not one:
 
-- [ ] ✅ **Gate A (local):** `curl http://localhost:8081/api/health` → 200, and a function triggered from the Inngest Dev Server UI runs green
+- [ ] ✅ **Gate A (local):** `curl http://localhost:5062/api/health` → 200, and a function triggered from the Inngest Dev Server UI runs green
 - [ ] ✅ **Gate B (bundle):** **`npx expo export -p web` succeeds** with `inngest/edge` imported. Purely local — no EAS account, no deploy — but it builds the exact Metro bundle EAS Hosting would run. **This is what proves Inngest can actually ship.**
 - [ ] Wire Gate B into CI so any dependency that breaks the worker bundle fails the PR, not the eventual first deploy
 
@@ -251,7 +251,7 @@ Governing principle:
 
 ## Verification
 
-- **Phase 0 gate A (local):** `curl http://localhost:8081/api/health` → 200; an Inngest function fired from the local Dev Server UI runs green.
+- **Phase 0 gate A (local):** `curl http://localhost:5062/api/health` → 200; an Inngest function fired from the local Dev Server UI runs green.
 - **Phase 0 gate B (bundle):** `npx expo export -p web` succeeds with `inngest/edge` imported. No deploy, no EAS account — but it proves the worker bundle is shippable.
 - **Auth:** `curl -H "Authorization: Bearer $TOKEN" /api/me` → parent row; absent/invalid token → 401.
 - **Generation durability:** trigger a run, kill the worker mid-run, confirm retry produces exactly one set.

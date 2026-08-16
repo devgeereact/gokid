@@ -1,0 +1,14 @@
+REQUEST: GET /api/sets?year=Y1
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Fri, 14 Aug 2026 22:35:51 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"count":3,"sets":[{"id":"y1-common-words","title":"Common Exception Words","subject":"English","topic":"Word reading","yearCode":"Y1","description":"Year 1 • English • Word reading — reading and spelling tricky words that do not follow usual phonics rules.","minutes":10,"cardsTotal":6,"quizCount":5},{"id":"y1-add-subtract-20","title":"Addition and Subtraction to 20","subject":"Maths","topic":"Addition and subtraction","yearCode":"Y1","description":"Year 1 • Maths • Addition and subtraction — adding and taking away numbers within 20 using number bonds.","minutes":12,"cardsTotal":6,"quizCount":5},{"id":"y1-seasons-weather","title":"Seasons and Weather","subject":"Science","topic":"Seasonal changes","yearCode":"Y1","description":"Year 1 • Science • Seasonal changes — observing the four seasons and everyday weather across the year.","minutes":11,"cardsTotal":6,"quizCount":5}]}

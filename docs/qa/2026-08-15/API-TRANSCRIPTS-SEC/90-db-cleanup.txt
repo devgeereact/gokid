@@ -1,0 +1,46 @@
+qa-sec children before delete: [{"n":7}]
+deleted rows: [
+  {
+    "id": "c02f76b1-b3a0-4613-8c0a-ce0629365508",
+    "clerk_user_id": "user_3HxZiC0FcsMWWmuRfFOEhNqCvEb",
+    "client_id": "qa-sec-t1-child-1786811804512",
+    "name": "QA T1 Kid"
+  },
+  {
+    "id": "67c52a7b-a06f-4d75-8c87-f80764f2f9c1",
+    "clerk_user_id": "user_3HxZi9T6YVQdO3WI8NnCTJd2Uxk",
+    "client_id": "qa-sec-t2-child-1786811804512",
+    "name": "QA T2 Kid"
+  },
+  {
+    "id": "f41f9669-c17f-4731-9f6d-80a336315640",
+    "clerk_user_id": "user_3HxZiC0FcsMWWmuRfFOEhNqCvEb",
+    "client_id": "qa-sec-t2-child-1786811804512",
+    "name": "HACKED"
+  },
+  {
+    "id": "c9a5dfe1-4da2-40a8-a012-c82b570ebff3",
+    "clerk_user_id": "user_3HxZi9T6YVQdO3WI8NnCTJd2Uxk",
+    "client_id": "qa-sec-unknown-1786811804512",
+    "name": "QA Unknown Kid"
+  },
+  {
+    "id": "0a44a900-a20e-4d57-b377-fc988909326f",
+    "clerk_user_id": "user_3HxZiC0FcsMWWmuRfFOEhNqCvEb",
+    "client_id": "qa-sec-t1-quiz-child-1786811804512",
+    "name": "QA Quiz Kid"
+  },
+  {
+    "id": "896ddfa7-8e30-4ffd-98f7-c88f782a85d1",
+    "clerk_user_id": "user_3HxZiC0FcsMWWmuRfFOEhNqCvEb",
+    "client_id": "qa-sec-t1-draftprobe-child-1786811804512",
+    "name": "QA Draftprobe Kid"
+  },
+  {
+    "id": "b968a841-0518-4c4e-bcf6-6bba63b7263f",
+    "clerk_user_id": "user_3HxZi9T6YVQdO3WI8NnCTJd2Uxk",
+    "client_id": "qa-sec-t2-sync-child-1786811804512",
+    "name": "QA Sync Kid"
+  }
+]
+qa-sec children after delete: [{"n":0}]

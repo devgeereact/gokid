@@ -1,0 +1,5 @@
+POST /api/progress (as T2) sessions=[{id:"qa-sec-dedupe-session-1786811804512", ...}] (FIRST post)
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811931047}

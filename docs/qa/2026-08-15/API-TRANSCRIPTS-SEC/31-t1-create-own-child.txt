@@ -1,0 +1,5 @@
+POST /api/progress (as T1) body: {child:{clientId:"qa-sec-t1-child-1786811804512",name:"QA T1 Kid",yearCode:"Y3"}, reviews:[1], sessions:[1]}
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811833162}

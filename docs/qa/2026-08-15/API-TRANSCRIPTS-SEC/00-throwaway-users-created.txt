@@ -1,0 +1,4 @@
+Created throwaway users
+T1=user_3HxZiC0FcsMWWmuRfFOEhNqCvEb
+T2=user_3HxZi9T6YVQdO3WI8NnCTJd2Uxk
+(emails: gokid-qa-sec+t1-1786811804512@gakinz.com, gokid-qa-sec+t2-1786811804512@gakinz.com)
