@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/expo"
+import { useAuth, useUser } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
@@ -10,6 +10,7 @@ import { AlertBanner } from "@/components/alert-banner"
 import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { apiDeleteAuthed } from "@/lib/api"
 import { useChildren } from "@/lib/children"
 import { clearAllBookmarks } from "@/lib/bookmarks"
 import { clearAllDownloads } from "@/lib/downloads"
@@ -34,6 +35,7 @@ const CONFIRM_WORD = "DELETE"
 
 export default function DeleteAccount() {
   const { user } = useUser()
+  const { getToken } = useAuth()
   const { children } = useChildren()
   const [typed, setTyped] = useState("")
   const [busy, setBusy] = useState(false)
@@ -52,8 +54,26 @@ export default function DeleteAccount() {
       return
     }
     try {
-      // Clerk first: this is the step that can fail, and the one that must succeed for the rest to
-      // be safe. It removes the account, the children in unsafeMetadata, and the session with it.
+      // SERVER FIRST — and this ordering is the whole fix. `user.delete()` destroys the session, and
+      // the session token is the only thing that can authorise erasing this parent's server rows. Do
+      // Clerk first and the children/reviews/sessions/certificates rows in Postgres become
+      // permanently unreachable: no token can ever name them again.
+      //
+      // That was the state before this call existed. This screen promised, in as many words, that
+      // deletion "erases everything below, immediately and permanently" — child profiles, all
+      // learning history, certificates — while deleting only the Clerk user and the on-device
+      // stores. Every synced row stayed on the server. A false statement to a parent about a child's
+      // data is not a missing feature; it is the claim GDPR Article 17 and the Children's Code both
+      // attach to.
+      //
+      // A failure here aborts the whole deletion rather than continuing: a partial wipe that leaves
+      // server data behind while destroying the local copy is strictly worse than not starting, and
+      // it would tell the parent the job was done.
+      const token = await getToken()
+      if (!token) throw new Error("No session token — cannot erase server data.")
+      await apiDeleteAuthed("/api/account", token)
+
+      // Clerk second. It removes the account, the children in unsafeMetadata, and the session.
       await user.delete()
       // Only now is destroying the on-device data correct. Every on-device store has to be listed
       // here — a store added later and not added here leaves a child's data behind after a deletion

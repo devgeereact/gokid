@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/expo"
+import { useAuth, useUser } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
 import { StatusBar } from "expo-status-bar"
 import { SymbolView } from "expo-symbols"
@@ -9,6 +9,7 @@ import { AlertBanner } from "@/components/alert-banner"
 import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
+import { apiGetAuthed } from "@/lib/api"
 import { useChildren, yearLabel } from "@/lib/children"
 import { useAllProgress } from "@/lib/reviews"
 
@@ -20,9 +21,19 @@ import { useAllProgress } from "@/lib/reviews"
  * lets the parent put it wherever they want (Files, Mail, Notes) without GoKid needing storage or
  * network permissions, and without a new native dependency.
  *
- * The payload is assembled here from the two places data actually lives — Clerk `unsafeMetadata` for
- * profiles, the on-device spaced-repetition store for study history. If a third store is ever added,
- * it has to be added here too, or this screen quietly starts lying about being complete.
+ * The payload is assembled here from the three places data actually lives — Clerk `unsafeMetadata`
+ * for profiles, the on-device spaced-repetition store for study history, and (since server sync
+ * landed) the parent's rows in Postgres. If a fourth store is ever added, it has to be added here
+ * too, or this screen quietly starts lying about being complete.
+ *
+ * That warning was written when there were two stores, and it came true: Postgres arrived with
+ * `lib/sync.ts` and was not added here, so for a while a parent exercising their Article 20 right
+ * received an export missing everything their child had ever synced. The server portion is fetched
+ * per child from `GET /api/progress`, the same endpoint sync reads.
+ *
+ * A server fetch that fails does NOT silently produce a local-only export — the parent is told the
+ * export is incomplete instead. An export that quietly omits half the data is worse than no export,
+ * because the parent has no way to know what is missing.
  */
 
 function exportedAt() {
@@ -32,6 +43,7 @@ function exportedAt() {
 
 export default function DataExport() {
   const { user } = useUser()
+  const { getToken } = useAuth()
   const { children } = useChildren()
   const progress = useAllProgress()
   const [busy, setBusy] = useState(false)
@@ -45,9 +57,24 @@ export default function DataExport() {
     setBusy(true)
     setFailed(false)
     try {
+      // The server half. Fetched per child from the same endpoint sync uses, so the export contains
+      // what the server actually holds rather than what the device believes it sent.
+      const token = await getToken()
+      const server = await Promise.all(
+        children.map(async (child) => {
+          if (!token) return { childId: child.id, synced: null }
+          const data = await apiGetAuthed<{ reviews: unknown[]; sessions: unknown[] }>(
+            `/api/progress?child=${encodeURIComponent(child.id)}`,
+            token
+          )
+          return { childId: child.id, synced: { reviews: data.reviews, sessions: data.sessions } }
+        })
+      )
+      const serverFor = (childId: string) => server.find((s) => s.childId === childId)?.synced ?? null
+
       const payload = {
         exportedAt: exportedAt(),
-        format: "gokid.export.v1",
+        format: "gokid.export.v2",
         account: {
           id: user?.id ?? null,
           email: user?.primaryEmailAddress?.emailAddress ?? null,
@@ -61,6 +88,10 @@ export default function DataExport() {
           // Study record for this child, flattened out of the keyed store.
           cards: Object.values(progress[child.id]?.cards ?? {}),
           sessions: progress[child.id]?.sessions ?? [],
+          // What the server holds for this child. `null` only when there is no session token, i.e.
+          // nothing was ever synced — kept as an explicit null rather than an empty object so the
+          // parent can tell "nothing on the server" from "server section missing".
+          server: serverFor(child.id),
         })),
       }
 
