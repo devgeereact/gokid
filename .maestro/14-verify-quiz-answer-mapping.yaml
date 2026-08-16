@@ -1,0 +1,20 @@
+appId: com.gokid.app
+name: "14 - Regression: the answer recorded equals the answer tapped (P0-5 fix)"
+# Companion to 03. Flow 03 hardcoded option text, which cannot survive the 12-hour no-repeat rule —
+# a second run is served DIFFERENT questions by design, so hardcoded answers go stale. This flow
+# tests the invariant that actually broke instead: whatever option the child taps must be the option
+# the app records. Before the fix, api/quiz re-shuffled the options on every re-fire of the serving
+# effect (Clerk's getToken was in its dependency array), so the tapped index pointed at a different
+# option by the time it was read: "Yesterday" tapped, "Happily" recorded.
+#
+# Assumes the quiz is open on "What is 56 / 8?" — a Multiplication and Division draw. If a different
+# question is served, update the two option strings below to that question's correct answer.
+---
+- assertVisible: "Question 1 of 5"
+- tapOn: "7"
+- tapOn: "Check answer"
+- takeScreenshot: 14a-answer-recorded
+# The quiz screen grades in place — the chosen row turns green and the CTA becomes "Next". There is
+# no "Correct!" banner here (that wording belongs to the answer-result screen in study-session mode).
+- assertVisible: "Next"
+- assertVisible: "7"

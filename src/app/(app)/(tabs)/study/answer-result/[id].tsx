@@ -10,6 +10,7 @@ import { colors } from "@/design/tokens"
 import { useChildren, useStudyingChildId } from "@/lib/children"
 import { nextDueLabel, useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
+import { endSession, minutesFor } from "@/lib/study-session"
 
 /**
  * Answer Result (design/GoKid-answerresult-screen.png, screen 20). Per-question feedback shown after
@@ -157,7 +158,7 @@ export default function AnswerResult() {
   const { id, index, choice } = useLocalSearchParams<{ id: string; index?: string; choice?: string }>()
   const childId = useStudyingChildId() ?? ""
   const { children } = useChildren()
-  const { cards } = useProgress(childId)
+  const { cards, recordSession } = useProgress(childId)
   const set = getStudySet(id)
   if (!set) return <Redirect href="/home" />
 
@@ -192,6 +193,17 @@ export default function AnswerResult() {
     if (next < set.cards.length) {
       router.replace({ pathname: "/study/session/[id]", params: { id: set.id, index: String(next) } })
     } else {
+      // Last card — bank the session before the summary screen reads it back. Without this the
+      // summary asked `useProgress` for a session that had never been written and reported
+      // "Cards studied 0" to a child who had just answered every question in the set.
+      recordSession({
+        setId: set.id,
+        setTitle: set.title,
+        subject: set.subject,
+        cardsReviewed: set.cards.length,
+        minutes: minutesFor(set.id, Date.now()),
+      })
+      endSession(set.id)
       router.replace({ pathname: "/study/session-summary/[id]", params: { id: set.id } })
     }
   }
@@ -342,7 +354,7 @@ export default function AnswerResult() {
             onPress={onNext}
           >
             <Text className="font-text text-body-lg font-bold text-white">Next card</Text>
-            <SymbolView name="arrow.right" size={18} tintColor={colors.white} weight="bold" style={{ marginLeft: 10 }} />
+            <SymbolView name="arrow.right" size={18} tintColor={colors.white} weight="bold" className="ml-2.5" />
           </Pressable>
           <Pressable
             accessibilityRole="button"

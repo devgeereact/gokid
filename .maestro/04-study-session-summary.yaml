@@ -1,0 +1,58 @@
+appId: com.gokid.app
+name: 04 - Study session (MCQ) -> answer-result -> session-summary -> set-result -> congratulations
+---
+- launchApp:
+    clearState: false
+- tapOn: "Jacob K, Year 4"
+- scrollUntilVisible:
+    element:
+      text: "Multiplication and Division.*"
+    direction: DOWN
+- tapOn:
+    text: "Multiplication and Division.*"
+- tapOn: "Start a study session"
+- takeScreenshot: 04b-session-q1
+- tapOn: "42"
+- tapOn: "Next card"
+- takeScreenshot: 04c-answer-result-1
+- scrollUntilVisible:
+    element:
+      text: "Next card"
+    direction: DOWN
+- tapOn: "Next card"
+- takeScreenshot: 04d-session-q2
+- tapOn: "32"
+- tapOn: "Next card"
+- scrollUntilVisible:
+    element:
+      text: "Next card"
+    direction: DOWN
+- tapOn: "Next card"
+- takeScreenshot: 04e-session-q3
+- tapOn: "7"
+- tapOn: "Next card"
+- scrollUntilVisible:
+    element:
+      text: "Next card"
+    direction: DOWN
+- tapOn: "Next card"
+- takeScreenshot: 04f-session-q4
+- tapOn: "36"
+- tapOn: "Next card"
+- scrollUntilVisible:
+    element:
+      text: "Next card"
+    direction: DOWN
+- tapOn: "Next card"
+- takeScreenshot: 04g-session-q5
+- tapOn: "8"
+- tapOn: "Next card"
+- scrollUntilVisible:
+    element:
+      text: "Next card"
+    direction: DOWN
+- tapOn: "Next card"
+- takeScreenshot: 04h-session-q6
+- tapOn: "42"
+- tapOn: "Next card"
+- takeScreenshot: 04i-after-card6
