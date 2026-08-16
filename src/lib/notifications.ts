@@ -9,10 +9,11 @@ import type { ReviewCard, SessionRecord } from "./reviews"
  * The in-app notification feed (design/gokid-screens.md §13 → "Notification Centre",
  * "Weekly Summary", "Achievement Notification").
  *
- * **This is not push.** `expo-notifications` is not installed, so nothing here is delivered to the
- * lock screen, scheduled, or sent while the app is closed. Everything below is derived from the
- * child's own record at the moment the screen is opened — which is exactly why it can be trusted:
- * an entry exists only if the thing it describes actually happened.
+ * **This module is not push.** `expo-notifications` IS installed (package.json — used by
+ * lib/reminders.ts for the one daily study reminder a parent can turn on), but nothing computed HERE
+ * is scheduled or delivered while the app is closed. Everything below is derived from the child's own
+ * record at the moment the screen is opened — which is exactly why it can be trusted: an entry exists
+ * only if the thing it describes actually happened.
  *
  * That distinction is the whole point. The previous feed mixed one real item (cards coming back)
  * with a hardcoded one — "Capital Cities of Europe has been added… Yesterday" — which was never
@@ -20,8 +21,9 @@ import type { ReviewCard, SessionRecord } from "./reviews"
  * is worse than a wrong figure on a chart, because the entire purpose of the surface is to be
  * believed.
  *
- * When `expo-notifications` lands, these same derivations become the *content* of scheduled local
- * notifications. The feed stays; delivery is added on top.
+ * `expo-notifications` now lands the ONE case that needs real delivery (the daily reminder). This
+ * feed is the rest of §13 — Notification Centre, Weekly Summary, Achievement — and stays a pure
+ * derivation with no scheduling of its own; the screen (notifications.tsx) says so explicitly.
  */
 
 export type Note = {

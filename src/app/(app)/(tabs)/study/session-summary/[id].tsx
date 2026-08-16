@@ -7,7 +7,7 @@ import { ChildAvatar } from "@/components/child-avatar"
 import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { DEFAULT_AVATAR, useChildren, useStudyingChildId } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, useStudyingChildId, washFor} from "@/lib/children"
 import { dueLabel, useProgress } from "@/lib/reviews"
 import { getStudySet } from "@/lib/study"
 
@@ -48,9 +48,13 @@ function Card({ children }: { children: React.ReactNode }) {
 function BarList({ rows, title }: { rows: BarRow[]; title: string }) {
   return (
     <Card>
-      <View className="mb-4 flex-row items-center justify-between">
+      {/* "View all" used to sit here as a plain Text styled like a link, with no onPress and no
+          destination — a control that promised a fuller list this screen never had. There's no
+          "all strengths" / "all needs-practice" screen to send it to, so it's gone rather than
+          pretending (design honesty, CLAUDE.md); set-result made the same call for its per-question
+          review — the detail lives where the record actually is, not behind an inert label. */}
+      <View className="mb-4">
         <Text className="font-text text-h3 font-bold text-ink">{title}</Text>
-        <Text className="font-text text-body font-bold text-primary">View all</Text>
       </View>
       {rows.map((r) => (
         <View key={r.label} className="mb-4 flex-row items-center last:mb-0">
@@ -165,7 +169,7 @@ export default function SessionSummary() {
       <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View className="flex-row items-center rounded-2xl bg-gamify-green-wash p-4">
-          <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-16 w-16" />
+          <ChildAvatar avatar={child?.avatar ?? DEFAULT_AVATAR} className="h-16 w-16" wash={child ? washFor(child) : undefined} />
           <View className="ml-3 flex-1">
             <Text className="font-text text-body-lg font-bold text-ink">Amazing work, {name}! ⭐</Text>
             <Text className="mt-1 font-text text-body text-text-secondary">You completed your study session.</Text>
@@ -250,7 +254,7 @@ export default function SessionSummary() {
             className="h-14 flex-[2] flex-row items-center justify-center rounded-full bg-study-teal active:opacity-90"
             onPress={() => router.replace({ pathname: "/study/set-result/[id]", params: { id: set.id } })}
           >
-            <SymbolView name="book" size={20} tintColor={colors.white} weight="semibold" style={{ marginRight: 8 }} />
+            <SymbolView name="book" size={20} tintColor={colors.white} weight="semibold" className="mr-2" />
             <Text className="font-text text-body-lg font-bold text-white">Continue studying</Text>
           </Pressable>
           <Pressable
@@ -259,7 +263,7 @@ export default function SessionSummary() {
             className="h-14 flex-1 flex-row items-center justify-center rounded-full border border-border bg-white active:opacity-70"
             onPress={() => router.replace("/home")}
           >
-            <SymbolView name="cup.and.saucer" size={20} tintColor={colors.ink} weight="semibold" style={{ marginRight: 8 }} />
+            <SymbolView name="cup.and.saucer" size={20} tintColor={colors.ink} weight="semibold" className="mr-2" />
             <Text className="font-text text-body-lg font-bold text-ink">Take a break</Text>
           </Pressable>
         </View>

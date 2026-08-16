@@ -24,7 +24,11 @@ import * as Notifications from "expo-notifications"
  *    firing at the old one.
  */
 
-const CATEGORY = "gokid.reminder.daily"
+// Exported so the tap handler (src/app/_layout.tsx) can recognise a response as THIS notification
+// rather than routing every notification response the same way — today there is only the one, but
+// the identifier is the contract between "what we scheduled" and "what we route on tap", not an
+// assumption that they're the only notification that will ever exist.
+export const REMINDER_NOTIFICATION_ID = "gokid.reminder.daily"
 
 /**
  * Ask for permission. Returns whether we may post notifications.
@@ -66,7 +70,7 @@ export async function scheduleDailyReminder(hour: number, minute: number): Promi
   try {
     await cancelReminders()
     await Notifications.scheduleNotificationAsync({
-      identifier: CATEGORY,
+      identifier: REMINDER_NOTIFICATION_ID,
       content: {
         title: "Time to study?",
         // Written for the adult who set it. No child's name, because a lock screen is visible to
