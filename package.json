@@ -55,16 +55,19 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
+    "start": "expo start --port 5062",
+    "android": "expo run:android --port 5062",
+    "ios": "expo run:ios --port 5062",
     "web": "expo start --web",
     "lint": "expo lint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:ping": "node scripts/db-ping.mjs",
-    "keys:check": "node scripts/keys-check.mjs"
+    "keys:check": "node scripts/keys-check.mjs",
+    "check:strands": "node scripts/check-strands.mjs",
+    "check:bias": "node scripts/check-answer-bias.mjs",
+    "check:content": "npm run check:strands && npm run check:bias"
   },
   "private": true
 }

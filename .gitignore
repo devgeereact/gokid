@@ -46,3 +46,11 @@ example
 
 # Local design audit screenshots (38MB of simulator captures)
 design/.audit/
+
+# Reusable QA security harness (throwaway identities, live tokens at runtime) — never committed.
+# Promote to scripts/ if it earns a permanent home; see docs/qa/2026-08-15/workers/security-close.md
+.qa-sec-scratch/
+
+# Tool scratch dirs (impeccable, codex) — local artefacts, not project files.
+.impeccable/
+.codex/
