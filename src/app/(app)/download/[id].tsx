@@ -110,6 +110,7 @@ export default function DownloadSet() {
         {/* Set summary card */}
         <View className="flex-row gap-4 rounded-2xl border border-border bg-white p-4">
           <Image
+            accessible={false}
             accessibilityIgnoresInvertColors
             className="h-28 w-28 rounded-lg bg-gamify-tile"
             contentFit="cover"

@@ -1,0 +1,42 @@
+appId: com.gokid.app
+name: 03 - Quiz (practice mode) -> answer questions -> Check answer -> results
+---
+# Also used to observe answer-position bias: y4-fronted-adverbials answers every question "A" per
+# lib/study.ts, and we tap the actual correct-text option each time (not a fixed position) so this
+# is a genuine "does the UI score correctly" check, not a position-blind tap.
+- launchApp:
+    clearState: false
+- tapOn: "Jacob K, Year 4"
+- tapOn:
+    text: "Carry on|Start studying"
+- scrollUntilVisible:
+    element:
+      text: "Take the quiz"
+    direction: DOWN
+- tapOn: "Take the quiz"
+- assertVisible: "Start quiz"
+- takeScreenshot: 03a-quiz-instructions
+- tapOn: "Start quiz"
+- takeScreenshot: 03b-quiz-q1
+- tapOn: "After lunch,"
+- tapOn: "Check answer"
+- takeScreenshot: 03c-quiz-q1-checked
+- tapOn: "Next"
+- takeScreenshot: 03d-quiz-q2
+- tapOn: "A comma"
+- tapOn: "Check answer"
+- tapOn: "Next"
+- takeScreenshot: 03e-quiz-q3
+- tapOn: "Quietly, the cat crept upstairs."
+- tapOn: "Check answer"
+- tapOn: "Next"
+- takeScreenshot: 03f-quiz-q4
+- tapOn: "How, when or where something happens"
+- tapOn: "Check answer"
+- tapOn: "Next"
+- takeScreenshot: 03g-quiz-q5
+- tapOn: "Yesterday"
+- tapOn: "Check answer"
+- takeScreenshot: 03h-quiz-q5-checked
+- tapOn: "See results"
+- takeScreenshot: 03i-quiz-results

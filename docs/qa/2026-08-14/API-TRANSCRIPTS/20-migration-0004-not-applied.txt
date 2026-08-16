@@ -1,0 +1,11 @@
+PROBE: information_schema check for migration 0004 tables (question_impressions, curriculum_objectives)
+SQL: select table_name from information_schema.tables where table_schema='public' and table_name in ('question_impressions','curriculum_objectives')
+
+RESULT: []  (neither table exists)
+
+PROBE: information_schema check for quiz_questions columns
+RESULT: only id, set_id, kind, prompt, explanation, topic, payload, mixed, position exist.
+MISSING (present in src/db/schema.ts, absent in DB): status, objective_id, difficulty, source, created_at
+
+PROBE: drizzle.__drizzle_migrations rows
+RESULT: 4 rows (migrations 0000-0003 applied). drizzle/0004_outstanding_lenny_balinger.sql (committed a0f8d2c 'feat: AI question-generation pipeline + no-repeat quiz serving') was never applied to this database.

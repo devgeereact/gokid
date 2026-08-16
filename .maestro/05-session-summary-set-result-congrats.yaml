@@ -1,0 +1,15 @@
+appId: com.gokid.app
+name: 05 - Session summary -> set-result -> congratulations (continues from 04)
+---
+# Continues directly from 04's last screen (Answer Result for the 6th/last card). If the app was
+# closed since, this flow cannot resume it - run 04 immediately before this one in the same session.
+- scrollUntilVisible:
+    element:
+      text: "Next card"
+    direction: DOWN
+- tapOn: "Next card"
+- takeScreenshot: 05a-session-summary
+- assertVisible: "Continue studying"
+- assertVisible: "Take a break"
+- tapOn: "Continue studying"
+- takeScreenshot: 05b-set-result

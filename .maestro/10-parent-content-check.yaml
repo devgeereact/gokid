@@ -1,0 +1,9 @@
+appId: com.gokid.app
+name: 10 - Isaac's study tab + parent gate entry
+---
+- launchApp:
+    clearState: false
+- tapOn: "Isaac K, Year 4"
+- takeScreenshot: 10a-isaac-study-tab
+- tapOn: "Parent"
+- takeScreenshot: 10b-parent-gate-or-content

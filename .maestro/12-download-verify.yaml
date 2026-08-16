@@ -1,0 +1,10 @@
+appId: com.gokid.app
+name: 12 - Download a set and verify via UI + filesystem
+---
+- launchApp:
+    clearState: false
+- tapOn: "Jacob K, Year 4"
+- openLink: "gokid://download/y4-fronted-adverbials"
+- takeScreenshot: 12a-download-screen-render
+- tapOn: "Download this set"
+- takeScreenshot: 12b-download-in-progress

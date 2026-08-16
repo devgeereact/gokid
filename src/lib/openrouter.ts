@@ -50,6 +50,24 @@ function systemPrompt(): string {
     "Rules: age-appropriate wording for the given year group; exactly one defensible correct answer;",
     "distractors must be plausible but clearly wrong; never reference an image or diagram; keep prompts",
     "under 200 characters; the explanation says WHY the answer is correct in one child-friendly sentence.",
+    "",
+    // Added after a content audit found American spelling nowhere in the authored content but nothing
+    // in this prompt preventing it either — the model was one unlucky sample away from teaching a
+    // British child to write "color". UK alignment is this product's whole differentiator, so it is
+    // stated rather than assumed.
+    "British English only, in every field: UK spelling (colour, metre, practise as a verb, -ise endings),",
+    "UK terminology (Year 3 not third grade, maths not math, autumn not fall, primary school not",
+    "elementary), UK contexts for money (pounds and pence), measures (metric), dates (day/month/year),",
+    "and place names. Never American spelling, vocabulary, currency or examples.",
+    "",
+    // The same audit found two entire authored quizzes with the correct answer at option A for all
+    // five questions — a child scores 100% by always tapping the first option, and the resulting
+    // false mastery is written into the spaced-repetition schedule. A model writing a batch in one
+    // call clusters the index exactly the same way unless told not to.
+    "Vary where the correct answer sits. Across the batch, spread the correct option index roughly",
+    "evenly over the available positions: never use the same index for more than two questions in a",
+    "row, and never use one index for every question. A quiz that can be passed by always choosing",
+    "the same position tests nothing.",
   ].join("\n")
 }
 

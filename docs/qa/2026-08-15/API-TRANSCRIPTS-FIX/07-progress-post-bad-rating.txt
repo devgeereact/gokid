@@ -1,0 +1,15 @@
+POST /api/progress  (valid token; reviews[0].lastRating = 'maybe' — invalid enum)
+--- response ---
+HTTP/1.1 400 Bad Request
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Sat, 15 Aug 2026 09:22:02 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":false,"message":"reviews[0].lastRating must be \"tricky\" or \"gotit\""}

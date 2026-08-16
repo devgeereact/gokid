@@ -22,6 +22,13 @@ export type QuizQuestion = {
   answer: number
   /** Optional illustration shown above the prompt (e.g. base-10 blocks). */
   illustration?: number
+  /**
+   * What the picture shows, for a child using VoiceOver. Required in practice whenever
+   * `illustration` is set: an "Image Question" whose image is unlabelled is a question a blind
+   * child cannot answer at all, and the quiz screen exposes the picture as an unnamed image.
+   * Describe what is depicted, not "picture of a question".
+   */
+  illustrationAlt?: string
   /** Why the correct answer is correct — shown on the Incorrect Answers review. */
   explanation?: string
   /** Curriculum topic this question tests — the review's per-question chip. */
@@ -52,6 +59,13 @@ type MixedBase = {
   topic?: string
   /** Picture shown above the prompt. Any question kind may have one. */
   illustration?: number
+  /**
+   * What the picture shows, for a child using VoiceOver. Required in practice whenever
+   * `illustration` is set: an "Image Question" whose image is unlabelled is a question a blind
+   * child cannot answer at all, and the quiz screen exposes the picture as an unnamed image.
+   * Describe what is depicted, not "picture of a question".
+   */
+  illustrationAlt?: string
 }
 export type MixedQuestion =
   /** Single choice — the classic MCQ. `answer` indexes `options`. */
@@ -89,7 +103,22 @@ export type StudySet = {
   id: string
   title: string
   subject: string
+  /** What this set is about, as shown to a parent — the specific unit, e.g. "States of matter". */
   topic: string
+  /**
+   * Which curriculum strand this set rolls up to, when the strand is broader than the topic.
+   *
+   * The subject hubs, search and the strong/weak-area nudges group sets by matching a strand name in
+   * ./subjects with **exact string equality**. `topic` alone could not serve both jobs: it has to be
+   * specific enough to tell a parent what their child is studying ("Fronted adverbials and
+   * punctuation") and identical to a strand name to be counted ("Grammar and punctuation"). Ten of
+   * 27 sets matched nothing, so their progress was invisible in the hub that exists to show it —
+   * content taught correctly and reported nowhere.
+   *
+   * Omit when `topic` is already exactly the strand name. `scripts/check-strands.mjs` fails if the
+   * effective value matches no strand, so this cannot silently drift again.
+   */
+  strand?: string
   /** Display label, e.g. "Year 3" / "Reception". */
   yearGroup: string
   /** Filter code — one of "Rec","Y1".."Y6". Matches `Child.yearGroup`. */
@@ -176,10 +205,10 @@ const CORE_SETS: StudySet[] = [
     mastered: ["Place value", "Hundreds", "Number bonds"],
     revisit: ["Estimating", "Compare numbers"],
     quiz: [
-      { id: "pvq1", prompt: "What is the value of the 4 in 452?", options: ["4", "40", "400", "4,000"], answer: 2, illustration: require("../../assets/images/gokid-quiz-blocks.png") },
-      { id: "pvq2", prompt: "Which number is 100 more than 342?", options: ["432", "442", "352", "242"], answer: 1, illustration: require("../../assets/images/gokid-quiz-blocks.png") },
-      { id: "pvq3", prompt: "Write 600 + 30 + 8 as one number.", options: ["6,308", "638", "683", "68"], answer: 1 },
-      { id: "pvq4", prompt: "Which is larger?", options: ["405", "450", "Equal", "None"], answer: 1 },
+      { id: "pvq1", prompt: "What is the value of the 4 in 452?", options: ["4", "40", "400", "4,000"], answer: 2, illustration: require("../../assets/images/gokid-quiz-blocks.png"), illustrationAlt: "Base ten blocks: hundred squares, ten sticks and single ones cubes." },
+      { id: "pvq2", prompt: "Which number is 100 more than 342?", options: ["432", "442", "352", "242"], answer: 1, illustration: require("../../assets/images/gokid-quiz-blocks.png"), illustrationAlt: "Base ten blocks: hundred squares, ten sticks and single ones cubes." },
+      { id: "pvq3", prompt: "Write 600 + 30 + 8 as one number.", options: ["638", "6,308", "683", "68"], answer: 0 },
+      { id: "pvq4", prompt: "Which is larger?", options: ["405", "Equal", "None", "450"], answer: 3 },
       { id: "pvq5", prompt: "How many hundreds are in 1,000?", options: ["1", "10", "100", "1,000"], answer: 1 },
       { id: "pvq6", prompt: "What is 10 more than 291?", options: ["281", "292", "301", "391"], answer: 2 },
     ],
@@ -193,6 +222,7 @@ const CORE_SETS: StudySet[] = [
         options: ["4", "40", "400", "4,000"],
         answer: 2,
         illustration: require("../../assets/images/gokid-quiz-blocks.png"),
+        illustrationAlt: "Base ten blocks: hundred squares, ten sticks and single ones cubes.",
       },
       {
         kind: "multi",
@@ -230,6 +260,7 @@ const CORE_SETS: StudySet[] = [
     title: "Capital Cities of Europe",
     subject: "Geography",
     topic: "Europe",
+    strand: "Locational knowledge",
     yearGroup: "Year 3",
     yearCode: "Y3",
     description:
@@ -264,6 +295,7 @@ const CORE_SETS: StudySet[] = [
     title: "The Human Skeleton",
     subject: "Science",
     topic: "Humans",
+    strand: "Animals, including humans",
     yearGroup: "Year 3",
     yearCode: "Y3",
     description:
@@ -370,10 +402,13 @@ const RAW_EXTRA: RawSet[] = [
     id: "rec-plants-animals",
     title: "Plants and animals",
     subject: "Science",
-    topic: "Living things",
+    // Matched by exact string equality against the subject's strand names (lib/analytics.ts), so
+    // "Living things" — close to the curriculum wording but not equal to it — put this set in no
+    // strand at all and hid it from the Science hub, search and the weak-area nudges.
+    topic: "Living things and their habitats",
     yearGroup: "Reception",
     yearCode: "Rec",
-    description: "Reception • Science • Living things — name common plants and animals and spot what is alive.",
+    description: "Reception • Science • Living things and their habitats — name common plants and animals and spot what is alive.",
     thumbKey: "science",
     heroKey: "skeleton",
     status: "getting",
@@ -439,10 +474,12 @@ const RAW_EXTRA: RawSet[] = [
     id: "y1-common-words",
     title: "Common Exception Words",
     subject: "English",
-    topic: "Word reading",
+    // "Word reading" matches no English strand (Reading, Phonics, Writing, Grammar and punctuation,
+    // Spelling), so this set was invisible in the English hub. "Reading" is the existing slot.
+    topic: "Reading",
     yearGroup: "Year 1",
     yearCode: "Y1",
-    description: "Year 1 • English • Word reading — reading and spelling tricky words that do not follow usual phonics rules.",
+    description: "Year 1 • English • Reading — reading and spelling tricky words that do not follow usual phonics rules.",
     thumbKey: "english",
     heroKey: "english",
     status: "getting",
@@ -460,10 +497,10 @@ const RAW_EXTRA: RawSet[] = [
       { id: "y1-cw-c6", question: "How do you spell the word for asking about a place, which sounds like 'wear'?", answer: "where" },
     ],
     quiz: [
-      { id: "y1-cw-q1", prompt: "Which is the correct spelling?", options: ["sed", "said", "sayd", "sedd"], answer: 1 },
+      { id: "y1-cw-q1", prompt: "Which is the correct spelling?", options: ["said", "sed", "sayd", "sedd"], answer: 0 },
       { id: "y1-cw-q2", prompt: "Which word is spelled correctly?", options: ["frend", "freind", "friend", "freend"], answer: 2 },
-      { id: "y1-cw-q3", prompt: "Which is the correct spelling for the number after zero?", options: ["wun", "one", "won", "onne"], answer: 1 },
-      { id: "y1-cw-q4", prompt: "Which word is a tricky common exception word?", options: ["cat", "the", "sit", "pin"], answer: 1 },
+      { id: "y1-cw-q3", prompt: "Which is the correct spelling for the number after zero?", options: ["wun", "won", "onne", "one"], answer: 3 },
+      { id: "y1-cw-q4", prompt: "Which word is a tricky common exception word?", options: ["cat", "sit", "the", "pin"], answer: 2 },
       { id: "y1-cw-q5", prompt: "Which is spelled correctly?", options: ["ther", "there", "thair", "theer"], answer: 1 },
     ],
     mastered: ["Reading 'the'", "Reading 'I'", "Reading 'he' and 'she'"],
@@ -565,8 +602,8 @@ const RAW_EXTRA: RawSet[] = [
     quiz: [
       { id: "y2-wc-q1", prompt: "Which word is a noun?", options: ["quickly", "table", "jump", "shiny"], answer: 1 },
       { id: "y2-wc-q2", prompt: "Which word is a verb?", options: ["swim", "blue", "chair", "soft"], answer: 0 },
-      { id: "y2-wc-q3", prompt: "Which word is an adjective?", options: ["run", "happy", "dog", "sing"], answer: 1 },
-      { id: "y2-wc-q4", prompt: "In 'The big dog barks', which word is the adjective?", options: ["The", "big", "dog", "barks"], answer: 1 },
+      { id: "y2-wc-q3", prompt: "Which word is an adjective?", options: ["run", "dog", "happy", "sing"], answer: 2 },
+      { id: "y2-wc-q4", prompt: "In 'The big dog barks', which word is the adjective?", options: ["The", "dog", "barks", "big"], answer: 3 },
       { id: "y2-wc-q5", prompt: "In 'Birds fly high', which word is the verb?", options: ["Birds", "fly", "high", "the"], answer: 1 },
     ],
     mastered: ["Spotting nouns for things", "Naming action verbs", "Finding describing adjectives"],
@@ -598,8 +635,8 @@ const RAW_EXTRA: RawSet[] = [
     ],
     quiz: [
       { id: "y2-hab-q1", prompt: "Which animal lives in a pond habitat?", options: ["Camel", "Frog", "Polar bear", "Lion"], answer: 1 },
-      { id: "y2-hab-q2", prompt: "What is a habitat?", options: ["A type of food", "The home of a living thing", "A kind of weather", "A baby animal"], answer: 1 },
-      { id: "y2-hab-q3", prompt: "Which of these has never been alive?", options: ["A tree", "A rock", "A worm", "A daisy"], answer: 1 },
+      { id: "y2-hab-q2", prompt: "What is a habitat?", options: ["A type of food", "A kind of weather", "A baby animal", "The home of a living thing"], answer: 3 },
+      { id: "y2-hab-q3", prompt: "Which of these has never been alive?", options: ["A tree", "A worm", "A rock", "A daisy"], answer: 2 },
       { id: "y2-hab-q4", prompt: "A camel is best suited to which habitat?", options: ["The hot desert", "The cold Arctic", "The deep sea", "A rainforest river"], answer: 0 },
       { id: "y2-hab-q5", prompt: "What do all habitats give living things?", options: ["Toys", "Food and shelter", "Money", "Cars"], answer: 1 },
     ],
@@ -646,6 +683,7 @@ const RAW_EXTRA: RawSet[] = [
     title: "Fronted Adverbials and Punctuation",
     subject: "English",
     topic: "Fronted adverbials and punctuation",
+    strand: "Grammar and punctuation",
     yearGroup: "Year 4",
     yearCode: "Y4",
     description: "Year 4 • English • Fronted adverbials and punctuation — open sentences with adverbials and use a comma after them.",
@@ -666,11 +704,11 @@ const RAW_EXTRA: RawSet[] = [
       { id: "y4-fa-c6", question: "Does a fronted adverbial come at the start or end of a sentence?", answer: "At the start of the sentence." },
     ],
     quiz: [
-      { id: "y4-fa-q1", prompt: "Which part is the fronted adverbial in 'After lunch, we played outside.'?", options: ["After lunch,", "played", "we", "outside"], answer: 0 },
-      { id: "y4-fa-q2", prompt: "What punctuation should follow a fronted adverbial?", options: ["A comma", "A full stop", "A question mark", "An apostrophe"], answer: 0 },
+      { id: "y4-fa-q1", prompt: "Which part is the fronted adverbial in 'After lunch, we played outside.'?", options: ["played", "we", "After lunch,", "outside"], answer: 2 },
+      { id: "y4-fa-q2", prompt: "What punctuation should follow a fronted adverbial?", options: ["A full stop", "A comma", "A question mark", "An apostrophe"], answer: 1 },
       { id: "y4-fa-q3", prompt: "Which sentence is punctuated correctly?", options: ["Quietly, the cat crept upstairs.", "Quietly the cat crept upstairs.", "The cat, crept upstairs quietly.", "The cat crept, upstairs quietly."], answer: 0 },
       { id: "y4-fa-q4", prompt: "What does a fronted adverbial usually tell you?", options: ["How, when or where something happens", "Who owns something", "The name of a person", "How many there are"], answer: 0 },
-      { id: "y4-fa-q5", prompt: "Which word is an adverbial of time?", options: ["Yesterday", "Happily", "Loudly", "Carefully"], answer: 0 },
+      { id: "y4-fa-q5", prompt: "Which word is an adverbial of time?", options: ["Happily", "Loudly", "Carefully", "Yesterday"], answer: 3 },
     ],
     mastered: ["Spotting adverbs", "Using capital letters", "Ending sentences with full stops"],
     revisit: ["Comma after the adverbial", "Adverbials of place"],
@@ -680,6 +718,7 @@ const RAW_EXTRA: RawSet[] = [
     title: "States of Matter",
     subject: "Science",
     topic: "States of matter",
+    strand: "Materials",
     yearGroup: "Year 4",
     yearCode: "Y4",
     description: "Year 4 • Science • States of matter — compare solids, liquids and gases and explain evaporation.",
@@ -700,10 +739,10 @@ const RAW_EXTRA: RawSet[] = [
       { id: "y4-sm-c6", question: "What happens to a solid, like ice, when it is heated?", answer: "It melts and turns into a liquid." },
     ],
     quiz: [
-      { id: "y4-sm-q1", prompt: "Which of these is a solid?", options: ["Ice", "Water", "Steam", "Air"], answer: 0 },
-      { id: "y4-sm-q2", prompt: "What happens to a liquid when it evaporates?", options: ["It turns into a gas", "It turns into a solid", "It freezes", "It stays the same"], answer: 0 },
+      { id: "y4-sm-q1", prompt: "Which of these is a solid?", options: ["Water", "Ice", "Steam", "Air"], answer: 1 },
+      { id: "y4-sm-q2", prompt: "What happens to a liquid when it evaporates?", options: ["It turns into a solid", "It freezes", "It turns into a gas", "It stays the same"], answer: 2 },
       { id: "y4-sm-q3", prompt: "At what temperature does water freeze?", options: ["0°C", "100°C", "50°C", "10°C"], answer: 0 },
-      { id: "y4-sm-q4", prompt: "What is it called when a gas turns into a liquid?", options: ["Condensation", "Evaporation", "Melting", "Freezing"], answer: 0 },
+      { id: "y4-sm-q4", prompt: "What is it called when a gas turns into a liquid?", options: ["Evaporation", "Melting", "Freezing", "Condensation"], answer: 3 },
       { id: "y4-sm-q5", prompt: "Which process turns a solid into a liquid?", options: ["Melting", "Freezing", "Evaporation", "Condensation"], answer: 0 },
     ],
     mastered: ["Naming solids, liquids and gases", "Water freezes at 0°C", "Melting ice"],
@@ -749,6 +788,7 @@ const RAW_EXTRA: RawSet[] = [
     title: "Rivers and Mountains",
     subject: "Geography",
     topic: "Rivers and mountains",
+    strand: "Physical geography",
     yearGroup: "Year 5",
     yearCode: "Y5",
     description: "Year 5 • Geography • Rivers and mountains — how rivers flow to the sea and how mountains are formed.",
@@ -818,6 +858,7 @@ const RAW_EXTRA: RawSet[] = [
     title: "Ratio and Proportion",
     subject: "Maths",
     topic: "Ratio and proportion",
+    strand: "Ratio and proportion",
     yearGroup: "Year 6",
     yearCode: "Y6",
     description: "Year 6 • Maths • Ratio and proportion — simplify ratios, share amounts and scale quantities up and down.",
@@ -852,6 +893,7 @@ const RAW_EXTRA: RawSet[] = [
     title: "Clauses and Punctuation",
     subject: "English",
     topic: "Grammar: clauses and punctuation",
+    strand: "Grammar and punctuation",
     yearGroup: "Year 6",
     yearCode: "Y6",
     description: "Year 6 • English • Grammar: clauses and punctuation — spot main, subordinate and relative clauses and punctuate them for SATs.",
@@ -906,9 +948,9 @@ const RAW_EXTRA: RawSet[] = [
       { id: "y6-ev-c6", question: "Who developed the theory of evolution by natural selection?", answer: "Charles Darwin, after studying animals such as the finches on the Galápagos Islands." },
     ],
     quiz: [
-      { id: "y6-ev-q1", prompt: "What does 'inheritance' mean in science?", options: ["Getting money from family", "Passing characteristics from parents to offspring", "Changing your environment", "Learning a new skill"], answer: 1 },
+      { id: "y6-ev-q1", prompt: "What does 'inheritance' mean in science?", options: ["Getting money from family", "Changing your environment", "Learning a new skill", "Passing characteristics from parents to offspring"], answer: 3 },
       { id: "y6-ev-q2", prompt: "Which of these is an example of an adaptation?", options: ["A cactus's spines that reduce water loss", "A dog being trained to sit", "A tree losing a branch in a storm", "A rock rolling downhill"], answer: 0 },
-      { id: "y6-ev-q3", prompt: "Fossils are best described as...", options: ["living animals today", "the remains or traces of things that lived long ago", "rocks with no history", "modern animal bones"], answer: 1 },
+      { id: "y6-ev-q3", prompt: "Fossils are best described as...", options: ["living animals today", "rocks with no history", "the remains or traces of things that lived long ago", "modern animal bones"], answer: 2 },
       { id: "y6-ev-q4", prompt: "Evolution takes place...", options: ["in a single day", "over many generations", "only in plants", "only inside a zoo"], answer: 1 },
       { id: "y6-ev-q5", prompt: "Which scientist is famous for the theory of evolution by natural selection?", options: ["Isaac Newton", "Charles Darwin", "Marie Curie", "Albert Einstein"], answer: 1 },
     ],
@@ -946,8 +988,8 @@ const RAW_EXTRA: RawSet[] = [
     ],
     quiz: [
       { id: "y3-rb-q1", prompt: "In which year did Claudius invade Britain?", options: ["AD 43", "AD 410", "55 BC", "AD 1066"], answer: 0 },
-      { id: "y3-rb-q2", prompt: "Hadrian's Wall was built to...", options: ["carry water to cities", "guard the north of Roman Britain", "hold back the sea", "mark a Roman road"], answer: 1 },
-      { id: "y3-rb-q3", prompt: "Boudicca was the queen of which tribe?", options: ["The Saxons", "The Iceni", "The Vikings", "The Picts"], answer: 1 },
+      { id: "y3-rb-q2", prompt: "Hadrian's Wall was built to...", options: ["carry water to cities", "hold back the sea", "mark a Roman road", "guard the north of Roman Britain"], answer: 3 },
+      { id: "y3-rb-q3", prompt: "Boudicca was the queen of which tribe?", options: ["The Saxons", "The Vikings", "The Iceni", "The Picts"], answer: 2 },
       { id: "y3-rb-q4", prompt: "Roman roads were famously...", options: ["winding", "straight", "underground", "made of wood"], answer: 1 },
       { id: "y3-rb-q5", prompt: "Why did the Romans leave Britain around AD 410?", options: ["They ran out of food", "The army was needed to defend Rome", "The weather was too cold", "Boudicca defeated them"], answer: 1 },
     ],
@@ -979,10 +1021,10 @@ const RAW_EXTRA: RawSet[] = [
       { id: "y3-al-c6", question: "What is a sequence?", answer: "Steps carried out one after another, in the order they are written." },
     ],
     quiz: [
-      { id: "y3-al-q1", prompt: "An algorithm is best described as...", options: ["a type of computer", "a list of steps in order", "a picture on screen", "a broken program"], answer: 1 },
+      { id: "y3-al-q1", prompt: "An algorithm is best described as...", options: ["a type of computer", "a picture on screen", "a broken program", "a list of steps in order"], answer: 3 },
       { id: "y3-al-q2", prompt: "Fixing a mistake in a program is called...", options: ["looping", "debugging", "saving", "printing"], answer: 1 },
       { id: "y3-al-q3", prompt: "Which is a loop?", options: ["Repeat 4 times: move forward", "Move forward once", "Stop the program", "Save the file"], answer: 0 },
-      { id: "y3-al-q4", prompt: "Why must steps be in the right order?", options: ["It looks tidier", "The computer follows them exactly as written", "It uses less battery", "It makes the screen brighter"], answer: 1 },
+      { id: "y3-al-q4", prompt: "Why must steps be in the right order?", options: ["It looks tidier", "It uses less battery", "The computer follows them exactly as written", "It makes the screen brighter"], answer: 2 },
       { id: "y3-al-q5", prompt: "A bug in a program means...", options: ["an insect got inside", "the program does the wrong thing", "the program is finished", "the computer is off"], answer: 1 },
     ],
     mastered: ["Writing steps in a clear order", "Knowing what an algorithm is", "Spotting a repeated step as a loop"],
@@ -993,6 +1035,7 @@ const RAW_EXTRA: RawSet[] = [
     title: "Colour and the Colour Wheel",
     subject: "Art",
     topic: "Colour and painting",
+    strand: "Painting",
     yearGroup: "Year 3",
     yearCode: "Y3",
     description: "Year 3 • Art • Colour and painting — primary and secondary colours, mixing them, and warm versus cool.",
@@ -1061,6 +1104,7 @@ const RAW_EXTRA: RawSet[] = [
     title: "French Greetings and Numbers",
     subject: "Languages",
     topic: "Greetings and introductions",
+    strand: "Greetings",
     yearGroup: "Year 3",
     yearCode: "Y3",
     description: "Year 3 • Languages • Greetings and introductions — say hello, give your name and count in French.",
@@ -1095,6 +1139,7 @@ const RAW_EXTRA: RawSet[] = [
     title: "Festivals and Celebrations",
     subject: "Religious Education",
     topic: "Festivals and celebrations",
+    strand: "Festivals",
     yearGroup: "Year 3",
     yearCode: "Y3",
     description: "Year 3 • Religious Education • Festivals and celebrations — what major festivals mark and how people celebrate them.",
@@ -1145,6 +1190,16 @@ function withTrueCardCount(set: StudySet): StudySet {
 }
 
 export const STUDY_SETS: StudySet[] = [...CORE_SETS, ...RAW_EXTRA.map(resolve)].map(withTrueCardCount)
+
+/**
+ * The strand a set counts towards — its explicit `strand` when the topic is narrower than the
+ * curriculum heading, otherwise the topic itself. Every consumer that groups sets by strand must go
+ * through this rather than reading `topic`, or it reintroduces the mismatch this exists to fix.
+ * Takes the minimum shape it needs so the API's `ApiSet` can use it too.
+ */
+export function strandOf(set: { topic: string; strand?: string }): string {
+  return set.strand ?? set.topic
+}
 
 export function getStudySet(id: string | undefined): StudySet | undefined {
   return STUDY_SETS.find((s) => s.id === id)
@@ -1209,11 +1264,46 @@ export function relatedSets(set: StudySet, limit = 6): RelatedSet[] {
   return out
 }
 
-/** The set to offer after finishing `afterId` — the next in catalogue order, wrapping to the first.
- *  Keeps the "what next" ordering owned by the content layer instead of index math in a screen. */
-export function nextSetId(afterId: string): string {
-  const idx = STUDY_SETS.findIndex((s) => s.id === afterId)
-  return STUDY_SETS[(idx + 1) % STUDY_SETS.length].id
+/**
+ * The set to offer after finishing `afterId` — the next in catalogue order for a YEAR, not the raw
+ * array. Keeps the "what next" ordering owned by the content layer instead of index math in a screen.
+ *
+ * Two bugs this replaces, both found on device:
+ *
+ * 1. **Wraps into the wrong year.** The array is authored year-block by year-block (Reception → Y6),
+ *    then a "Subject Hub shelf" of six sets that are ALL authored Year 3 (History, Computing, Art,
+ *    Music, Languages, RE only ever got one example set each — see the shelf's own comment above).
+ *    A child of any year who reaches a subject hub via `recommendedSets` studies one of those Year 3
+ *    sets, and the old `(idx + 1) % length` walk then carried on through the REST of that Year 3
+ *    block — a Year 4 or Year 6 child kept getting served Year 3 content with nothing pulling them
+ *    back to their own year. `yearCode`, when the caller has it, fixes this at the source: the walk
+ *    is filtered to that year from the start, so a set authored for a different year is never
+ *    reachable as "next" no matter where `afterId` sits in the whole-catalogue order.
+ * 2. **Silently looped past the end.** With no `yearCode` (today's two callers, see below), the
+ *    catalogue-order walk still wrapped `% STUDY_SETS.length` past the very last set straight back to
+ *    "place-value" (index 0) — offering it as the "next" thing regardless of relevance. It now stops:
+ *    reaching the end returns `afterId` itself, an honest "nothing further yet" rather than a false
+ *    "here's what's next" (the design-honesty rule, CLAUDE.md). The UI still needs a real empty state
+ *    for that case — pressing "Next set" when there is none currently reopens the set just finished,
+ *    which is the best available truth until `result/[id].tsx` and `congratulations/[id].tsx` can be
+ *    changed to render one.
+ *
+ * `yearCode` is optional and last so the two existing callers keep compiling unchanged; without it,
+ * this derives a year from `afterId`'s OWN authored year, which is right except in exactly the
+ * subject-hub case above (there, the set's authored year and the child's real year differ) — that is
+ * what passing the child's actual `yearCode` is for. Callers should pass the studying child's
+ * `yearGroup` code (`useChildren` / `Child.yearGroup`) once they can be edited to do so.
+ */
+export function nextSetId(afterId: string, yearCode?: string): string {
+  const anchor = getStudySet(afterId)
+  const targetYear = yearCode ?? anchor?.yearCode
+  const pool = targetYear ? STUDY_SETS.filter((s) => s.yearCode === targetYear) : STUDY_SETS
+  const idx = pool.findIndex((s) => s.id === afterId)
+  // `afterId` isn't in `pool` — only possible when an explicit `yearCode` differs from the anchor's
+  // own year (the override case above). Start at the top of the child's real year rather than
+  // falling back to the whole catalogue.
+  if (idx === -1) return pool[0]?.id ?? STUDY_SETS[0]?.id ?? afterId
+  return pool[idx + 1]?.id ?? afterId
 }
 
 
@@ -1276,6 +1366,9 @@ export function quizItems(set: StudySet): MixedQuestion[] {
     options: q.options,
     answer: q.answer,
     illustration: q.illustration,
+    // Carried with the image, always. Dropping it here would strip the alt text on exactly the path
+    // the quiz runner uses, leaving the picture unlabelled again for the questions that have one.
+    illustrationAlt: q.illustrationAlt,
     explanation: q.explanation,
     topic: q.topic,
   }))

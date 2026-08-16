@@ -110,7 +110,10 @@ function YearPicker({ value, onChange }: { value: string; onChange: (code: strin
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             accessibilityLabel={year.label}
+            // 36px tall — below Apple's 44pt minimum. hitSlop pads the touch target without
+            // resizing the segment (same h-9/hitSlop=6 pattern as the search screen's chips).
             className={`h-9 flex-1 items-center justify-center rounded-sm ${on ? "bg-primary" : "active:opacity-60"}`}
+            hitSlop={6}
             onPress={() => onChange(year.code)}
           >
             <Text className={`font-text text-body font-semibold ${on ? "text-white" : "text-text-secondary"}`}>
@@ -133,7 +136,7 @@ function ObjectiveRow({ objective, met }: { objective: Objective; met: boolean }
         size={18}
         tintColor={met ? colors.success : colors.border}
         weight="regular"
-        style={{ marginTop: 2 }}
+        className="mt-0.5"
       />
       <View className="ml-3 flex-1">
         <Text className={`font-text text-body ${met ? "text-ink" : "text-text-secondary"}`}>{objective.text}</Text>
@@ -155,7 +158,14 @@ function SetRow({ set }: { set: StudySet }) {
       className="mt-3 flex-row items-center rounded-lg border border-border bg-white p-3 active:opacity-80"
       onPress={() => router.push({ pathname: "/lesson/[id]", params: { id: set.id } })}
     >
-      <Image accessibilityIgnoresInvertColors className="h-12 w-12 rounded-md" contentFit="cover" source={set.thumb} />
+      {/* Decorative — the row's own accessibilityLabel already states title, subject and status. */}
+      <Image
+        accessible={false}
+        accessibilityIgnoresInvertColors
+        className="h-12 w-12 rounded-md"
+        contentFit="cover"
+        source={set.thumb}
+      />
       <View className="ml-3 flex-1">
         <Text numberOfLines={1} className="font-text text-body font-bold text-ink">
           {set.title}
@@ -229,7 +239,7 @@ function SubjectSection({
           size={14}
           tintColor={colors["text-secondary"]}
           weight="semibold"
-          style={{ marginLeft: 8 }}
+          className="ml-2"
         />
       </Pressable>
 

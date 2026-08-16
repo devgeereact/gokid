@@ -3,7 +3,22 @@ import { useMemo } from "react"
 
 import { type ApiSet, useSets } from "./api"
 import { type SessionRecord, useProgress } from "./reviews"
+import { getStudySet, strandOf } from "./study"
 import { getSubject, type Subject, subjectSlug } from "./subjects"
+
+/**
+ * The strand an API set counts towards.
+ *
+ * `study_sets` in Postgres has no `strand` column yet, so the server cannot send one. The bundled
+ * catalogue does have it, and it is the same content — the database was seeded from `lib/study.ts`
+ * — so the id lookup resolves it without inventing anything. Falls back to the row itself (i.e. its
+ * topic) for any set the bundle does not know, which is the pre-existing behaviour.
+ *
+ * When the column lands, delete the lookup and call `strandOf(set)` directly.
+ */
+function strandFor(set: { id: string; topic: string }): string {
+  return strandOf(getStudySet(set.id) ?? set)
+}
 
 /**
  * Parent-area analytics (design/gokid-screens.md §10 → Analytics: Study Time, Curriculum Coverage,
@@ -165,7 +180,9 @@ export function useAnalytics(child: { id: string; name: string; yearGroup: strin
     for (const card of cards) {
       const set: ApiSet | undefined = setById.get(card.setId)
       if (!set) continue
-      const key = `${set.subject}::${set.topic}`
+      // Group by STRAND, not topic — see study.ts:strandOf. Keying on topic split one
+      // strand into several rows and hid sets whose topic matched no strand at all.
+      const key = `${set.subject}::${strandFor(set)}`
       const row = byTopic.get(key) ?? { subject: set.subject, seen: 0, learned: 0 }
       row.seen += 1
       if (card.box >= 2) row.learned += 1
@@ -281,14 +298,14 @@ export function useSubjectProgress(subject: Subject | undefined, childId: string
     for (const card of cards) {
       const set = setById.get(card.setId)
       if (!set) continue
-      const row = byTopic.get(set.topic) ?? { seen: 0, learned: 0 }
+      const row = byTopic.get(strandFor(set)) ?? { seen: 0, learned: 0 }
       row.seen += 1
       if (card.box >= 2) row.learned += 1
-      byTopic.set(set.topic, row)
+      byTopic.set(strandFor(set), row)
     }
 
     const strands: StrandProgress[] = (subject?.strands ?? []).map((strand) => {
-      const inStrand = mine.filter((s) => s.topic === strand.name)
+      const inStrand = mine.filter((s) => strandFor(s) === strand.name)
       const seen = byTopic.get(strand.name)
       return {
         name: strand.name,

@@ -1,0 +1,13 @@
+appId: com.gokid.app
+name: 11 - Parent-content real children + View-all dead-link taps
+---
+- launchApp:
+    clearState: false
+- tapOn: "Jacob K, Year 4"
+- tapOn: "Parent"
+- tapOn: "Enter parent area"
+- tapOn: "1"
+- tapOn: "2"
+- tapOn: "3"
+- tapOn: "4"
+- takeScreenshot: 11g-parent-content

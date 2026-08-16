@@ -11,7 +11,7 @@ import { ChildAvatar, PRESET_KEYS } from "@/components/child-avatar"
 import { RoundedHeading } from "@/components/rounded-heading"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
-import { type Avatar, type CardTint, CARD_TINTS, DEFAULT_AVATAR, suggestTint, tintClass, useChildren } from "@/lib/children"
+import { type Avatar, type CardTint, CARD_TINTS, DEFAULT_AVATAR, suggestTint, tintClass, useChildren, yearLabel } from "@/lib/children"
 import { useParentGate } from "@/lib/parent-gate"
 import { useParentPasscode } from "@/lib/parent-passcode"
 
@@ -30,6 +30,31 @@ const YEARS = Array.from({ length: 14 }, (_, i) => `${CURRENT_YEAR - 4 - i}`)
 // a user's Memoji directly (Memoji surface only through the system keyboard's sticker input),
 // so emoji stand in for "choose an icon"; a saved Memoji can still come in via upload.
 const EMOJI = ["🐻", "🐰", "🐼", "🐨", "🐸", "🦄", "🐯", "🐷", "🐵", "🐶"] as const
+
+// Spoken names for the preset illustrations. VoiceOver has no way to describe a picture on its
+// own, and the Pressable wrapping each one has no other text child to fall back on — without this
+// the three options are indistinguishable "button, button, button".
+const PRESET_LABELS: Record<(typeof PRESET_KEYS)[number], string> = {
+  fox: "Fox picture",
+  elephant: "Elephant picture",
+  lion: "Lion picture",
+}
+
+// Spoken names for the emoji options, for the same reason — and because a raw glyph's VoiceOver
+// pronunciation is inconsistent across iOS versions ("panda face" vs "panda") where a plain
+// English name is not.
+const EMOJI_LABELS: Record<(typeof EMOJI)[number], string> = {
+  "🐻": "Bear picture",
+  "🐰": "Rabbit picture",
+  "🐼": "Panda picture",
+  "🐨": "Koala picture",
+  "🐸": "Frog picture",
+  "🦄": "Unicorn picture",
+  "🐯": "Tiger picture",
+  "🐷": "Pig picture",
+  "🐵": "Monkey picture",
+  "🐶": "Dog picture",
+}
 
 function FieldLabel({ children }: { children: string }) {
   return <Text className="font-text text-body font-medium text-ink">{children}</Text>
@@ -75,9 +100,12 @@ function PickerSheet({
 }) {
   return (
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
-      <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
-        {/* Stops taps on the sheet body from dismissing it. */}
+      {/* Tap-outside-to-dismiss, not a real control a VoiceOver user is looking for — `accessible={false}`
+          keeps it from being announced as an unlabeled "button" stop while swiping through the sheet. */}
+      <Pressable accessible={false} className="flex-1 justify-end bg-black/40" onPress={onClose}>
+        {/* Stops taps on the sheet body from dismissing it — same non-control reasoning as above. */}
         <Pressable
+          accessible={false}
           className="max-h-96 rounded-t-2xl bg-background pb-8 pt-2"
           onPress={(event) => event.stopPropagation()}
         >
@@ -151,8 +179,11 @@ function AvatarSheet({
 
   return (
     <Modal transparent animationType="slide" visible onRequestClose={onClose}>
-      <Pressable className="flex-1 justify-end bg-black/40" onPress={onClose}>
+      {/* Tap-outside-to-dismiss, not a real control a VoiceOver user is looking for — `accessible={false}`
+          keeps it from being announced as an unlabeled "button" stop while swiping through the sheet. */}
+      <Pressable accessible={false} className="flex-1 justify-end bg-black/40" onPress={onClose}>
         <Pressable
+          accessible={false}
           className="rounded-t-2xl bg-background px-6 pb-8 pt-2"
           onPress={(event) => event.stopPropagation()}
         >
@@ -167,6 +198,7 @@ function AvatarSheet({
               <Pressable
                 key={key}
                 accessibilityRole="button"
+                accessibilityLabel={PRESET_LABELS[key]}
                 accessibilityState={{ selected: isPreset(key) }}
                 className={`h-16 w-16 rounded-full active:opacity-70 ${
                   isPreset(key) ? "border-2 border-primary" : ""
@@ -184,13 +216,18 @@ function AvatarSheet({
               <Pressable
                 key={glyph}
                 accessibilityRole="button"
+                accessibilityLabel={EMOJI_LABELS[glyph]}
                 accessibilityState={{ selected: isEmoji(glyph) }}
                 className={`h-14 w-14 items-center justify-center rounded-full bg-white active:opacity-70 ${
                   isEmoji(glyph) ? "border-2 border-primary" : "border border-border"
                 }`}
                 onPress={() => onSelect({ kind: "emoji", value: glyph })}
               >
-                <Text className="text-h2">{glyph}</Text>
+                {/* Decorative — the Pressable above already carries the spoken name; without this
+                    VoiceOver would also read the raw glyph, doubling up. */}
+                <Text accessible={false} className="text-h2">
+                  {glyph}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -442,6 +479,7 @@ export default function AddChild() {
               <Pressable
                 key={year}
                 accessibilityRole="button"
+                accessibilityLabel={yearLabel(year)}
                 accessibilityState={{ selected }}
                 className={`h-11 flex-1 items-center justify-center rounded-md border active:opacity-70 ${
                   selected ? "border-primary bg-primary" : "border-border bg-white"

@@ -1,0 +1,17 @@
+appId: com.gokid.app
+name: "13 - Regression: study-session mode DOES persist (P0-6 fix)"
+# Companion to 06, which proved the bug. Run this after finishing a session in study-session mode:
+# the summary must report the real card count, not "Cards studied 0".
+---
+- scrollUntilVisible:
+    element:
+      text: "Next card"
+    direction: DOWN
+- tapOn: "Next card"
+- takeScreenshot: 13a-session-summary-after-fix
+- assertVisible: "Session Summary"
+- assertVisible: "Cards studied"
+# Do NOT assert that no "0" appears anywhere. "0 cards learned" in the header is CORRECT on a first
+# pass: "learned" means box >= 2, which needs two successful recalls across widening gaps. The stat
+# that proves this fix is "Cards studied", which must equal the set's card count (6 for this set) and
+# was 0 before the fix. Read 13a-session-summary-after-fix to confirm the number.

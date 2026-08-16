@@ -1,0 +1,14 @@
+REQUEST: GET /api/sets?year=Y5
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Fri, 14 Aug 2026 22:35:52 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"count":3,"sets":[{"id":"y5-rivers-mountains","title":"Rivers and Mountains","subject":"Geography","topic":"Rivers and mountains","yearCode":"Y5","description":"Year 5 • Geography • Rivers and mountains — how rivers flow to the sea and how mountains are formed.","minutes":10,"cardsTotal":6,"quizCount":5},{"id":"y5-fractions","title":"Fractions","subject":"Maths","topic":"Fractions","yearCode":"Y5","description":"Year 5 • Maths • Fractions — equivalent fractions and adding and subtracting fractions.","minutes":12,"cardsTotal":6,"quizCount":5},{"id":"y5-earth-space","title":"Earth and Space","subject":"Science","topic":"Earth and space","yearCode":"Y5","description":"Year 5 • Science • Earth and space — the solar system and why we have day and night.","minutes":14,"cardsTotal":6,"quizCount":5}]}

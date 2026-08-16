@@ -1,0 +1,5 @@
+POST cardId="qa-sec-card-a" lastReviewedAt=T1(earlier) box=1 rating=tricky [arrives FIRST]
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811931172}

@@ -1,0 +1,5 @@
+DELETE /v1/users/user_3HxZiC0FcsMWWmuRfFOEhNqCvEb
+
+--- response ---
+status: 200
+{"id":"user_3HxZiC0FcsMWWmuRfFOEhNqCvEb","object":"user","deleted":true}

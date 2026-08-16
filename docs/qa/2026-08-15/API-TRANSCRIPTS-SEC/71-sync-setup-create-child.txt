@@ -1,0 +1,5 @@
+POST /api/progress (as T2) creating sync test child clientId=qa-sec-t2-sync-child-1786811804512
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811930970}

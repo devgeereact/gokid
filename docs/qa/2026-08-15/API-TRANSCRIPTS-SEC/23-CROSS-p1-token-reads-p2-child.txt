@@ -1,0 +1,5 @@
+GET /api/progress?child=qa-sec-p2-child (as P1, but that clientId belongs to P2)
+
+--- response ---
+status: 200
+{"ok":true,"reviews":[],"sessions":[]}

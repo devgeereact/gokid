@@ -1,0 +1,5 @@
+GET /api/quiz?setId=place-value&clientId=qa-sec-p2-child&count=3 (as P1, but that clientId belongs to P2)
+
+--- response ---
+status: 404
+{"ok":false,"message":"Unknown child."}

@@ -1,0 +1,5 @@
+POST cardId="qa-sec-card-a" lastReviewedAt=T2(LATER) box=3 rating=gotit [arrives SECOND, later ts]
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811931239}

@@ -1,0 +1,13 @@
+appId: com.gokid.app
+name: 06 - Verify Study Session mode does not persist to the SRS record
+---
+- launchApp:
+    clearState: false
+- tapOn: "Jacob K, Year 4"
+- scrollUntilVisible:
+    element:
+      text: "Multiplication and Division.*"
+    direction: DOWN
+- tapOn:
+    text: "Multiplication and Division.*"
+- takeScreenshot: 06a-lesson-after-session-mode

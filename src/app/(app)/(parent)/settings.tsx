@@ -10,7 +10,7 @@ import { Row, Section } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useChildren } from "@/lib/children"
-import { entitlementLabel, useEntitlement } from "@/lib/subscription"
+import { entitlementLabel, manageSubscriptionUrl, useEntitlement } from "@/lib/subscription"
 
 /**
  * Account settings (MVP → Parent Features → "Account settings", "Subscription management",
@@ -35,6 +35,11 @@ export default function Settings() {
   const { children } = useChildren()
   const [restoring, setRestoring] = useState(false)
   const entitlement = useEntitlement()
+  // Nothing is ever billed while `status` is "free" (lib/subscription.ts — every user, today), so the
+  // Billing row cannot honestly name a payment method. `store` is only used once there IS something to
+  // bill, matching how /subscription already names the platform that would actually take the payment.
+  const free = entitlement.status === "free"
+  const store = manageSubscriptionUrl().includes("apple") ? "Apple" : "Google"
 
   async function restorePurchases() {
     setRestoring(true)
@@ -125,7 +130,10 @@ export default function Settings() {
             border
             onPress={restoring ? undefined : restorePurchases}
           />
-          <Row symbol="creditcard" label="Billing" value="Apple" />
+          {/* Was `value="Apple"` as a literal next to a "Plan: Free" row — the same class of bug the
+              plan row itself had (see the comment above): it told a parent GoKid had a payment method
+              on file when nothing has ever been billed. */}
+          <Row symbol="creditcard" label="Billing" value={free ? "None" : store} />
         </View>
 
         <Section title="Learning" className="mb-3 mt-8" />

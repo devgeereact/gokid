@@ -1,0 +1,6 @@
+POST /api/progress (as P2)
+body: {child:{clientId:"qa-sec-p2-child",name:"QA P2 Kid",yearCode:"Y3"}, reviews:[1 review, cardId=p2-card], sessions:[1 session]}
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786786966938}
