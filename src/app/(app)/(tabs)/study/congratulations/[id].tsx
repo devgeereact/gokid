@@ -85,7 +85,12 @@ export default function Congratulations() {
   // The child who actually studied this set, not whoever happens to be first in the roster — the
   // whole screen is about them and a household with two children was naming the wrong one.
   const name = (children.find((c) => c.id === childId) ?? children[0])?.name ?? "Your child"
-  const nextId = nextSetId(set.id)
+  // The child's own year, explicitly — otherwise a Year 4 child finishing a set could be handed
+  // Year 3 content, because several subjects are only authored at Year 3. `nextSetId` clamps at the
+  // end of the year and returns the same id when nothing follows, which `atEnd` detects.
+  const child = children.find((c) => c.id === childId)
+  const nextId = nextSetId(set.id, child?.yearGroup)
+  const atEnd = nextId === set.id
 
   // Real outcomes for this set, from the spaced-repetition record.
   const setCards = cards.filter((c) => c.setId === set.id)
@@ -155,6 +160,7 @@ export default function Congratulations() {
         <View className="rounded-2xl bg-gamify-green-wash p-4">
           <View className="flex-row items-center">
             <Image
+              accessible={false}
               accessibilityIgnoresInvertColors
               className="h-32 w-24"
               contentFit="contain"
@@ -225,6 +231,7 @@ export default function Congratulations() {
           <Text className="mb-4 font-text text-h3 font-bold text-ink">What to try next</Text>
           <View className="flex-row items-center">
             <Image
+              accessible={false}
               accessibilityIgnoresInvertColors
               className="h-16 w-16 rounded-lg bg-gamify-green-wash"
               contentFit="contain"
@@ -237,13 +244,21 @@ export default function Congratulations() {
               </Text>
             </View>
           </View>
+          {/* No next set in this child's year — offering "Start next set" would reopen the set they
+              have just finished. Say so and send them to the shelf instead. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Start next set"
+            accessibilityLabel={atEnd ? "Back to study sets" : "Start next set"}
             className="mt-4 h-14 flex-row items-center justify-center gap-2 rounded-full bg-study-teal active:opacity-90"
-            onPress={() => router.replace({ pathname: "/lesson/[id]", params: { id: nextId } })}
+            onPress={() =>
+              atEnd
+                ? router.replace("/study")
+                : router.replace({ pathname: "/lesson/[id]", params: { id: nextId } })
+            }
           >
-            <Text className="font-text text-body-lg font-bold text-white">Start next set</Text>
+            <Text className="font-text text-body-lg font-bold text-white">
+              {atEnd ? "Back to study sets" : "Start next set"}
+            </Text>
             <SymbolView name="arrow.right" size={18} tintColor={colors.white} weight="bold" />
           </Pressable>
           <Pressable

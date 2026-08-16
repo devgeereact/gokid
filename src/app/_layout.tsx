@@ -4,13 +4,15 @@ import { ClerkProvider } from "@clerk/expo"
 import { tokenCache } from "@clerk/expo/token-cache"
 import * as Sentry from "@sentry/react-native"
 import { isRunningInExpoGo } from "expo"
-import { type ErrorBoundaryProps, Stack, useNavigationContainerRef } from "expo-router"
+import { type ErrorBoundaryProps, router, Stack, useNavigationContainerRef } from "expo-router"
 import { StatusBar } from "expo-status-bar"
+import * as Notifications from "expo-notifications"
 import { useEffect } from "react"
 import { SafeAreaProvider } from "react-native-safe-area-context"
 
 import { EmptyState } from "@/components/empty-state"
 import { SafeAreaView } from "@/components/styled"
+import { REMINDER_NOTIFICATION_ID } from "@/lib/reminders"
 
 // Time-to-display and native frame tracking need native modules Expo Go doesn't ship.
 const navigationIntegration = Sentry.reactNavigationIntegration({
@@ -67,12 +69,27 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
 function RootLayout() {
   const navigationRef = useNavigationContainerRef()
+  // Fires for a tap on any local/remote notification — while the app is running AND on a cold start
+  // caused by one (SDK 57's documented way to catch both in one place; see the expo-notifications
+  // docs for `useLastNotificationResponse`). Today the only notification GoKid ever schedules is
+  // lib/reminders.ts's one daily study reminder, and until now tapping it opened the app to whatever
+  // the entry fork (src/app/index.tsx) or the last screen happened to be — a real entry point into
+  // the app that led nowhere in particular.
+  const notificationResponse = Notifications.useLastNotificationResponse()
 
   useEffect(() => {
     if (navigationRef?.current) {
       navigationIntegration.registerNavigationContainer(navigationRef)
     }
   }, [navigationRef])
+
+  useEffect(() => {
+    if (notificationResponse?.notification.request.identifier !== REMINDER_NOTIFICATION_ID) return
+    // The study dashboard for whichever child is currently active — the reminder is a prompt to
+    // study, not to any particular set, so the tab that lists what's ready is the honest landing
+    // spot rather than guessing a specific lesson.
+    router.push("/study")
+  }, [notificationResponse])
 
   return (
     // react-native-safe-area-context v5 renders SafeAreaView as null until it has a

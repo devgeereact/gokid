@@ -27,7 +27,7 @@ function Chip({ label, tone }: { label: string; tone: "mastered" | "revisit" }) 
     >
       <Text className="font-text text-body-lg font-bold text-white">{label}</Text>
       {tone === "mastered" ? (
-        <SymbolView name="arrow.up" size={18} tintColor={colors.white} weight="bold" style={{ marginLeft: 10 }} />
+        <SymbolView name="arrow.up" size={18} tintColor={colors.white} weight="bold" className="ml-2.5" />
       ) : null}
     </View>
   )
@@ -51,7 +51,14 @@ export default function Result() {
 
   // Advance to the next set in curriculum order (shared with congratulations), instead of an
   // unrelated hardcoded 3-set list that misrouted 18 of the 21 sets to "place-value".
-  const nextId = nextSetId(set.id)
+  //
+  // The child's own year is passed explicitly: without it a Year 4 child finishing a set could be
+  // sent into Year 3 content, because several subjects are only authored at Year 3 and the sequence
+  // used to run over the whole catalogue. `nextSetId` now clamps at the end of the year rather than
+  // wrapping, and returns the same id when there is nothing after it — which is what `atEnd` detects.
+  const child = children.find((c) => c.id === childId)
+  const nextId = nextSetId(set.id, child?.yearGroup)
+  const atEnd = nextId === set.id
 
   return (
     <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-background px-5">
@@ -61,6 +68,7 @@ export default function Result() {
         {/* Hero — celebrating child, score ring overlapping the base */}
         <View className="items-center">
           <Image
+            accessible={false}
             accessibilityIgnoresInvertColors
             className="h-64 w-full"
             contentFit="contain"
@@ -114,18 +122,27 @@ export default function Result() {
               size={16}
               tintColor={colors.primary}
               weight="bold"
-              style={{ marginLeft: 8 }}
+              className="ml-2"
             />
           </Pressable>
         ) : null}
 
+        {/* At the end of the child's year there is no next set, and a "Next set" button that reopens
+            the set they just finished is the kind of control this codebase's design-honesty rule
+            exists to prevent. Say what is true and offer the shelf instead. */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Next set"
+          accessibilityLabel={atEnd ? "Back to study sets" : "Next set"}
           className="mt-6 h-14 items-center justify-center rounded-full bg-primary active:opacity-90"
-          onPress={() => router.replace({ pathname: "/lesson/[id]", params: { id: nextId } })}
+          onPress={() =>
+            atEnd
+              ? router.replace("/study")
+              : router.replace({ pathname: "/lesson/[id]", params: { id: nextId } })
+          }
         >
-          <Text className="font-text text-body-lg font-bold text-white">Next set</Text>
+          <Text className="font-text text-body-lg font-bold text-white">
+            {atEnd ? "Back to study sets" : "Next set"}
+          </Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
