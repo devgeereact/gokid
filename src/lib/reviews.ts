@@ -152,6 +152,25 @@ export async function clearAllProgress(): Promise<void> {
   emit()
 }
 
+/**
+ * Erase one child's study record, leaving their siblings' untouched.
+ *
+ * The counterpart to `clearAllProgress` for deleting a single child. Without it, removing a child
+ * left their reviews and sessions in this store forever: invisible, because nothing lists a child
+ * who no longer exists, and liable to resurface under a new child that happened to reuse the id.
+ *
+ * Same failure discipline as `clearAllProgress` — throws rather than resolving quietly, because the
+ * caller is in the middle of telling a parent that this child's record is gone.
+ */
+export async function clearChildProgress(childId: string): Promise<void> {
+  if (!store[childId]) return
+  const next = { ...store }
+  delete next[childId]
+  await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(next))
+  store = next
+  emit()
+}
+
 function progressFor(childId: string): ChildProgress {
   return store[childId] ?? EMPTY
 }
