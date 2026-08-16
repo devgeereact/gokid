@@ -1,0 +1,14 @@
+REQUEST: GET /api/sets?year=Y6
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Fri, 14 Aug 2026 22:35:52 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"count":3,"sets":[{"id":"y6-grammar-clauses","title":"Clauses and Punctuation","subject":"English","topic":"Grammar: clauses and punctuation","yearCode":"Y6","description":"Year 6 • English • Grammar: clauses and punctuation — spot main, subordinate and relative clauses and punctuate them for SATs.","minutes":10,"cardsTotal":6,"quizCount":5},{"id":"y6-ratio-proportion","title":"Ratio and Proportion","subject":"Maths","topic":"Ratio and proportion","yearCode":"Y6","description":"Year 6 • Maths • Ratio and proportion — simplify ratios, share amounts and scale quantities up and down.","minutes":12,"cardsTotal":6,"quizCount":5},{"id":"y6-evolution","title":"Evolution and Inheritance","subject":"Science","topic":"Evolution and inheritance","yearCode":"Y6","description":"Year 6 • Science • Evolution and inheritance — how offspring inherit traits, adapt to habitats and change over generations.","minutes":11,"cardsTotal":6,"quizCount":5}]}

@@ -1,0 +1,5 @@
+POST cardId="qa-sec-card-b" lastReviewedAt=T3=1786811901240 (EARLIER) box=1 rating=tricky [arrives SECOND, carries EARLIER ts -- must NOT overwrite]
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811931369}

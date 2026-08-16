@@ -1,0 +1,5 @@
+POST /api/progress (as T2) with a brand-new clientId nobody has used ("qa-sec-unknown-1786811804512")
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811833665}

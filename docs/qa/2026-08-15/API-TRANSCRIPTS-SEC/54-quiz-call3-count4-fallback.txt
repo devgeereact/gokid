@@ -1,0 +1,5 @@
+GET /api/quiz?setId=place-value&clientId=qa-sec-t1-quiz-child-1786811804512&count=4 (call 3, pool nearly exhausted -> 1 forced repeat expected, oldest-seen)
+
+--- response ---
+status: 200
+{"ok":true,"setId":"place-value","count":4,"repeated":1,"poolSize":11,"questions":[{"id":"pv-m1","kind":"mcq","prompt":"What is the value of the 4 in 452?","explanation":null,"topic":null,"difficulty":1,"payload":{"answer":3,"options":["4","40","4,000","400"],"illustration":{"uri":"/assets/?unstable_path=.%2Fassets%2Fimages/gokid-quiz-blocks.png","width":717,"height":310}}},{"id":"pv-m4","kind":"order","prompt":"Put these numbers in order, smallest first.","explanation":null,"topic":null,"difficulty":1,"payload":{"items":["216","261","612","621"]}},{"id":"pv-m3","kind":"fill","prompt":"Write six hundred and thirty-eight as a number.","explanation":null,"topic":null,"difficulty":1,"payload":{"accept":["638"]}},{"id":"pvq1","kind":"mcq","prompt":"What is the value of the 4 in 452?","explanation":null,"topic":null,"difficulty":1,"payload":{"answer":0,"options":["400","4,000","4","40"]}}]}

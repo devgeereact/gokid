@@ -1,0 +1,14 @@
+REQUEST: GET /api/sets/' OR 1=1 -- (sql-injection-shaped id)
+HTTP/1.1 404 Not Found
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Fri, 14 Aug 2026 22:36:49 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":false,"message":"Set not found."}

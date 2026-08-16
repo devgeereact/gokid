@@ -1,0 +1,25 @@
+POST /api/progress  (valid token; same clientId, renamed child + year bump — proves childFor now updates the existing row instead of leaving it frozen at first-sync values)
+--- response ---
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Sat, 15 Aug 2026 09:22:28 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"syncedAt":1786785748006}--- DB row after re-sync (read-only check, id/clientId only) ---
+[
+  {
+    "id": "f4e3dd7b-62a7-483b-9501-660559c990ce",
+    "client_id": "fix-verify-child-1",
+    "name": "Fixture Kid Renamed",
+    "year_code": "Y5",
+    "avatar_value": "fox",
+    "birth_month": ""
+  }
+]

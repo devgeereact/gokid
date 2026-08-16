@@ -1,0 +1,15 @@
+POST /api/progress  (valid token; fully valid batch, first sync of a fresh test child)
+--- response ---
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Sat, 15 Aug 2026 09:22:13 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"syncedAt":1786785733120}

@@ -1,0 +1,5 @@
+GET /api/quiz?setId=place-value&clientId=qa-sec-t1-quiz-child-1786811804512&count=4 (call 1)
+
+--- response ---
+status: 200
+{"ok":true,"setId":"place-value","count":4,"repeated":0,"poolSize":11,"questions":[{"id":"pvq1","kind":"mcq","prompt":"What is the value of the 4 in 452?","explanation":null,"topic":null,"difficulty":1,"payload":{"answer":1,"options":["40","400","4,000","4"]}},{"id":"pvq5","kind":"mcq","prompt":"How many hundreds are in 1,000?","explanation":null,"topic":null,"difficulty":1,"payload":{"answer":3,"options":["100","1","1,000","10"]}},{"id":"pvq6","kind":"mcq","prompt":"What is 10 more than 291?","explanation":null,"topic":null,"difficulty":1,"payload":{"answer":0,"options":["301","292","281","391"]}},{"id":"pv-m2","kind":"multi","prompt":"Which of these are less than 500?","explanation":null,"topic":null,"difficulty":1,"payload":{"answers":[0,3],"options":["490","605","512","308"]}}]}

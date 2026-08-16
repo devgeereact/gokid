@@ -1,0 +1,5 @@
+GET /api/quiz?setId=place-value&clientId=qa-sec-t1-quiz-child-1786811804512&count=4 (call 2, immediately after call 1)
+
+--- response ---
+status: 200
+{"ok":true,"setId":"place-value","count":4,"repeated":0,"poolSize":11,"questions":[{"id":"pvq3","kind":"mcq","prompt":"Write 600 + 30 + 8 as one number.","explanation":null,"topic":null,"difficulty":1,"payload":{"answer":2,"options":["683","6,308","638","68"]}},{"id":"pv-m5","kind":"match","prompt":"Match each number to how many hundreds it has.","explanation":null,"topic":null,"difficulty":1,"payload":{"pairs":[{"left":"305","right":"3 hundreds"},{"left":"540","right":"5 hundreds"},{"left":"812","right":"8 hundreds"}]}},{"id":"pvq2","kind":"mcq","prompt":"Which number is 100 more than 342?","explanation":null,"topic":null,"difficulty":1,"payload":{"answer":0,"options":["442","242","432","352"]}},{"id":"pvq4","kind":"mcq","prompt":"Which is larger?","explanation":null,"topic":null,"difficulty":1,"payload":{"answer":3,"options":["405","None","Equal","450"]}}]}

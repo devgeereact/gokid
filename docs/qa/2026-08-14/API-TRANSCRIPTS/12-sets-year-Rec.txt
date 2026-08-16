@@ -1,0 +1,14 @@
+REQUEST: GET /api/sets?year=Rec
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Fri, 14 Aug 2026 22:35:51 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"count":3,"sets":[{"id":"rec-letter-sounds","title":"Letter sounds (phonics)","subject":"English","topic":"Phonics","yearCode":"Rec","description":"Reception • English • Phonics — hear and say the sound each letter makes.","minutes":9,"cardsTotal":6,"quizCount":5},{"id":"rec-numbers-to-10","title":"Numbers to 10","subject":"Maths","topic":"Number and place value","yearCode":"Rec","description":"Reception • Maths • Number and place value — count and name numbers from 0 to 10.","minutes":10,"cardsTotal":6,"quizCount":5},{"id":"rec-plants-animals","title":"Plants and animals","subject":"Science","topic":"Living things","yearCode":"Rec","description":"Reception • Science • Living things — name common plants and animals and spot what is alive.","minutes":11,"cardsTotal":6,"quizCount":5}]}
