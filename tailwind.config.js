@@ -30,6 +30,11 @@ module.exports = {
         0.5: "2px",
         1: "4px",
         2: "8px",
+        // Icon nudge inside a filled CTA ("Next →", "Try again →"). Off the 4pt step, and INFERRED —
+        // it is the value those buttons already shipped with as an inline `marginLeft: 10`. Recorded
+        // as a token so the inline styles could go without changing a single rendered pixel; snapping
+        // them to 8 or 12 would have been a silent redesign of three screens.
+        2.5: "10px",
         3: "12px",
         4: "16px",
         5: "20px",
@@ -94,6 +99,17 @@ module.exports = {
         // design/GoKid-sectionsummary-screen.png — below the design system's Caption (13/18),
         // which is the smallest step it defines. Inferred: at 13px the two-word labels wrap and
         // the tile values stop baseline-aligning across the row.
+        //
+        // An accessibility audit (15 Aug 2026) flagged this as text below a readable minimum on five
+        // child-facing screens. Kept at 11px deliberately, because the premise was wrong in a way
+        // worth recording: nothing in this app sets `allowFontScaling={false}` or
+        // `maxFontSizeMultiplier`, so every one of these labels scales with iOS Dynamic Type. 11px is
+        // the size at the DEFAULT setting, not a floor a low-vision user is stuck with.
+        //
+        // The real defect the audit was pointing at was next to it: those labels carried
+        // `numberOfLines={1}`, so as a user's type size grew the label TRUNCATED instead of wrapping.
+        // Scaling text that gets clipped is worse than small text. They now allow two lines, which
+        // changes nothing at default sizes (the labels are short) and degrades gracefully when scaled.
         tile: ["11px", "14px"],
 
         // Emoji avatar glyph, sized to fill the add-a-child ring (~160pt) with padding.

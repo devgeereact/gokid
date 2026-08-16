@@ -99,6 +99,7 @@ export default function QuizInstructions() {
           }`}
         >
           <Image
+            accessible={false}
             accessibilityIgnoresInvertColors
             className="h-full w-full"
             contentFit="contain"

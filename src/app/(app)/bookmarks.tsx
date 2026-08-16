@@ -36,7 +36,7 @@ function BookmarkRow({ set, onRemove }: { set: ApiSet; onRemove: () => void }) {
       onPress={() => router.push({ pathname: "/lesson/[id]", params: { id: set.id } })}
     >
       {art ? (
-        <Image accessibilityIgnoresInvertColors className="h-13 w-13 rounded-full" contentFit="cover" source={art} />
+        <Image accessible={false} accessibilityIgnoresInvertColors className="h-13 w-13 rounded-full" contentFit="cover" source={art} />
       ) : (
         <View className="h-13 w-13 items-center justify-center rounded-full bg-study-wash">
           <SymbolView name="book.fill" size={20} tintColor={colors.primary} weight="semibold" />

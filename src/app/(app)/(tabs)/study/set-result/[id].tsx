@@ -129,6 +129,7 @@ export default function SetResult() {
         <View className="rounded-2xl border border-border bg-white p-4">
           <View className="flex-row">
             <Image
+              accessible={false}
               accessibilityIgnoresInvertColors
               className="h-20 w-20 rounded-xl"
               contentFit="cover"

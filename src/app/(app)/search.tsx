@@ -87,9 +87,13 @@ function SubjectChips({
         accessibilityRole="button"
         accessibilityLabel="All subjects"
         accessibilityState={{ selected: selected === null }}
+        // 36px tall — below Apple's 44pt minimum. `hitSlop` pads the touch target without
+        // touching the chip's own visual size (matches the h-9/hitSlop=6 pattern used for the
+        // bookmark and download-remove buttons elsewhere in the app).
         className={`mr-2 h-9 items-center justify-center rounded-full px-4 active:opacity-80 ${
           selected === null ? "bg-primary" : "border border-border bg-white"
         }`}
+        hitSlop={6}
         onPress={() => onSelect(null)}
       >
         <Text className={`font-text text-body font-semibold ${selected === null ? "text-white" : "text-ink"}`}>
@@ -108,6 +112,7 @@ function SubjectChips({
             className={`mr-2 h-9 items-center justify-center rounded-full px-4 active:opacity-80 ${
               active ? "bg-primary" : subjectTint(subject)
             }`}
+            hitSlop={6}
             onPress={() => onSelect(active ? null : subject)}
           >
             <Text className={`font-text text-body font-semibold ${active ? "text-white" : "text-ink"}`}>
@@ -129,7 +134,14 @@ function ResultRow({ set }: { set: StudySet }) {
       className="mb-3 flex-row items-center rounded-lg border border-border bg-study-lesson p-3 active:opacity-90"
       onPress={() => router.push({ pathname: "/lesson/[id]", params: { id: set.id } })}
     >
-      <Image accessibilityIgnoresInvertColors className="h-13 w-13 rounded-md" contentFit="cover" source={set.thumb} />
+      {/* Decorative — the row's own accessibilityLabel already states title, subject and year. */}
+      <Image
+        accessible={false}
+        accessibilityIgnoresInvertColors
+        className="h-13 w-13 rounded-md"
+        contentFit="cover"
+        source={set.thumb}
+      />
       <View className="ml-3 flex-1">
         <Text numberOfLines={1} className="font-text text-body font-bold text-ink">
           {set.title}

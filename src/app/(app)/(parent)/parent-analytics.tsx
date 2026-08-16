@@ -12,7 +12,7 @@ import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { type AreaRow, duration, type Insight, type Period, useAnalytics } from "@/lib/analytics"
-import { DEFAULT_AVATAR, useChildren, yearLabel } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, yearLabel, washFor} from "@/lib/children"
 
 /**
  * Parent Analytics (design/gokid-screens.md §10 → Analytics). One screen carrying all eight items
@@ -298,7 +298,7 @@ export default function ParentAnalytics() {
                 }`}
                 onPress={() => setChildId(c.id)}
               >
-                <ChildAvatar avatar={c.avatar ?? DEFAULT_AVATAR} className="h-11 w-11" />
+                <ChildAvatar avatar={c.avatar ?? DEFAULT_AVATAR} className="h-11 w-11" wash={washFor(c)} />
                 <View className="ml-2">
                   <Text className="font-text text-body-lg font-bold text-ink">{c.name}</Text>
                   <Text className="font-text text-body text-text-secondary">{yearLabel(c.yearGroup)}</Text>
@@ -317,7 +317,10 @@ export default function ParentAnalytics() {
               accessibilityRole="button"
               accessibilityLabel={p === "week" ? "This week" : "This month"}
               accessibilityState={{ selected: period === p }}
+              // 40px tall — below Apple's 44pt minimum. hitSlop pads the touch target without
+              // resizing the segment (same h-9/hitSlop=6 pattern used elsewhere in the app).
               className={`h-10 flex-1 items-center justify-center rounded-sm ${period === p ? "bg-primary" : ""}`}
+              hitSlop={6}
               onPress={() => router.setParams({ period: p })}
             >
               <Text className={`font-text text-body font-bold ${period === p ? "text-white" : "text-text-secondary"}`}>
