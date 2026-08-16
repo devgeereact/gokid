@@ -1,0 +1,14 @@
+REQUEST: GET /api/sets?year=Y3
+HTTP/1.1 200 OK
+X-Content-Type-Options: nosniff
+Surrogate-Control: no-store
+Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+Pragma: no-cache
+Expires: 0
+content-type: application/json
+Date: Fri, 14 Aug 2026 22:35:51 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+{"ok":true,"count":9,"sets":[{"id":"y3-colour-mixing","title":"Colour and the Colour Wheel","subject":"Art","topic":"Colour and painting","yearCode":"Y3","description":"Year 3 • Art • Colour and painting — primary and secondary colours, mixing them, and warm versus cool.","minutes":9,"cardsTotal":6,"quizCount":5},{"id":"y3-algorithms","title":"Algorithms and Debugging","subject":"Computing","topic":"Algorithms","yearCode":"Y3","description":"Year 3 • Computing • Algorithms — write clear step-by-step instructions and find the bug when they go wrong.","minutes":10,"cardsTotal":6,"quizCount":5},{"id":"capital-cities","title":"Capital Cities of Europe","subject":"Geography","topic":"Europe","yearCode":"Y3","description":"Year 3 • Geography • Europe — match European countries to their capital cities and locate them on a map.","minutes":12,"cardsTotal":5,"quizCount":5},{"id":"y3-roman-britain","title":"The Romans in Britain","subject":"History","topic":"Ancient Rome","yearCode":"Y3","description":"Year 3 • History • Ancient Rome — the Roman invasion of Britain, what the Romans built and why they left.","minutes":12,"cardsTotal":6,"quizCount":5},{"id":"y3-french-greetings","title":"French Greetings and Numbers","subject":"Languages","topic":"Greetings and introductions","yearCode":"Y3","description":"Year 3 • Languages • Greetings and introductions — say hello, give your name and count in French.","minutes":10,"cardsTotal":6,"quizCount":5},{"id":"place-value","title":"Place Value to 1,000","subject":"Maths","topic":"Number and place value","yearCode":"Y3","description":"Year 3 • Maths • Number and place value — recognise the place value of each digit in a three-digit number.","minutes":15,"cardsTotal":6,"quizCount":6},{"id":"y3-pulse-rhythm","title":"Pulse, Rhythm and Pitch","subject":"Music","topic":"Pulse and rhythm","yearCode":"Y3","description":"Year 3 • Music • Pulse and rhythm — keep a steady beat, clap rhythms and hear high from low.","minutes":9,"cardsTotal":6,"quizCount":5},{"id":"y3-festivals","title":"Festivals and Celebrations","subject":"Religious Education","topic":"Festivals and celebrations","yearCode":"Y3","description":"Year 3 • Religious Education • Festivals and celebrations — what major festivals mark and how people celebrate them.","minutes":10,"cardsTotal":6,"quizCount":5},{"id":"human-skeleton","title":"The Human Skeleton","subject":"Science","topic":"Humans","yearCode":"Y3","description":"Year 3 • Science • Humans — name the main bones of the body and explain what the skeleton does.","minutes":15,"cardsTotal":5,"quizCount":4}]}

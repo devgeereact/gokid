@@ -14,7 +14,7 @@ import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { type ApiSet, useSets } from "@/lib/api"
 import { useBookmarks } from "@/lib/bookmarks"
-import { DEFAULT_AVATAR, useChildren, useStudyingChildId, yearLabel } from "@/lib/children"
+import { DEFAULT_AVATAR, useChildren, useStudyingChildId, yearLabel, washFor} from "@/lib/children"
 import { currentTerm } from "@/lib/curriculum"
 import { timeGreeting } from "@/lib/greeting"
 import { useHomeShelves } from "@/lib/home-shelves"
@@ -75,7 +75,7 @@ function LessonCard({
       onPress={() => router.push({ pathname: "/lesson/[id]", params: { id: set.id } })}
     >
       {art ? (
-        <Image accessibilityIgnoresInvertColors className="h-13 w-13 rounded-full" contentFit="cover" source={art} />
+        <Image accessible={false} accessibilityIgnoresInvertColors className="h-13 w-13 rounded-full" contentFit="cover" source={art} />
       ) : (
         <View className="h-13 w-13 items-center justify-center rounded-full bg-study-wash">
           <SymbolView name="book.fill" size={20} tintColor={colors.primary} weight="semibold" />
@@ -129,7 +129,7 @@ function ShelfCard({ set, caption }: { set: ApiSet; caption: string }) {
           visibly boxed. */}
       <View className="h-20 items-center justify-center">
         {art ? (
-          <Image accessibilityIgnoresInvertColors className="h-16 w-16 rounded-full" contentFit="cover" source={art} />
+          <Image accessible={false} accessibilityIgnoresInvertColors className="h-16 w-16 rounded-full" contentFit="cover" source={art} />
         ) : (
           <View className="h-16 w-16 items-center justify-center rounded-full bg-study-wash">
             <SymbolView name="book.fill" size={22} tintColor={colors.primary} weight="semibold" />
@@ -294,7 +294,7 @@ export default function Study() {
       >
         {/* Greeting — real child (name, year, avatar); time-of-day follows the local clock. */}
         <View className="flex-row items-center">
-          <ChildAvatar avatar={avatar} className="h-14 w-14" />
+          <ChildAvatar avatar={avatar} className="h-14 w-14" wash={child ? washFor(child) : undefined} />
           <View className="ml-4 flex-1">
             <Text numberOfLines={1} className="font-text text-h2 font-bold text-ink">
               {timeGreeting()}, {childName}
@@ -326,6 +326,7 @@ export default function Study() {
                 </Text>
               </View>
               <Image
+                accessible={false}
                 accessibilityIgnoresInvertColors
                 className="-mr-2 h-24 w-24"
                 contentFit="contain"

@@ -255,6 +255,7 @@ export default function Progress() {
                   >
                     {c.art ? (
                       <Image
+                        accessible={false}
                         accessibilityIgnoresInvertColors
                         className="h-11 w-11 rounded-md"
                         contentFit="cover"

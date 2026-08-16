@@ -1,0 +1,10 @@
+appId: com.gokid.app
+name: 09 - Switch to Isaac and check for Jacob's data leaking
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Isaac K, Year 4"
+- takeScreenshot: 09a-isaac-study-home
+- tapOn: "Progress"
+- takeScreenshot: 09b-isaac-progress

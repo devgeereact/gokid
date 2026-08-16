@@ -18,9 +18,12 @@ import { colors } from "@/design/tokens"
  */
 
 const SUPPORT_EMAIL = "support@gokid.app"
-// Placeholder App Store id until the listing exists — the link is built here so there is one place to
-// set it. `itms-apps://` opens the Store app directly on device.
-const APP_STORE_ID = "0000000000"
+// No real App Store listing exists yet (pre-launch) — deliberately `null`, not a placeholder numeric
+// id. A placeholder like "0000000000" still passes `Linking.canOpenURL` for `itms-apps://`: the OS
+// only checks that the App Store app can handle the SCHEME, not that the id resolves to anything, so
+// `openExternal`'s honest failure path never fired and a pre-launch tap opened the App Store on a
+// broken page. Set this to the real numeric id once the listing exists — the row needs no other change.
+const APP_STORE_ID: string | null = null
 
 async function openExternal(url: string, failureMessage: string) {
   try {
@@ -94,10 +97,12 @@ export default function Help() {
             label="Rate GoKid"
             border
             onPress={() =>
-              openExternal(
-                `itms-apps://itunes.apple.com/app/id${APP_STORE_ID}?action=write-review`,
-                "The App Store isn't available on this device."
-              )
+              APP_STORE_ID
+                ? openExternal(
+                    `itms-apps://itunes.apple.com/app/id${APP_STORE_ID}?action=write-review`,
+                    "The App Store isn't available on this device."
+                  )
+                : Alert.alert("Not on the App Store yet", "GoKid isn't listed yet, so there's nothing to rate. Check back after launch.")
             }
           />
           <Row symbol="info.circle" label="About GoKid" onPress={() => router.push("/about")} />

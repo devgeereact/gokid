@@ -97,9 +97,10 @@ export async function POST(request: Request): Promise<Response> {
       totals,
     })
   } catch (error) {
-    return Response.json(
-      { ok: false, error: error instanceof Error ? error.message : "unknown" },
-      { status: 500 }
-    )
+    // Log server-side; return generic copy — same discipline as progress+api.ts/quiz+api.ts. This
+    // route previously returned the raw driver error (including parameterised SQL text) straight to
+    // the caller, which is an information leak even on an admin-gated route.
+    console.error("[api/admin/seed] 500", error)
+    return Response.json({ ok: false, error: "Seed failed." }, { status: 500 })
   }
 }

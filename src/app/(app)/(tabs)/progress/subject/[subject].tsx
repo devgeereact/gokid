@@ -25,7 +25,10 @@ import { getSubject, recommendedSets, type Subject } from "@/lib/subjects"
  * `recommendedSets` for the recent strip, and shows an empty state for a slug with no subject.
  *
  * Inferred: the header filter glyph is static/decorative. Topic icons and the focus lightbulb are
- * tinted SF Symbols. "View all" has no target screen yet, so it is an inert demo link.
+ * tinted SF Symbols. "View all" now opens Search pre-filtered to this subject (the search screen
+ * returns every set for a subject when the query is empty — see `searchSets` in lib/search.ts) —
+ * it used to be a Pressable with an empty handler and a comment saying the destination wasn't built
+ * yet; that destination already existed, it just hadn't been wired (design honesty, CLAUDE.md).
  */
 
 type Tone = "teal" | "amber" | "red"
@@ -252,11 +255,9 @@ export default function SubjectProgress() {
             <Text className="font-text text-h3 font-bold text-ink">Recent sets</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="View all recent sets"
+              accessibilityLabel={`View all ${subj.name} sets`}
               className="active:opacity-60"
-              onPress={() => {
-                // Demo — the full "all sets" list screen is not built yet.
-              }}
+              onPress={() => router.push({ pathname: "/search", params: { subject: subj.name } })}
             >
               <Text className="font-text text-body font-bold text-primary">View all</Text>
             </Pressable>

@@ -1,0 +1,5 @@
+GET /api/progress?child=qa-sec-t1-child-1786811804512 (as T2, but that clientId belongs to T1)
+
+--- response ---
+status: 200
+{"ok":true,"reviews":[],"sessions":[]}

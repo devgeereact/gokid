@@ -1,8 +1,10 @@
-import { useUser } from "@clerk/expo"
+import { useAuth, useUser } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
 import { useCallback, useMemo } from "react"
 
 import { useActiveChildId } from "./active-child"
+import { apiDeleteAuthed } from "./api"
+import { clearChildProgress } from "./reviews"
 
 // Children are stored on the parent's Clerk user under `unsafeMetadata`. It is the only
 // user-writable store the client is allowed to touch (AGENTS.md: the app never talks to
@@ -101,6 +103,7 @@ type ChildrenMetadata = {
 
 export function useChildren() {
   const { user } = useUser()
+  const { getToken } = useAuth()
   const children = useMemo(
     () => (user?.unsafeMetadata as ChildrenMetadata | undefined)?.children ?? [],
     [user?.unsafeMetadata]
@@ -142,13 +145,32 @@ export function useChildren() {
       if (!user) throw new Error("removeChild called before the user loaded")
       const next = children.filter((c) => c.id !== id)
       try {
+        // Server first, Clerk second, and in that order for a reason: the Clerk metadata entry is the
+        // only place the client stores this child's `clientId`, and the server row can only be
+        // addressed by it. Remove the entry first and a failed server call would leave a row that
+        // nothing — no screen, no future request, no support tool — can ever name again.
+        //
+        // Before this call existed, deleting a child removed the Clerk entry and left the Postgres
+        // row, its reviews, sessions and certificates standing indefinitely. A parent was told the
+        // child's record was deleted; it was not.
+        const token = await getToken()
+        if (token) {
+          await apiDeleteAuthed(`/api/children/${encodeURIComponent(id)}`, token)
+        }
+        // No token means this child never synced (nothing was ever sent to the server), so there is
+        // nothing on the server to erase and local removal is genuinely complete.
+
         await user.update({ unsafeMetadata: { ...user.unsafeMetadata, children: next } })
+
+        // Local stores are keyed by child id. Left behind, they would resurface against a new child
+        // that happened to reuse the id, and they are also part of what deletion promised.
+        await clearChildProgress(id)
       } catch (error) {
         Sentry.captureException(error, { tags: { flow: "delete-child" } })
         throw error
       }
     },
-    [user, children]
+    [user, children, getToken]
   )
 
   return { children, addChild, updateChild, removeChild }

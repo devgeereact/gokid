@@ -122,6 +122,22 @@ export async function apiGetAuthed<T>(path: string, token: string): Promise<T> {
   return request<T>(path, { headers: { Authorization: `Bearer ${token}` } })
 }
 
+/**
+ * Authed DELETE, for the two erasure routes (`/api/children/:clientId`, `/api/account`).
+ *
+ * Deletion is the one call in this module whose failure must never be softened. Every other request
+ * here can fall back to demo content or an empty state and leave the child no worse off; a delete
+ * that quietly fails leaves a parent believing their child's record is gone when it is still on a
+ * server. So this throws like the rest — and every caller is written to surface it rather than
+ * proceed to the next step of a deletion it cannot complete.
+ */
+export async function apiDeleteAuthed<T>(path: string, token: string): Promise<T> {
+  return request<T>(path, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
 export async function apiPostAuthed<T>(path: string, token: string, body: unknown): Promise<T> {
   return request<T>(path, {
     method: "POST",

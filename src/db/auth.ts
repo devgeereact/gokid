@@ -60,6 +60,15 @@ export async function authenticate(request: Request): Promise<AuthedParent | nul
  * first time. `name`/`yearCode` are accepted from the client because the client is the source of
  * truth for them — but the row is always written under the *verified* parent id, so an upsert can
  * never attach a child to someone else's account.
+ *
+ * On every later sync the row already exists, and this used to just return it unchanged — so a parent
+ * who renamed a child or moved them up a year group (`updateChild` in lib/children.ts, which only
+ * touches Clerk metadata) saw that reflected everywhere in the app except the one place it actually
+ * mattered: the server record `reviews`/`sessions`/`certificates` all key off. The Postgres row was
+ * frozen at whatever the child looked like on the very first sync, forever. Now an existing row is
+ * diffed against the freshly-passed `profile` and updated in place when something changed — still
+ * scoped to the row already resolved by `(clerkUserId, clientId)` above, so this cannot become a way
+ * to write into a different parent's child no matter what the caller sends.
  */
 export async function childFor(
   parent: AuthedParent,
@@ -69,11 +78,20 @@ export async function childFor(
   if (!clientId) return null
 
   const [existing] = await db
-    .select({ id: children.id })
+    .select({ id: children.id, name: children.name, yearCode: children.yearCode })
     .from(children)
     .where(and(eq(children.clerkUserId, parent.clerkUserId), eq(children.clientId, clientId)))
     .limit(1)
-  if (existing) return existing
+
+  if (existing) {
+    if (profile && (profile.name !== existing.name || profile.yearCode !== existing.yearCode)) {
+      await db
+        .update(children)
+        .set({ name: profile.name, yearCode: profile.yearCode })
+        .where(eq(children.id, existing.id))
+    }
+    return { id: existing.id }
+  }
   if (!profile) return null
 
   const [created] = await db

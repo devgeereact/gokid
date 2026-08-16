@@ -4,7 +4,7 @@ import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
 import { SymbolView } from "expo-symbols"
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
@@ -106,11 +106,28 @@ const LETTERS = ["A", "B", "C", "D", "E", "F"]
  * this renders it, or nothing, so each branch below is one line rather than a repeated block that
  * only some kinds remembered to include.
  */
-function Illustration({ source }: { source?: number }) {
+function Illustration({ source, alt }: { source?: number; alt?: string }) {
   if (!source) return null
   return (
     <View className="mb-6 rounded-2xl bg-quiz-card px-4 pb-3 pt-4">
-      <Image accessibilityIgnoresInvertColors className="h-40 w-full" contentFit="contain" source={source} />
+      {/*
+        The picture is part of the question, not decoration, so it must be reachable by VoiceOver.
+        It was previously an unlabelled `Image` inside a plain `View`: a child using a screen reader
+        was asked a question *about a picture* and told nothing about the picture.
+
+        When a question ships no `illustrationAlt`, say so rather than silently marking the image
+        decorative or inventing a description. A child who is told a description is missing can ask
+        someone; a child told nothing does not know there was anything to miss.
+      */}
+      <Image
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={alt ?? "Picture for this question. No description has been written for it yet."}
+        accessibilityIgnoresInvertColors
+        className="h-40 w-full"
+        contentFit="contain"
+        source={source}
+      />
     </View>
   )
 }
@@ -129,7 +146,7 @@ function Question({
   if (q.kind === "mcq" && response.kind === "mcq") {
     return (
       <View>
-        <Illustration source={q.illustration} />
+        <Illustration source={q.illustration} alt={q.illustrationAlt} />
         {q.options.map((opt, i) => {
           const state = checked
             ? i === q.answer
@@ -162,7 +179,7 @@ function Question({
     }
     return (
       <View>
-        <Illustration source={q.illustration} />
+        <Illustration source={q.illustration} alt={q.illustrationAlt} />
         <Text className="mb-4 text-center font-text text-body text-text-secondary">Choose all that apply.</Text>
         {q.options.map((opt, i) => {
           const picked = response.choices.includes(i)
@@ -187,7 +204,7 @@ function Question({
     const right = isResponseCorrect(q, response)
     return (
       <View>
-        <Illustration source={q.illustration} />
+        <Illustration source={q.illustration} alt={q.illustrationAlt} />
         <TextInput
           accessibilityLabel="Your answer"
           editable={!checked}
@@ -222,7 +239,7 @@ function Question({
     }
     return (
       <View>
-        <Illustration source={q.illustration} />
+        <Illustration source={q.illustration} alt={q.illustrationAlt} />
         <Text className="mb-4 text-center font-text text-body text-text-secondary">Tap in order, smallest first.</Text>
         {display.map((origIndex) => {
           const pos = positionOf(origIndex)
@@ -283,7 +300,7 @@ function MatchQuestion({
   }
   return (
     <View>
-      <Illustration source={q.illustration} />
+      <Illustration source={q.illustration} alt={q.illustrationAlt} />
       <View className="flex-row gap-3">
       <View className="flex-1">
         {q.pairs.map((p, i) => {
@@ -363,6 +380,18 @@ export default function Quiz() {
   // NOT refetch: a new draw would be different questions and desync every answer the child gave. So a
   // cached list is used verbatim and the fetch is skipped.
   const { getToken } = useAuth()
+  // Held in a ref, and deliberately NOT a dependency of the serving effect below. Clerk returns a new
+  // `getToken` closure on almost every render, so depending on it re-ran the fetch mid-quiz — and
+  // because api/quiz re-shuffles options on every request by design, the options were re-ordered
+  // underneath a child who had already read them. They tapped "Yesterday" and the app recorded
+  // "Happily". A correct answer scored wrong, and the wrong result went into the SRS engine.
+  // The draw must happen once per attempt; the ref keeps the latest function without re-triggering.
+  // Initialised with the first `getToken`, so it is valid before this sync effect ever runs; the
+  // effect only keeps it current. Writing a ref during render is a lint error and a compiler hazard.
+  const getTokenRef = useRef(getToken)
+  useEffect(() => {
+    getTokenRef.current = getToken
+  }, [getToken])
   const childId = useStudyingChildId()
   // Resuming = returning from the Final Review, identified by carried-back `answers`/`start` params.
   // A resume must reuse the exact questions the child already answered (from the store); a fresh
@@ -387,7 +416,7 @@ export default function Quiz() {
     let active = true
     ;(async () => {
       try {
-        const token = await getToken()
+        const token = await getTokenRef.current()
         if (!token) throw new Error("Not signed in.")
         const questions = await fetchServedQuiz(
           { setId: set.id, clientId: childId, count: localItems.length || 8 },
@@ -407,7 +436,7 @@ export default function Quiz() {
     return () => {
       active = false
     }
-  }, [id, set, childId, resuming, getToken, localItems.length])
+  }, [id, set, childId, resuming, localItems.length])
 
   const items = served ?? localItems
 

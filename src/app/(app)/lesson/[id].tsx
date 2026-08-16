@@ -51,6 +51,7 @@ function RelatedCard({ set, reason }: { set: StudySet; reason: string }) {
     >
       <View className="h-20 items-center justify-center">
         <Image
+          accessible={false}
           accessibilityIgnoresInvertColors
           className="h-16 w-16 rounded-full"
           contentFit="cover"
@@ -104,6 +105,7 @@ export default function LessonDetail() {
       <ScrollView className="flex-1" contentContainerClassName="pb-8" showsVerticalScrollIndicator={false}>
         <View className="h-64 items-center justify-center">
           <Image
+            accessible={false}
             accessibilityIgnoresInvertColors
             className="h-full w-full"
             contentFit="contain"

@@ -1,0 +1,5 @@
+POST /api/progress (as T1) with child.clientId="qa-sec-t2-child-1786811804512" (T2's known clientId), name="HACKED", yearCode="Y6", plus a review cardId="hack-card"
+
+--- response ---
+status: 200
+{"ok":true,"syncedAt":1786811833595}

@@ -1,0 +1,33 @@
+appId: com.gokid.app
+name: 02 - Set detail -> flashcards -> flip -> Tricky/Got it -> complete -> quiz instructions
+---
+# NOTE: does NOT tap "Download this set" here — see 03-devmenu-tap-hijack.yaml, which documents that
+# the Expo dev-menu overlay button sits on the same screen coordinates and swallows the tap in this
+# dev-client build. Download is instead verified by direct navigation in 06-download-verify.yaml.
+- launchApp:
+    clearState: false
+- tapOn: "Jacob K, Year 4"
+- assertVisible: "Start studying"
+- tapOn: "Start studying"
+- assertVisible: "Study cards"
+- tapOn: "Study cards"
+- takeScreenshot: 02c-flashcard-front
+- tapOn: "Show answer"
+- takeScreenshot: 02d-flashcard-flipped
+- tapOn: "Got it"
+- takeScreenshot: 02e-flashcard-card2
+- tapOn: "Show answer"
+- tapOn: "Tricky"
+- takeScreenshot: 02f-flashcard-card3
+- tapOn: "Show answer"
+- tapOn: "Got it"
+- takeScreenshot: 02g-flashcard-card4
+- tapOn: "Show answer"
+- tapOn: "Got it"
+- takeScreenshot: 02h-flashcard-card5
+- tapOn: "Show answer"
+- tapOn: "Tricky"
+- takeScreenshot: 02i-flashcard-card6
+- tapOn: "Show answer"
+- tapOn: "Got it"
+- takeScreenshot: 02j-after-deck-complete

@@ -250,7 +250,7 @@ export default function FlashcardRunner() {
             // turning the card over are different intentions.
             onPress={() => setZoomed(true)}
           >
-            <Image accessibilityIgnoresInvertColors className="h-full w-full" contentFit="contain" source={set.hero} />
+            <Image accessible={false} accessibilityIgnoresInvertColors className="h-full w-full" contentFit="contain" source={set.hero} />
           </Pressable>
           <View className="flex-[2] items-center justify-center px-6">
             <Text className={`font-text text-h2 font-bold text-ink ${reading.align} ${reading.text}`}>

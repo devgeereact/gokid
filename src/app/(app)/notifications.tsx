@@ -21,10 +21,11 @@ import { useProgress } from "@/lib/reviews"
  * has been added… Yesterday", which was never true for anyone: a fixed string on a surface whose
  * entire job is to be believed.
  *
- * This is **not push**. `expo-notifications` is not installed, so nothing here is scheduled or
- * delivered while the app is closed, and the screen says so rather than letting a parent assume they
- * will be told. When that dependency lands, these same derivations become the content of scheduled
- * local notifications and this list stays as the in-app record.
+ * This LIST is **not push**: `expo-notifications` IS installed (package.json, ~57.0.6) and does
+ * schedule a real OS notification, but that is lib/reminders.ts's one daily study reminder, a
+ * separate feature a parent opts into from Settings → Study reminder — not anything derived here.
+ * Nothing on this screen is scheduled or delivered while the app is closed; the footer below says so
+ * rather than letting a parent assume every entry above will also reach them as a push.
  */
 
 const TONE: Record<Note["tone"], string> = {
@@ -111,8 +112,9 @@ export default function Notifications() {
                 <SymbolView name="info.circle" size={16} tintColor={colors["text-secondary"]} weight="regular" />
               </View>
               <Text className="ml-2 flex-1 font-text text-caption text-text-secondary">
-                GoKid doesn’t send phone notifications yet, so this list only updates when you open
-                it. Nothing here will interrupt you or your child.
+                This list only updates when you open it — it isn’t sent to your phone. If you’ve
+                turned on a study reminder (Settings → Study reminder), that’s the only notification
+                GoKid delivers, once a day, and it’s separate from what’s shown here.
               </Text>
             </View>
           </>

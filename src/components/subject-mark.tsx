@@ -46,6 +46,7 @@ export function SubjectMark({
       {subject.art ? (
         // `cover`, not `contain` — see the note above: `contain` is what exposed the corners.
         <Image
+          accessible={false}
           accessibilityIgnoresInvertColors
           className="h-full w-full"
           contentFit="cover"
