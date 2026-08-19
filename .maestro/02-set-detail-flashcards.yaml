@@ -7,8 +7,11 @@ name: 02 - Set detail -> flashcards -> flip -> Tricky/Got it -> complete -> quiz
 - launchApp:
     clearState: false
 - tapOn: "Jacob K, Year 4"
-- assertVisible: "Start studying"
-- tapOn: "Start studying"
+# The Continue-card CTA reads "Start studying" only while the child has never opened the set
+# (src/app/(app)/(tabs)/study/index.tsx:346 switches on contProgress.seen). Once any progress exists
+# it reads "Carry on", so a literal "Start studying" here passes exactly once per fresh child.
+- assertVisible: "Carry on|Start studying"
+- tapOn: "Carry on|Start studying"
 - assertVisible: "Study cards"
 - tapOn: "Study cards"
 - takeScreenshot: 02c-flashcard-front
