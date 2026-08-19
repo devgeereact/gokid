@@ -176,9 +176,10 @@ route already erases that row, so the promise made to parents stays true once bi
 objective that describes content no set teaches is indistinguishable in the data from one that does.
 A boolean would remove the ambiguity permanently instead of relying on a written rule. Half a day.
 
-**Promote the security harness.** `.qa-sec-scratch/` holds reusable scripts that mint throwaway
-identities and exercise IDOR, sync dedupe and the no-repeat rule. Currently gitignored. If you want
-those runnable on demand, they belong in `scripts/` with a README.
+**The security harness is now committed.** Done — it lives in `scripts/qa/` with a README and a
+numbered run order (mint identities, IDOR, no-repeat, published-only, sync replay, verify, cleanup).
+It is the only executable regression suite in the repo. `fixture.json` and captured transcripts stay
+gitignored; the scripts do not. Run `99-cleanup.mjs --yes` after every pass.
 
 **Sentry tracing vs the privacy copy.** `src/app/data-usage.tsx` tells parents there is no
 third-party analytics or tracking. That holds — every Sentry call site is error-scoped — but

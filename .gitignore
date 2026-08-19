@@ -47,10 +47,11 @@ example
 # Local design audit screenshots (38MB of simulator captures)
 design/.audit/
 
-# Reusable QA security harness (throwaway identities, live tokens at runtime) — never committed.
-# Promote to scripts/ if it earns a permanent home; see docs/qa/2026-08-15/workers/security-close.md
-.qa-sec-scratch/
+# QA harness runtime artefacts (scripts/qa/). The scripts themselves are committed; these are not:
+# fixture.json holds throwaway Clerk user ids, .transcripts/ holds captured request/response bodies.
+scripts/qa/fixture.json
+scripts/qa/.transcripts/
 
-# Tool scratch dirs (impeccable, codex) — local artefacts, not project files.
+# Tool scratch dirs — local artefacts, not project files.
 .impeccable/
 .codex/

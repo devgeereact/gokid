@@ -16,12 +16,13 @@ Your training data is Expo SDK 50-era. SDK 57 renamed, moved, or replaced large 
 |---|---|---|
 | Runtime | Expo SDK 57, React Native 0.86, React 19.2 | |
 | Routing | `expo-router` — file-based, routes live in `src/app/` | `typedRoutes` and `reactCompiler` are ON (`app.json` → `experiments`) |
-| Native UI | `@expo/ui` | Real SwiftUI / Jetpack Compose components |
 | Styling | NativeWind 4 + Tailwind 3 | `className` only. Tokens in `tailwind.config.js` |
 | Icons | `expo-symbols` | SF Symbols |
-| Glass / iOS 26 | `expo-glass-effect` | |
 | Errors | `@sentry/react-native` | Wired through `metro.config.js` + config plugin |
 | Language | TypeScript (strict) | |
+| Database | **Postgres on Neon** | `@neondatabase/serverless` — HTTP/WebSocket driver, not `pg` over raw TCP. Server-side only |
+| ORM | **Drizzle** | Schema in `src/db/schema.ts`. Migrations in `drizzle/`, committed — never edit or delete one, generate the next |
+| Auth | **Clerk** | Use `@clerk/expo` (v3 — the package was renamed from `@clerk/clerk-expo`). Skills in `.agents/skills/clerk-*` are the source of truth — read them before writing auth code |
 
 ### Target stack — NOT installed yet
 
@@ -29,12 +30,10 @@ Do not import these until they are actually added to `package.json`. When adding
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Database | **Postgres on Neon** | Serverless driver over HTTP/WebSocket — not `pg` over raw TCP |
-| ORM | **Drizzle** | Schema lives in `src/db/schema.ts`. Migrations via `drizzle-kit`, committed to the repo |
-| Auth | **Clerk** | Use `@clerk/clerk-expo`. Skills in `.agents/skills/clerk-*` are the source of truth — read them before writing auth code |
+| Native UI | **`@expo/ui`** | Removed 2026-08-19. Its SwiftUI `Host` crashes on mount in the SDK 57 dev client, taking down every screen that renders through it (`design/.loop/whoisstudying-log.md`); `RoundedHeading` degrades to plain RN `Text` today. Reinstate when that crash is fixed upstream |
+| Glass / iOS 26 | **`expo-glass-effect`** | Removed 2026-08-19 — installed for months, imported by nothing. Reinstate when an iOS 26 surface actually calls for it |
 | Images | **ImageKit** | All remote images go through ImageKit URL transforms (resize / format / quality). Render with `expo-image`, never bare `<Image>` from `react-native` |
 | Background jobs | **Inngest** | Anything async, retryable, scheduled, or fan-out. Never a `setTimeout` in a component or a fire-and-forget `fetch` |
-| Monitoring | Sentry | Already installed |
 
 **Never put the Neon connection string or the Clerk secret key in the app bundle.** Drizzle and Neon run server-side only (route handlers / Inngest functions). The client talks to an API, never to Postgres directly. Client-safe values only under `EXPO_PUBLIC_*`.
 
@@ -43,8 +42,8 @@ Do not import these until they are actually added to `package.json`. When adding
 ## 2. UI non-negotiables
 
 - **Native tabs. Always.** Use `NativeTabs` from `expo-router/unstable-native-tabs`. Never a JavaScript tab bar, never `@react-navigation` tabs, never a hand-rolled `<View>` tab strip. This is not negotiable and does not get "temporarily" swapped out to unblock something — if native tabs are fighting you, fix the native tabs.
-- Prefer `@expo/ui` native components over reimplementing a control in RN views.
-- iOS 26 surfaces use `expo-glass-effect`. Degrade gracefully on older iOS and on Android — check availability, don't assume.
+- Prefer a native component over reimplementing a control in RN views. `@expo/ui` is the intended source of those and is **not currently installed** — see §1. Reaching for it means installing it and fixing the `Host` crash, not quietly hand-rolling a `<View>` replica.
+- Glass on iOS 26 goes through `expo-glass-effect`, also **not currently installed**. If you add it, degrade gracefully on older iOS and on Android — check availability, don't assume.
 - **No `StyleSheet.create`. No inline `style={{}}`.** NativeWind `className` only.
 - No raw color, spacing, or font-size literals. Extend `tailwind.config.js` theme and use the token.
 - Design source of truth: the mockups in `design/`. Match them; don't improvise a different layout.

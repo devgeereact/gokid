@@ -5,7 +5,6 @@
   "dependencies": {
     "@clerk/backend": "^3.11.7",
     "@clerk/expo": "^3.7.5",
-    "@expo/ui": "~57.0.7",
     "@neondatabase/serverless": "^1.1.0",
     "@sentry/react-native": "~7.11.0",
     "drizzle-orm": "^0.45.2",
@@ -13,10 +12,8 @@
     "expo-auth-session": "~57.0.4",
     "expo-constants": "~57.0.3",
     "expo-dev-client": "~57.0.7",
-    "expo-device": "~57.0.1",
     "expo-file-system": "~57.0.1",
     "expo-font": "~57.0.0",
-    "expo-glass-effect": "~57.0.1",
     "expo-haptics": "~57.0.1",
     "expo-image": "~57.0.1",
     "expo-image-picker": "~57.0.5",
@@ -67,7 +64,10 @@
     "keys:check": "node scripts/keys-check.mjs",
     "check:strands": "node scripts/check-strands.mjs",
     "check:bias": "node scripts/check-answer-bias.mjs",
-    "check:content": "npm run check:strands && npm run check:bias"
+    "check:content": "npm run check:strands && npm run check:bias",
+    "qa:mint": "node scripts/qa/00-mint-users.mjs",
+    "qa:sec": "node scripts/qa/01-idor.mjs && node scripts/qa/02-quiz-no-repeat.mjs && node scripts/qa/04-sync.mjs && node scripts/qa/05-verify-db.mjs",
+    "qa:cleanup": "node scripts/qa/99-cleanup.mjs"
   },
   "private": true
 }
