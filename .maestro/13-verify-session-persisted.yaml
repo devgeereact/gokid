@@ -3,6 +3,9 @@ name: "13 - Regression: study-session mode DOES persist (P0-6 fix)"
 # Companion to 06, which proved the bug. Run this after finishing a session in study-session mode:
 # the summary must report the real card count, not "Cards studied 0".
 ---
+# Runs 04 first rather than assuming its final screen is still on the device. Without this the flow
+# passes only when invoked immediately after 04 by hand, and fails in any suite run.
+- runFlow: 04-study-session-summary.yaml
 - scrollUntilVisible:
     element:
       text: "Next card"
