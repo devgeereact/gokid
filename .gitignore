@@ -57,6 +57,24 @@ docs/qa/*/shots/
 scripts/qa/fixture.json
 scripts/qa/.transcripts/
 
+# JetBrains IDE. The shared half is tracked deliberately — code style, inspection profile,
+# module and VCS mapping — so everyone lints and formats identically. The per-developer half is
+# not: workspace.xml alone holds window layout, open tabs and recent files, and rewrites itself
+# on every IDE action, so it conflicts on every branch.
+#
+# dataSources.local.xml is listed for a second reason: WebStorm stores database credentials there,
+# and this project connects to Neon Postgres.
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/httpRequests/
+.idea/dataSources.local.xml
+.idea/dataSources/
+.idea/sonarlint/
+.idea/**/sonarIssues.xml
+
 # Tool scratch dirs — local artefacts, not project files.
 .impeccable/
 .codex/
