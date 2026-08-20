@@ -72,7 +72,7 @@ When wiring a feature to the backend, the change belongs in the `lib/*` seam, no
 ## Design and build status
 
 - Visual source of truth is the mockups in `design/`. `design/gokid-screens.md` is the full screen inventory with per-item ✅/🟡 build status.
-- `docs/Report.md` is the current diagnostic + launch-readiness report (smoke test, expo-doctor, launch blockers). The critical pre-launch blockers live there: deploy the API server + set `EXPO_PUBLIC_API_URL`, Apple Developer enrolment, and `eas.json` (none exist yet).
+- `docs/LAUNCH.md` is the current production-readiness document — blockers, env vars, deploy sequence, and the manual QA that still needs a human. The remaining P0s are: deploy the API server + set `EXPO_PUBLIC_API_URL`, replace the `REPLACE-ME` hostnames in `eas.json`, set `ADMIN_TOKEN`, and enrol in the Apple Developer Program. `docs/README.md` indexes everything else.
 
 # gstack
 

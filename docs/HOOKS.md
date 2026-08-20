@@ -1,18 +1,23 @@
-# Working-Agent — Hook proposal
+# Rule-enforcement hooks
 
-Companion to [Working-Agent.md](Working-Agent.md).
+The four hooks that keep `AGENTS.md`'s mechanical rules enforced without a human remembering.
+The QA agents that these complement live in [`.claude/agents/gokid-qa-*.md`](../.claude/agents/).
 
 **Status: INSTALLED and verified, 14 August 2026.** Scripts in [scripts/hooks/](../scripts/hooks/),
 wired in [.claude/settings.json](../.claude/settings.json) (checked in, so they apply to anyone working
 in this repo). 28 synthetic payloads exercised, 28 passed, plus a live blocking test of the Stop gate
-against a deliberately broken type. What was built differs from this proposal in three places — see
-"As built" at the end.
+against a deliberately broken type. What was built differs from the original proposal in three
+places — see "As built" at the end.
+
+Re-verified 20 August 2026: the four scripts are present in `scripts/hooks/` and all four are wired
+in `.claude/settings.json` (`guard-destructive` on PreToolUse, `guard-patterns` and `privacy-claim`
+on PostToolUse, `done-gate` on Stop).
 
 ## Agent vs hook — which job is which
 
 An agent *finds* problems. A hook *stops them coming back*. The QA brief is an agent job; the rules in
 `AGENTS.md` are a hook job, because they are cheap, mechanical, and currently enforced only by a human
-remembering. `docs/Report.md` §P2 already flagged this: *"nothing currently keeps `tsc`/lint green except
+remembering. The July diagnostic report flagged this ([`archive/2026-07-20-diagnostic-report.md`](archive/2026-07-20-diagnostic-report.md) §P2): *"nothing currently keeps `tsc`/lint green except
 a human remembering."*
 
 Hooks must finish in seconds and fire on every matching tool call, so nothing expensive belongs here.
@@ -42,7 +47,7 @@ Checks, in order of how often they actually bite:
 | `catch {}` / `catch (e) {}` with an empty body | §3 — no swallowed errors; report to Sentry with context |
 | `#[0-9a-fA-F]{3,8}` in `src/app` or `src/components` | §2 — no raw colour literals, use a token |
 | `p-\[`, `text-\[`, `gap-\[` … arbitrary Tailwind values | §2 — extend `tailwind.config.js` instead |
-| `streak`, `leaderboard`, `lives`, `hearts`, `countdown` (case-insensitive, new occurrences only) | the product brief rejects these mechanics; `ceoaudit.md` found them shipping anyway |
+| `streak`, `leaderboard`, `lives`, `hearts`, `countdown` (case-insensitive, new occurrences only) | the product brief rejects these mechanics; the July CEO audit found them shipping anyway |
 
 Exit code 2 blocks the tool result and feeds the message back to me, so the violation gets fixed in the
 same turn rather than surviving to review.
@@ -130,7 +135,7 @@ So: on any edit to `package.json`, diff the dependency list, and if anything was
 non-blocking reminder naming `src/app/data-usage.tsx` and the new package. Non-blocking on purpose —
 most additions are innocent, and a blocking hook here would train people to ignore it.
 
-This is exactly the CI check `docs/Report.md` recommended, available now without CI.
+This is exactly the CI check the July diagnostic report recommended, available now without CI.
 
 ---
 
@@ -163,7 +168,7 @@ every class of defect a hook prevents is a class the audit no longer has to find
 
 **1. The pattern guard inspects only the text an edit inserted, not the whole file.**
 A whole-file check was the obvious design and it is wrong here. This codebase has pre-existing debt —
-`ceoaudit.md` found streak, leaderboard and points UI shipping — so a whole-file check would fire on
+The July CEO audit found streak, leaderboard and points UI shipping — so a whole-file check would fire on
 every edit to those files until the debt is paid, and a hook that cries on every save gets switched off,
 taking the useful checks with it. Checking inserted text enforces "do not introduce new violations",
 which is true today and stays true. It also removed the need for the allowlist this doc worried about,

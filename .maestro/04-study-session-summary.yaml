@@ -4,12 +4,15 @@ name: 04 - Study session (MCQ) -> answer-result -> session-summary -> set-result
 - launchApp:
     clearState: false
 - tapOn: "Jacob K, Year 4"
-- scrollUntilVisible:
-    element:
-      text: "Multiplication and Division.*"
-    direction: DOWN
-- tapOn:
-    text: "Multiplication and Division.*"
+# Deep link rather than tapping the set title on Study home. When this set is the child's Continue
+# set, that title renders inside the Continue card -- which is a plain View; only its "Carry on"
+# button navigates (study/index.tsx:344-353). The tap therefore "succeeded" on the text node and went
+# nowhere, and every later step failed on a screen that had never changed.
+- openLink: "gokid://lesson/y4-mult-div"
+- assertVisible: "Study cards"
+# "Start a study session" is the accessibilityLabel; the button's visible text is "Study session".
+# The Pressable carries accessibilityRole="button" + accessibilityLabel (lesson/[id].tsx:176-183),
+# so iOS merges the child Text away and the hierarchy exposes only the label. Match the label.
 - tapOn: "Start a study session"
 - takeScreenshot: 04b-session-q1
 - tapOn: "42"
