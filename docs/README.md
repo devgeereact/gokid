@@ -30,6 +30,18 @@ Dated, immutable runs. Each report states its own coverage and what it could *no
 The security probes those runs used are committed and re-runnable: `scripts/qa/` (`npm run qa:sec`,
 then always `npm run qa:cleanup`).
 
+### Resolving paths cited inside the QA runs
+
+Those reports are immutable and still cite the paths that existed when they were written. Current
+locations:
+
+| Cited as | Now at |
+| --- | --- |
+| `ceoaudit.md` | [`archive/2026-07-17-ceo-audit.md`](archive/2026-07-17-ceo-audit.md) |
+| `docs/Report.md` | [`archive/2026-07-20-diagnostic-report.md`](archive/2026-07-20-diagnostic-report.md) |
+| `docs/DEPLOY.md`, `docs/ENV.md`, `docs/HANDOFF.md` | merged into [`LAUNCH.md`](LAUNCH.md) |
+| `docs/Working-Agent.md`, `docs/Working-Agent-Squad.md` | deleted; the briefs are now `.claude/agents/gokid-qa-*.md` |
+
 ## Archive
 
 Superseded, kept for history. **Do not act on these** — most of what they flag is fixed. They are

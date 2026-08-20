@@ -8,8 +8,9 @@ content. Cards are illustrated, quizzes are scored, and per-card mastery drives 
 the app resurfaces what each child is weak on.
 
 Children never authenticate. They are profiles under a parent, selected on a "who's studying?"
-screen. This is deliberate: children signing in with Google or Apple would trigger COPPA verifiable
-parental consent obligations, and most under-13s have no such account.
+screen. The parent is the account holder; a child profile holds only a first name and a year group.
+Keeping children out of the identity system entirely is what allows that minimisation, and it avoids
+depending on under-13s having Google or Apple accounts, which most do not.
 
 ---
 
@@ -103,4 +104,4 @@ There is no unit test suite yet. What exists:
 ## Status
 
 **Not yet shipped.** The client is built and audited; the API has never run outside the Metro dev
-server. Four P0s block submission — see [`docs/LAUNCH.md`](docs/LAUNCH.md) §1.
+server. Three P0s block submission — see [`docs/LAUNCH.md`](docs/LAUNCH.md) §1.

@@ -3,7 +3,9 @@
 // sign-in-ticket endpoint is rate-limited).
 //
 // Run 99-cleanup.mjs when the pass is finished — it deletes both users and their database rows.
-import { bapi, save, writeFixture } from "./lib.mjs"
+import fs from "node:fs"
+
+import { bapi, save, writeFixture, FIXTURE } from "./lib.mjs"
 
 const TS = Date.now()
 
@@ -27,8 +29,26 @@ async function createUser(tag) {
   return u.id
 }
 
+// If the second mint fails, the first user is already live on the instance and no fixture has been
+// written yet — so 99-cleanup has nothing to find and the account is orphaned. Record T1 as soon as
+// it exists, and tear it down if T2 cannot be created.
 const t1 = await createUser("t1")
-const t2 = await createUser("t2")
+writeFixture({ ts: TS, t1 })
+
+let t2
+try {
+  t2 = await createUser("t2")
+} catch (err) {
+  console.error("second mint failed — removing the first user so nothing is left behind")
+  const r = await bapi(`/users/${t1}`, { method: "DELETE" })
+  if (r.status === 200 || r.status === 404) {
+    fs.rmSync(FIXTURE, { force: true })
+    console.error(`rolled back ${t1}`)
+  } else {
+    console.error(`COULD NOT roll back ${t1} (status ${r.status}) — it is recorded in ${FIXTURE}; run 99-cleanup.mjs`)
+  }
+  throw err
+}
 
 const file = writeFixture({ ts: TS, t1, t2 })
 console.log("fixture written:", file)

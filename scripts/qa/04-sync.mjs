@@ -7,7 +7,7 @@
 //     later timestamp, no matter which order the requests arrive in
 //
 // This script only POSTs. Run 05-verify-db.mjs afterwards to read back what actually landed.
-import { mintToken, call, readFixture, stepper } from "./lib.mjs"
+import { summarise, expect, mintToken, call, readFixture, stepper } from "./lib.mjs"
 
 const { t2: T2, ts: TS } = readFixture() // T2 here, distinct from the quiz-phase child under T1
 const CHILD = `qa-sec-t2-sync-child-${TS}`

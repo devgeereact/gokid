@@ -6,8 +6,12 @@ parent's child, that a child is not served the same quiz question twice, that dr
 escapes, and that a replayed or out-of-order sync does not corrupt stored progress.
 
 Promoted here from a throwaway scratch directory after the 2026-08-15 security-close pass
-(`docs/qa/2026-08-15/workers/security-close.md`). This is the only executable regression suite in
-the repo — there is no unit test suite.
+(`docs/qa/2026-08-15/workers/security-close.md`). This is the API and security regression harness; the 14 Maestro
+flows in `.maestro/` cover the interaction layer. There is no unit test suite.
+
+Every documented expectation is a real assertion — `expect()` in `lib.mjs` records failures and
+`summarise()` exits non-zero. Before that, the scripts printed "(expect ...)" prose and exited 0
+regardless, so a genuine isolation break produced a clean run.
 
 ## Prerequisites
 

@@ -6,8 +6,12 @@ The QA agents that these complement live in [`.claude/agents/gokid-qa-*.md`](../
 **Status: INSTALLED and verified, 14 August 2026.** Scripts in [scripts/hooks/](../scripts/hooks/),
 wired in [.claude/settings.json](../.claude/settings.json) (checked in, so they apply to anyone working
 in this repo). 28 synthetic payloads exercised, 28 passed, plus a live blocking test of the Stop gate
-against a deliberately broken type. What was built differs from this proposal in three places — see
-"As built" at the end.
+against a deliberately broken type. What was built differs from the original proposal in three
+places — see "As built" at the end.
+
+Re-verified 20 August 2026: the four scripts are present in `scripts/hooks/` and all four are wired
+in `.claude/settings.json` (`guard-destructive` on PreToolUse, `guard-patterns` and `privacy-claim`
+on PostToolUse, `done-gate` on Stop).
 
 ## Agent vs hook — which job is which
 

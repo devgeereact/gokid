@@ -141,7 +141,11 @@ Order matters. Seeding an unmigrated database fails.
 
 ```bash
 npm run db:migrate                                              # against the deployed DATABASE_URL
-curl -X POST https://<host>/api/admin/seed -H "x-admin-token: $ADMIN_TOKEN"
+# Pass the token via a curl config file rather than argv: a shell expands $ADMIN_TOKEN before
+# curl starts, so it would be visible in the process list and in any `set -x` trace.
+printf 'header = "x-admin-token: %s"\n' "$ADMIN_TOKEN" > /tmp/gokid-admin.conf
+curl -K /tmp/gokid-admin.conf -X POST https://<host>/api/admin/seed
+rm -f /tmp/gokid-admin.conf
 ```
 
 There is no migration hook, deploy step or app-boot call that seeds content — a fresh environment
@@ -217,7 +221,19 @@ updated; `scripts/hooks/privacy-claim.mjs` already does this locally.
 
 ### Simulator state left behind
 
-- **Parent passcode is `1234`** — none existed before; change or clear it.
-- **Jacob K has real study progress** recorded from testing (flashcards and quizzes). Isaac is clean.
-- Jacob's avatar was changed to 🐨 by a test worker and **restored to 🐻**; incident note in
+The test simulator is **not** in a clean state. Before trusting a fresh run, or handing the device
+to anyone, reset it:
+
+- **A parent passcode was set during testing.** None existed before. Clear it in Parent Zone →
+  Settings, or wipe the simulator (`xcrun simctl erase <UDID>`).
+- **One child profile carries real study progress** from flashcard and quiz testing, so any
+  screenshot of the progress tab reflects test data rather than a first-run state. A second profile
+  is clean.
+- One profile's avatar was changed by a test worker and restored; the incident note is in
   [`qa/2026-08-15/REPORT.md`](qa/2026-08-15/REPORT.md) §3c.
+
+> **Do not record child names, avatars or progress values in this file.** This repository is public,
+> and GoKid's whole privacy posture — the ICO Children's Code commitments in
+> `src/app/data-usage.tsx`, the data minimisation in the schema — is undermined by a launch document
+> that names a child and describes their study record. Describe device state generically; keep the
+> specifics on the device.
