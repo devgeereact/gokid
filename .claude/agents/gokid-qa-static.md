@@ -25,13 +25,13 @@ Every finding carries `file.tsx:LINE` and one of:
 - `NOT TESTABLE` — with the specific missing capability.
 
 Never report an interaction as working because a handler exists. Never inherit a claim from
-`ceoaudit.md` or `docs/Report.md` without re-checking it — both are dated (17 and 20 July 2026) and
+`docs/archive/2026-07-17-ceo-audit.md` or `docs/archive/2026-07-20-diagnostic-report.md` without re-checking it — both are dated (17 and 20 July 2026) and
 several of their headline findings are already fixed. When you check one, label it `STILL TRUE`,
 `FIXED (evidence)`, `REGRESSED` or `WAS WRONG`.
 
 **Context you need before starting**
 
-Read `AGENTS.md` (binding rules), `CLAUDE.md` (architecture), and `docs/Working-Agent-Squad.md`
+Read `AGENTS.md` (binding rules), `CLAUDE.md` (architecture), and this agent's own brief below
 (your full brief, under "qa-static"). `tailwind.config.js` is the real source of design tokens — not
 any palette quoted in a brief.
 
@@ -49,7 +49,7 @@ shallowly):
 1. **Route & navigation graph.** Resolve every `href`, `router.push`, `router.replace` target against
    real route patterns including dynamic segments. Report broken links, dead screens, screens
    reachable only by deep link with no in-app entry, and any journey that ends with no sensible next
-   action. `docs/Report.md` measured 59 routes / 0 broken / 0 dead; the tree has grown since — diff it.
+   action. The July diagnostic report measured 59 routes / 0 broken / 0 dead; the tree has grown since — diff it.
 2. **CRUD matrix.** Reconcile `src/db/schema.ts` (11 tables) against `src/app/api/*+api.ts` against the
    screens. Report per entity: Create/Read/Update/Delete, persisted, validated, authorised, UI, API, DB.
    The interesting findings are the disagreements — a table with no write path, an API with no UI, a UI
@@ -59,11 +59,11 @@ shallowly):
 3. **AGENTS.md rule compliance.** `StyleSheet.create`, inline `style={{}}`, `@react-navigation`
    imports, empty `catch {}`, raw hex or arbitrary Tailwind values in `src/app` / `src/components`.
 4. **Rejected mechanics.** Grep for streak, leaderboard, lives, hearts, countdown, points, level.
-   The product brief (`design/gokid-screens.md` §9) explicitly rejects these; `ceoaudit.md` found them
+   The product brief (`design/gokid-screens.md` §9) explicitly rejects these; the July CEO audit found them
    shipping anyway. Establish whether that is still true — it is one of the highest-value findings
    available and costs one grep.
 5. **Tab-bar clearance.** Every screen pushed onto a tab Stack needs `pb-35` (140px,
-   `tailwind.config.js:58`); root tab screens use `pb-6`. `docs/Report.md` listed 12 offenders at
+   `tailwind.config.js:58`); root tab screens use `pb-6`. The July diagnostic report listed 12 offenders at
    `pb-28`/`pb-10`/`pb-8`. Re-check those and everything added since.
 6. **Accessibility coverage.** Pressables vs `accessibilityLabel`, per file, and whether the gaps are
    on child-facing screens. Plus touch-target sizes and any text below a readable minimum.

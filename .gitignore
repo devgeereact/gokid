@@ -47,6 +47,11 @@ example
 # Local design audit screenshots (38MB of simulator captures)
 design/.audit/
 
+# QA device-run screenshots. 87 captures / 35MB from the 15 Aug Tier 2/3 run — kept on disk as
+# local evidence for docs/qa/2026-08-15/REPORT.md, but not in git, for the same reason as
+# design/.audit/ above. shots-verify/ IS committed: those six are the proof for two P0 fixes.
+docs/qa/*/shots/
+
 # QA harness runtime artefacts (scripts/qa/). The scripts themselves are committed; these are not:
 # fixture.json holds throwaway Clerk user ids, .transcripts/ holds captured request/response bodies.
 scripts/qa/fixture.json

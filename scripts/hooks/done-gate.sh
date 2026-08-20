@@ -2,7 +2,7 @@
 # Stop hook — AGENTS.md §5: `npx tsc --noEmit` clean and `npm run lint` clean before any task is done.
 #
 # Today that is honour-system, and there are no tests and no CI, so these two commands are the only
-# automated gates that exist in this repository (docs/Report.md §P2).
+# automated gates that exist in this repository (docs/LAUNCH.md P1-1).
 #
 # Skips entirely when nothing under src/ has changed, so conversation-only turns pay nothing.
 #

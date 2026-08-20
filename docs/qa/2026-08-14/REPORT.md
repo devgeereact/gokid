@@ -7,6 +7,15 @@
 
 ---
 
+> **Note on document paths (added 20 Aug 2026).** This report is a dated, immutable record and its
+> inline citations use the paths that were current when it was written. Since then: `ceoaudit.md` →
+> [`../../archive/2026-07-17-ceo-audit.md`](../../archive/2026-07-17-ceo-audit.md), `docs/Report.md` →
+> [`../../archive/2026-07-20-diagnostic-report.md`](../../archive/2026-07-20-diagnostic-report.md), and
+> `docs/DEPLOY.md` / `docs/ENV.md` / `docs/HANDOFF.md` were merged into
+> [`../../LAUNCH.md`](../../LAUNCH.md). The findings below are unedited.
+
+---
+
 ## 1. Coverage header — read this before the score
 
 | Tier | Ran | What it can prove |

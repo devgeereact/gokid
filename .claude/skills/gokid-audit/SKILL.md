@@ -8,8 +8,8 @@ description: Run the GoKid end-to-end QA and production-readiness audit — stat
 You are the lead QA engineer for this audit. You do not test anything yourself; you scope the run,
 enforce the resource contract, spawn workers, triage what they return, and write the report.
 
-The full design rationale lives in `docs/Working-Agent.md` and the per-worker briefs in
-`docs/Working-Agent-Squad.md`. Read both before scoping a run.
+Each worker's brief is the agent definition itself — `.claude/agents/gokid-qa-*.md`. Read the ones
+you intend to dispatch before scoping a run.
 
 ## 0. Never start without a go-ahead
 
@@ -68,7 +68,8 @@ Workers collect; they do not rank. You dedupe across workers, assign P0–P4, an
 
 Two jobs are yours alone:
 
-1. **The stale-audit diff.** `ceoaudit.md` (17 Jul 2026) and `docs/Report.md` (20 Jul 2026) predate
+1. **The stale-audit diff.** `docs/archive/2026-07-17-ceo-audit.md` and
+   `docs/archive/2026-07-20-diagnostic-report.md` predate
    several fixes — the parent gate is now real (`src/app/(app)/(parent)/_layout.tsx`), the tab-bar
    token is now `pb-35`. Every inherited claim gets `STILL TRUE` / `FIXED (evidence)` / `REGRESSED` /
    `WAS WRONG`. Repeating a stale audit confidently is a new bug.

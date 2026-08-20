@@ -3,7 +3,7 @@
 // the product brief explicitly rejects.
 //
 // It inspects ONLY the text this edit inserted — not the whole file. That matters: the codebase has
-// pre-existing debt (ceoaudit.md found streak/leaderboard UI shipping), and a whole-file check would
+// pre-existing debt (the July CEO audit found streak/leaderboard UI shipping), and a whole-file check would
 // fire on every edit to those files until the debt is paid, which is how a hook gets switched off.
 // "Do not introduce new violations" is enforceable today; "the file is clean" is not.
 //
@@ -85,7 +85,7 @@ const RULES = [
     test: /\b(streak|leaderboard|countdown)\b/i,
     msg:
       "rejected motivational mechanic (streak / leaderboard / countdown). design/gokid-screens.md §9 " +
-      "rejects these deliberately; ceoaudit.md found them shipping anyway. If this is intentional " +
+      "rejects these deliberately; the July CEO audit found them shipping anyway. If this is intentional " +
       "removal or a comment about them, say so and re-apply.",
   },
 ]

@@ -5,7 +5,7 @@
 // SDK and no third-party tracker. That is true today. It becomes a false statement to parents the
 // moment someone adds a dependency — and nobody will remember the copy exists.
 //
-// docs/Report.md recommended this as a CI check. This is the same check, available without CI.
+// The July diagnostic report recommended this as a CI check. This is the same check, without CI.
 //
 // Fires only when a dependency was actually ADDED (not on version bumps, not on removals), which
 // makes it rare enough to stay signal.
