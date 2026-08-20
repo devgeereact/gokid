@@ -84,7 +84,7 @@ if (tool === "Bash") {
     deny(
       "BLOCKED: a CODE_SIGNING_ALLOWED=NO build has empty entitlements. Every Keychain call then fails\n" +
         "with OSStatus -34018, Clerk's isLoaded never flips, and the app hangs on the splash forever\n" +
-        "(docs/Report.md §1). Use the default adhoc simulator signing — pass no signing flags at all."
+        "(docs/archive/2026-07-20-diagnostic-report.md §1). Use the default adhoc simulator signing — pass no signing flags at all."
     )
   }
 

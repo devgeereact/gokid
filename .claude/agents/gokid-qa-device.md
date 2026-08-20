@@ -77,7 +77,7 @@ the birth-year extremes the picker permits.
 Two children in different year groups (Y3 and Y1). Complete a session as one, switch, then check every
 progress surface, recommendation shelf, download list and parent screen for leakage.
 `src/lib/reviews.ts` keys storage per child — confirm the key is applied on every *read* path, not only
-on write. `ceoaudit.md` found `/parent-content` showing demo children rather than the real ones;
+on write. The July CEO audit found `/parent-content` showing demo children rather than the real ones;
 re-check it. Then delete a child that has progress, and delete the *last* child: what happens to the
 active-child selection, the DB row, and where does the app land?
 

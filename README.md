@@ -1,56 +1,106 @@
-# Welcome to your Expo app 👋
+# GoKid
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An AI-powered flashcard and quiz app for UK primary school children (Reception–Year 6).
 
-## Get started
+A parent signs in, creates a profile for each child with their year group, and the app serves study
+sets pinned to actual UK National Curriculum learning objectives — not generic "age-appropriate"
+content. Cards are illustrated, quizzes are scored, and per-card mastery drives spaced repetition so
+the app resurfaces what each child is weak on.
 
-1. Install dependencies
+Children never authenticate. They are profiles under a parent, selected on a "who's studying?"
+screen. This is deliberate: children signing in with Google or Apple would trigger COPPA verifiable
+parental consent obligations, and most under-13s have no such account.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## Stack
 
-   ```bash
-   npx expo start
-   ```
+| Layer | Choice |
+| --- | --- |
+| Runtime | Expo SDK 57, React Native 0.86, React 19.2 |
+| Routing | `expo-router` — file-based, routes in `src/app/` |
+| Styling | NativeWind 4 + Tailwind 3 (`className` only; tokens in `tailwind.config.js`) |
+| Auth | Clerk (`@clerk/expo` v3) — Apple + Google SSO only, no email/password |
+| Database | Neon Postgres via `@neondatabase/serverless` (HTTP driver), server-side only |
+| ORM | Drizzle — schema in `src/db/schema.ts`, migrations in `drizzle/` |
+| Errors | `@sentry/react-native` |
 
-In the output, you'll find options to open the app in a
+**The client never touches Postgres.** All server access goes through Expo Router API routes
+(`src/app/api/*+api.ts`), which own the Drizzle connection. Server secrets carry no `EXPO_PUBLIC_`
+prefix, so Metro never inlines them into the app bundle.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Full rules, forbidden actions and the definition of done: **[`AGENTS.md`](AGENTS.md)**.
+Architecture that only becomes visible after reading several files: **[`CLAUDE.md`](CLAUDE.md)**.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
-
-When you're ready, run:
+## Getting started
 
 ```bash
-npm run reset-project
+npm install
+cp .env.example .env     # then fill it in — see docs/LAUNCH.md §2
+npm start                # dev server on port 5062
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+This project uses native modules, so **Expo Go will not work**. You need a dev client build:
 
-### Other setup steps
+```bash
+npm run ios              # or: npm run android
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+> `npx expo run:ios` mis-targets the host Mac as a device here and fails on code signing. To run on
+> the simulator, build and install directly — see [`CLAUDE.md`](CLAUDE.md) for the exact command.
+> Do **not** build with `CODE_SIGNING_ALLOWED=NO`: it produces empty entitlements, which breaks the
+> Keychain (`OSStatus -34018`) and hangs the app on the splash while Clerk never loads.
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## Commands
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm start            # dev server (port 5062)
+npm run ios          # dev client build — NOT Expo Go
+npm run android
+npm run lint
+npx tsc --noEmit     # must pass before any task is "done"
 
-## Join the community
+npm run db:generate  # new migration from src/db/schema.ts (needs a TTY)
+npm run db:migrate   # apply migrations to DATABASE_URL
+npm run db:studio
+npm run db:ping      # verify the Neon connection is live
+npm run keys:check   # validate the API keys in .env
 
-Join our community of developers creating universal apps.
+npm run check:content # curriculum strand coverage + quiz answer-position bias
+npm run qa:sec        # security regression suite (IDOR, no-repeat, sync replay)
+npm run qa:cleanup    # ALWAYS run after qa:sec — deletes the throwaway Clerk users
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Testing
+
+There is no unit test suite yet. What exists:
+
+- **`.maestro/`** — 14 interaction flows (14/14 passing). Requires Maestro installed.
+- **`scripts/qa/`** — 7 API and security probes against a live dev server and database.
+- **`scripts/hooks/`** — 4 rule-enforcement hooks wired in `.claude/settings.json`.
+
+`npx tsc --noEmit` and `npm run lint` are the only gates that run everywhere, and both must pass.
+
+---
+
+## Documentation
+
+| File | What it is |
+| --- | --- |
+| [`AGENTS.md`](AGENTS.md) | Binding rules, tech stack, UI non-negotiables, forbidden actions |
+| [`CLAUDE.md`](CLAUDE.md) | Architecture — routing guards, the `lib/*` data seam, client/server boundary |
+| [`PLAN.md`](PLAN.md) | The original backend-first design plan, plus where the build diverged from it |
+| [`docs/LAUNCH.md`](docs/LAUNCH.md) | **Production readiness — current blockers and the deploy sequence** |
+| [`docs/README.md`](docs/README.md) | Index of everything under `docs/` |
+| [`design/`](design/) | Visual source of truth. `design/gokid-screens.md` is the screen inventory with build status |
+
+---
+
+## Status
+
+**Not yet shipped.** The client is built and audited; the API has never run outside the Metro dev
+server. Four P0s block submission — see [`docs/LAUNCH.md`](docs/LAUNCH.md) §1.

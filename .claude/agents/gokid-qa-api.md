@@ -56,7 +56,7 @@ Confirm reachability with `GET /api/health` before anything else.
    client id is claimed. Then POST two conflicting reviews of one card with different `lastReviewedAt`
    in both arrival orders and confirm last-write-wins is by timestamp, not by arrival.
 6. **Release blocker.** Confirm whether `EXPO_PUBLIC_API_URL` is set. It was absent as of 14 Aug 2026,
-   which makes `src/lib/api.ts:19` throw in any release build — `docs/Report.md`'s P0. Report the
+   which makes `src/lib/api.ts:21` throw in any release build — `docs/LAUNCH.md`'s P0-1. Report the
    current state; do not repeat the old finding as if fresh.
 
 **Evidence rules**
