@@ -106,6 +106,12 @@ jobs:
       # Without this, a dependency that breaks the deploy is discovered at the first
       # deploy, which is the worst possible moment to find it.
       - name: Export web bundle (workerd)
+        env:
+          # Static rendering evaluates the app at export time, so src/app/_layout.tsx throws
+          # without a Clerk key. This is a syntactically valid dummy, not a real key: nothing
+          # contacts Clerk during a bundle, and hardcoding a real publishable key would tie CI
+          # to one Clerk instance and break it on rotation.
+          EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk
         run: npx expo export -p web
 
       - name: Confirm the API routes bundled
