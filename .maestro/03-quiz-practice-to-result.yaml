@@ -15,28 +15,49 @@ name: 03 - Quiz (practice mode) -> answer questions -> Check answer -> results
 - assertVisible: "Start quiz"
 - takeScreenshot: 03a-quiz-instructions
 - tapOn: "Start quiz"
+# The questions come from /api/quiz over the network, so the option rows land after the screen does.
 - takeScreenshot: 03b-quiz-q1
+- extendedWaitUntil:
+    visible:
+      id: "quiz-option-0"
+    timeout: 30000
 - tapOn:
     id: "quiz-option-0"
 - tapOn: "Check answer"
 - takeScreenshot: 03c-quiz-q1-checked
 - tapOn: "Next"
 - takeScreenshot: 03d-quiz-q2
+- extendedWaitUntil:
+    visible:
+      id: "quiz-option-0"
+    timeout: 30000
 - tapOn:
     id: "quiz-option-0"
 - tapOn: "Check answer"
 - tapOn: "Next"
 - takeScreenshot: 03e-quiz-q3
+- extendedWaitUntil:
+    visible:
+      id: "quiz-option-0"
+    timeout: 30000
 - tapOn:
     id: "quiz-option-0"
 - tapOn: "Check answer"
 - tapOn: "Next"
 - takeScreenshot: 03f-quiz-q4
+- extendedWaitUntil:
+    visible:
+      id: "quiz-option-0"
+    timeout: 30000
 - tapOn:
     id: "quiz-option-0"
 - tapOn: "Check answer"
 - tapOn: "Next"
 - takeScreenshot: 03g-quiz-q5
+- extendedWaitUntil:
+    visible:
+      id: "quiz-option-0"
+    timeout: 30000
 - tapOn:
     id: "quiz-option-0"
 - tapOn: "Check answer"

@@ -65,12 +65,22 @@ const optionCard = (state: "idle" | "selected" | "correct" | "wrong") =>
 /** A tappable answer row shared by MCQ (radio) and multi-select (checkbox). */
 function OptionRow({
   glyph,
+  index,
   label,
   state,
   onPress,
   disabled,
 }: {
   glyph: string
+  /**
+   * Position in the rendered option list. Drives testID only — never shown, never spoken.
+   *
+   * It exists for the Maestro flows. api/quiz shuffles the options on every serving and the
+   * 12-hour no-repeat rule serves a different question next run, so a flow cannot name an option
+   * by its text without going stale after one pass. This is the stable handle: select by position,
+   * read the label back, assert the answer recorded is the one tapped.
+   */
+  index: number
   label: string
   state: "idle" | "selected" | "correct" | "wrong"
   onPress: () => void
@@ -84,6 +94,7 @@ function OptionRow({
       accessibilityLabel={label}
       accessibilityState={{ selected: state === "selected" }}
       disabled={disabled}
+      testID={`quiz-option-${index}`}
       className={`mb-3 h-16 flex-row items-center rounded-2xl border px-3 active:opacity-90 ${optionCard(state)}`}
       onPress={onPress}
     >
@@ -161,6 +172,7 @@ function Question({
             <OptionRow
               key={i}
               glyph={LETTERS[i]}
+              index={i}
               label={opt}
               state={state}
               disabled={checked}
@@ -189,6 +201,7 @@ function Question({
             <OptionRow
               key={i}
               glyph={picked || (checked && isAnswer) ? "✓" : ""}
+              index={i}
               label={opt}
               state={state}
               disabled={checked}
@@ -241,7 +254,7 @@ function Question({
       <View>
         <Illustration source={q.illustration} alt={q.illustrationAlt} />
         <Text className="mb-4 text-center font-text text-body text-text-secondary">Tap in order, smallest first.</Text>
-        {display.map((origIndex) => {
+        {display.map((origIndex, i) => {
           const pos = positionOf(origIndex)
           const correctPos = checked ? origIndex : -1
           const state = checked ? (pos === correctPos ? "correct" : "wrong") : pos >= 0 ? "selected" : "idle"
@@ -249,6 +262,7 @@ function Question({
             <OptionRow
               key={origIndex}
               glyph={pos >= 0 ? String(pos + 1) : ""}
+              index={i}
               label={q.items[origIndex]}
               state={state}
               disabled={checked}
