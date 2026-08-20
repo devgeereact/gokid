@@ -47,6 +47,15 @@ example
 # Local design audit screenshots (38MB of simulator captures)
 design/.audit/
 
+# Design iteration captures. 186 files / 77MB, and the single largest thing that was in
+# this repository's history — bigger than everything else combined. Kept on disk as local
+# reference, purged from history on 2026-08-20 along with docs/qa/*/shots.
+#
+# AGENTS.md cites design/.loop/whoisstudying-log.md for the @expo/ui Host crash. That file
+# is on the author's disk and not in a fresh clone; the crash it documents is summarised in
+# AGENTS.md §1 itself, which is the part that matters.
+design/.loop/
+
 # QA device-run screenshots. 87 captures / 35MB from the 15 Aug Tier 2/3 run — kept on disk as
 # local evidence for docs/qa/2026-08-15/REPORT.md, but not in git, for the same reason as
 # design/.audit/ above. shots-verify/ IS committed: those six are the proof for two P0 fixes.
