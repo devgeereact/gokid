@@ -80,11 +80,17 @@ npm run qa:cleanup    # ALWAYS run after qa:sec — deletes the throwaway Clerk 
 
 There is no unit test suite yet. What exists:
 
-- **`.maestro/`** — 14 interaction flows (14/14 passing). Requires Maestro installed.
-- **`scripts/qa/`** — 7 API and security probes against a live dev server and database.
+- **`.github/workflows/ci.yml`** — runs on every PR and every push to `main`: typecheck, lint,
+  content integrity, and `expo export -p web`. That last one builds the real Cloudflare Workers
+  bundle EAS Hosting serves, so a dependency that cannot survive workerd fails the PR rather than
+  the deploy.
+- **`.maestro/`** — 14 interaction flows (14/14 passing). Requires Maestro installed; not in CI.
+- **`scripts/qa/`** — 7 API and security probes against a live dev server and database. Needs real
+  credentials, so it runs by hand, not in CI. Every check asserts and exits non-zero on failure.
 - **`scripts/hooks/`** — 4 rule-enforcement hooks wired in `.claude/settings.json`.
 
-`npx tsc --noEmit` and `npm run lint` are the only gates that run everywhere, and both must pass.
+There is no unit test suite yet. `npx tsc --noEmit` and `npm run lint` must pass before any task is
+"done" (`AGENTS.md` §5); CI now enforces that rather than relying on memory.
 
 ---
 

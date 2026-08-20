@@ -47,7 +47,7 @@ billable hole as well as a data risk.
 
 | # | Item | Note |
 | --- | --- | --- |
-| **P1-1** | No CI | `.github/` does not exist. Nothing keeps `tsc` and `lint` green except a human remembering |
+| **P1-1** | ~~No CI~~ **Done** | `.github/workflows/ci.yml` runs typecheck, lint, content checks and `expo export -p web` on every PR and every push to `main`. The export gate is the important one: it builds the actual workerd bundle EAS Hosting runs, so a dependency that breaks the deploy fails the PR instead of the deploy |
 | **P1-2** | No unit tests | Zero `*.test.*` files. The spaced-repetition fold (`src/lib/reviews.ts`) and quiz scoring are pure functions and are the highest-value things to test — quiz scoring already shipped a P0 that reported 1/5 for a perfect run |
 | **P1-3** | In-app child delete unproven | The server cascade is proven at API and database level. The in-app path has never been driven by a real tap. See §5 |
 | **P1-4** | Sentry tracing vs the privacy copy | `src/app/_layout.tsx:30` sets `tracesSampleRate: 0.2` in production. `src/app/data-usage.tsx` tells parents there is no third-party analytics or tracking. Every Sentry *call site* is error-scoped, and `sendDefaultPii` is `false`, so the claim holds in spirit — but tracing does send navigation and timing telemetry. Either add a line to the copy or turn tracing off. Small now, large if a regulator reads it closely |
