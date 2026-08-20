@@ -50,13 +50,19 @@ previous flow's last screen is still on the device.
 Idempotency is the bar: 12 flows create their own state or reset it (12 removes an existing download
 before downloading again). A flow that passes once and then fails is worse than no flow.
 
-## Known gap — 03 and 14
+## The quiz flows (03, 14) select by position, never by text
 
-Both drive the quiz, whose questions come from `/api/quiz` — shuffled per serving, and subject to the
-12-hour no-repeat rule, so a second run is served a different draw by design. Naming an option by its
-text works exactly once. Fixing this needs a content-independent handle on an option row; the work is
-outstanding and these two flows fail until it lands. Do not "fix" them by re-hardcoding today's
-answers.
+Quiz questions come from `/api/quiz` — shuffled per serving, and subject to the 12-hour no-repeat
+rule, so a second run is served a different draw by design. Naming an option by its text works
+exactly once, which is why an earlier 03 tapped "After lunch," and 14 asserted "Question 1 of 5".
+
+Both now use the `quiz-option-<i>` testID on the option rows (`quiz/[id].tsx`), which is the only
+content-independent handle on a row. 14 reads the label back with `copyTextFrom` before tapping and
+asserts the same row still carries the same text afterwards — the exact thing a re-shuffle breaks,
+whatever question is served today. Do not "fix" these by re-hardcoding an answer.
+
+The options arrive over the network after the screen renders, so every answer tap is preceded by an
+`extendedWaitUntil` on `quiz-option-0`. Without it the flow taps into an empty list intermittently.
 
 ## Trap: a stale Metro cache looks like an app that ignores your edits
 

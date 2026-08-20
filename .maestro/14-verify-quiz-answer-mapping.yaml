@@ -16,6 +16,11 @@ name: "14 - Regression: the answer recorded equals the answer tapped (P0-5 fix)"
 - openLink: "gokid://quiz/instructions/y4-mult-div"
 - assertVisible: "Start quiz"
 - tapOn: "Start quiz"
+# The options arrive from /api/quiz over the network, after the screen itself renders.
+- extendedWaitUntil:
+    visible:
+      id: "quiz-option-0"
+    timeout: 30000
 - takeScreenshot: 14a-quiz-q1-before
 - copyTextFrom:
     id: "quiz-option-0"
