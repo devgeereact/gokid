@@ -1,0 +1,94 @@
+# CI for GoKid.
+#
+# Until now nothing kept `tsc` and `lint` green except a human remembering, which
+# docs/LAUNCH.md tracks as P1-1. The repository is public, so Actions minutes are
+# unlimited and there is no cost argument for leaving this out.
+#
+# Three gates, in two parallel jobs so the slow one does not delay the fast feedback.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A new push supersedes the previous run for the same ref. Cancel the old one rather
+# than paying for a result nobody will read. `push` runs on main are never cancelled.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  gates:
+    name: Typecheck, lint, content
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # AGENTS.md §5: both of these must pass before any task is "done".
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      # Curriculum strand coverage and quiz answer-position bias. Pure source scans —
+      # no database, no network — so they are safe to run on every PR.
+      - name: Content integrity
+        run: npm run check:content
+
+  bundle:
+    name: Worker bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      # The gate PLAN.md argues for, and the reason this job exists separately.
+      #
+      # EAS Hosting runs the API routes on Cloudflare Workers (workerd) with
+      # `nodejs_compat`, not Node. The local dev server runs them in real Node, so every
+      # workerd-specific failure — a dependency reaching for `node:worker_threads`, a
+      # package that will not survive Metro's single-file CommonJS bundle — is invisible
+      # during development and only appears at export time.
+      #
+      # This builds the exact bundle EAS Hosting would run. It needs no EAS account, no
+      # deploy and no secrets: `EXPO_PUBLIC_*` values are inlined at build time and their
+      # absence does not fail the bundle, while server secrets are read at runtime only.
+      #
+      # Without this, a dependency that breaks the deploy is discovered at the first
+      # deploy, which is the worst possible moment to find it.
+      - name: Export web bundle (workerd)
+        run: npx expo export -p web
+
+      - name: Confirm the API routes bundled
+        run: |
+          routes=$(find dist/server/_expo/functions -name '*.js' 2>/dev/null | wc -l)
+          echo "API route bundles: $routes"
+          if [ "$routes" -lt 1 ]; then
+            echo "::error::No API route bundles were produced. web.output is 'server', so this means the export silently dropped them."
+            exit 1
+          fi
