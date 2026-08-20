@@ -4,7 +4,7 @@
 // or write another parent's child — the server has to scope every row by the Clerk user id in the
 // bearer token. This drives both directions plus the abuse case where one parent posts another
 // parent's known clientId, and finishes on the unauthenticated / malformed-token edges.
-import { mintToken, call, readFixture, stepper } from "./lib.mjs"
+import { summarise, expect, mintToken, call, readFixture, stepper } from "./lib.mjs"
 
 const { t1: T1, t2: T2, ts: TS } = readFixture()
 
@@ -109,4 +109,24 @@ console.log("r7 (T2 unknown clientId create):", r7.status, r7.text.slice(0, 200)
 console.log("r8 (no auth progress):", r8.status, r8.text.slice(0, 200))
 console.log("r9 (malformed token progress):", r9.status, r9.text.slice(0, 200))
 console.log("r10 (no auth quiz):", r10.status, r10.text.slice(0, 200))
+
+console.log("\n=== ASSERTIONS ===")
+
+// Cross-family reads must not resolve another parent's child. The server resolves a child by
+// (verified parent, clientId) together, so a foreign clientId must behave exactly like an unknown
+// one — never 200 with data.
+const noCrossData = (r) => r.status !== 200 || !(r.json?.reviews?.length || r.json?.sessions?.length)
+expect("T1 cannot read T2's child", noCrossData(r3), `status ${r3.status}`)
+expect("T2 cannot read T1's child", noCrossData(r4), `status ${r4.status}`)
+expect("T1 cannot quiz with T2's clientId", noCrossData(r5), `status ${r5.status}`)
+
+// An abusive write under another parent's clientId must not land on that parent's child.
+expect("T1 abuse-write does not reach T2's child", r6.status !== 200 || r6.json?.childId !== T2_CHILD, `status ${r6.status}`)
+
+// Unauthenticated and malformed-token requests must fail closed, never fall through to data.
+expect("no-auth progress is rejected", r8.status === 401, `status ${r8.status}`)
+expect("malformed-token progress is rejected", r9.status === 401, `status ${r9.status}`)
+expect("no-auth quiz is rejected", r10.status === 401, `status ${r10.status}`)
+
 console.log("\nT1_CHILD=", T1_CHILD, "T2_CHILD=", T2_CHILD, "UNKNOWN_CHILD=", UNKNOWN_CHILD)
+summarise("01-idor")

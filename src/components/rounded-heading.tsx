@@ -21,7 +21,7 @@ type Props = {
  * `Host` hard-crashes the app the moment it mounts (drops straight back to the Expo
  * launcher), taking every screen that renders a heading down with it — so `@expo/ui` was
  * uninstalled rather than left as dead native weight, and this degrades to a plain RN
- * `Text` (system SF Pro, not rounded). `size`/`weight`/`color` are carried by
+ * `Text` (platform default system font, not rounded). `size`/`weight`/`color` are carried by
  * `fallbackClassName`; the extra props are kept so callers don't change when the package
  * is reinstated and `Host` returns.
  */

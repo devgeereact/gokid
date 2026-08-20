@@ -7,6 +7,7 @@ import "dotenv/config"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { Buffer } from "node:buffer"
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 
@@ -151,4 +152,36 @@ export function stepper(startAt) {
     log(`[${id}] ${name} -> status ${result.status}`, file)
     return result
   }
+}
+
+
+/**
+ * Assertions, so a failing security check actually fails the run.
+ *
+ * Before this existed every script printed its expectation as prose — `console.log("...(expect
+ * false)")` — and exited 0 regardless. `npm run qa:sec` chains the scripts with `&&`, so the exit
+ * code was the only pass/fail signal, and nothing ever set it. A genuine cross-family read, a
+ * repeated question or a leaked draft row would have produced a clean, green run.
+ *
+ * A security suite that cannot fail is worse than no suite, because it manufactures confidence.
+ * Call `expect()` for every documented expectation and `summarise()` at the end of each script.
+ */
+const failures = []
+
+export function expect(name, condition, detail = "") {
+  const ok = Boolean(condition)
+  if (!ok) failures.push(detail ? `${name} — ${detail}` : name)
+  console.log(`${ok ? "  PASS" : "  FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`)
+  return ok
+}
+
+/** Print the tally and exit non-zero if anything failed. Call at the end of every check script. */
+export function summarise(scriptName) {
+  if (failures.length === 0) {
+    console.log(`\n=== ${scriptName}: PASS ===`)
+    return
+  }
+  console.log(`\n=== ${scriptName}: FAIL (${failures.length}) ===`)
+  for (const f of failures) console.log(`  - ${f}`)
+  process.exit(1)
 }

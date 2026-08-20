@@ -37,13 +37,26 @@ console.log("deleted children rows:", deleted.length)
 const draftDeleted = await sql`delete from quiz_questions where id like 'qa-sec-%' returning id`
 console.log("deleted temp quiz_questions:", draftDeleted.length)
 
-for (const id of [t1, t2]) {
+// fixture.json holds the ONLY record of these throwaway Clerk user ids. If a delete fails and the
+// fixture is removed anyway, the user is orphaned on the instance with nothing left to identify it.
+// So: track failures, and keep the fixture unless every delete succeeded.
+const undeleted = []
+for (const id of [t1, t2].filter(Boolean)) {
   const r = await bapi(`/users/${id}`, { method: "DELETE" })
-  console.log(`${r.status === 200 ? "deleted" : "FAILED "} clerk user ${id} (status ${r.status})`)
+  const gone = r.status === 200 || r.status === 404 // 404 = already deleted, which is success here
+  if (!gone) undeleted.push(id)
+  console.log(`${gone ? "deleted" : "FAILED "} clerk user ${id} (status ${r.status})`)
 }
 
 const after = await sql`select count(*)::int as n from children where client_id like 'qa-sec-%'`
 console.log("children matching qa-sec-% after delete:", after[0].n)
+
+if (undeleted.length > 0) {
+  console.error(`\nKEEPING ${FIXTURE} — ${undeleted.length} Clerk user(s) were not deleted:`)
+  for (const id of undeleted) console.error(`  - ${id}`)
+  console.error("Re-run this script once the instance is reachable, or delete them by hand.")
+  process.exit(1)
+}
 
 fs.rmSync(FIXTURE, { force: true })
 console.log("fixture removed:", FIXTURE)

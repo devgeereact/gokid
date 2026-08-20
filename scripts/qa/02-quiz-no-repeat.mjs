@@ -3,7 +3,7 @@
 // A child must not be served the same question twice in a sitting. Once the fresh pool is exhausted
 // the endpoint may top up from recently-seen questions, but it has to reach for the *oldest-seen*
 // first. Also covers count= edge values (over-large, zero, negative, non-numeric).
-import { mintToken, call, readFixture, stepper } from "./lib.mjs"
+import { summarise, expect, mintToken, call, readFixture, stepper } from "./lib.mjs"
 
 const { t1: T1, ts: TS } = readFixture()
 const SET = "place-value" // published pool = 11 (largest available)
@@ -44,8 +44,25 @@ const overlap12 = ids(r1.json).filter((x) => ids(r2.json).includes(x))
 console.log("overlap(call1, call2):", overlap12, "(expect empty)")
 const call3Repeats = ids(r3.json).filter((x) => ids(r1.json).includes(x) || ids(r2.json).includes(x))
 console.log("call3 repeats seen before:", call3Repeats)
-console.log("call3 repeats from call1 (expected, oldest-seen)?", call3Repeats.every((x) => ids(r1.json).includes(x)))
-console.log("call3 repeats from call2 (should be false)?", call3Repeats.some((x) => ids(r2.json).includes(x) && !ids(r1.json).includes(x)))
+console.log("\n=== ASSERTIONS ===")
+
+// The 12-hour no-repeat rule: two consecutive calls must not overlap at all.
+expect("call1 and call2 share no questions", overlap12.length === 0, `overlap: ${JSON.stringify(overlap12)}`)
+
+// Call 3 exhausts the pool and must fall back to the OLDEST-seen questions (call1's), never call2's.
+// `every` on an empty array is vacuously true, so the emptiness case is asserted separately rather
+// than being allowed to masquerade as a pass.
+expect("call3 fell back to a non-empty repeat set", call3Repeats.length > 0, `got ${call3Repeats.length} repeats`)
+expect(
+  "call3 repeats come from call1 (oldest-seen first)",
+  call3Repeats.length > 0 && call3Repeats.every((x) => ids(r1.json).includes(x)),
+  `repeats: ${JSON.stringify(call3Repeats)}`
+)
+expect(
+  "call3 does not re-serve call2's questions",
+  !call3Repeats.some((x) => ids(r2.json).includes(x) && !ids(r1.json).includes(x)),
+  "a call2 question was re-served before call1's were exhausted"
+)
 if (call3Repeats[0]) {
   console.log("repeated id:", call3Repeats[0])
   console.log("  options when first served:", JSON.stringify(options(ids(r1.json).includes(call3Repeats[0]) ? r1.json : r2.json, call3Repeats[0])))
@@ -56,3 +73,5 @@ console.log("count=0   -> served count:", r5.json?.count)
 console.log("count=-5  -> served count:", r6.json?.count)
 console.log("count=abc -> served count:", r7.json?.count)
 console.log("\nCHILD=", CHILD)
+
+summarise("02-quiz-no-repeat")
