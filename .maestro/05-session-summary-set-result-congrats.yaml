@@ -1,6 +1,9 @@
 appId: com.gokid.app
 name: 05 - Session summary -> set-result -> congratulations (continues from 04)
 ---
+# Runs 04 first rather than assuming its final screen is still on the device. Without this the flow
+# passes only when invoked immediately after 04 by hand, and fails in any suite run.
+- runFlow: 04-study-session-summary.yaml
 # Continues directly from 04's last screen (Answer Result for the 6th/last card). If the app was
 # closed since, this flow cannot resume it - run 04 immediately before this one in the same session.
 - scrollUntilVisible:
@@ -9,6 +12,14 @@ name: 05 - Session summary -> set-result -> congratulations (continues from 04)
     direction: DOWN
 - tapOn: "Next card"
 - takeScreenshot: 05a-session-summary
+# Both CTAs sit under the stats block (session-summary/[id].tsx:250-268) and are off-screen on a
+# summary with a full set of stats. Scroll before asserting -- Maestro's assertVisible means
+# on-screen, not present-in-tree.
+- scrollUntilVisible:
+    element:
+      text: "Continue studying"
+    direction: DOWN
+    visibilityPercentage: 60
 - assertVisible: "Continue studying"
 - assertVisible: "Take a break"
 - tapOn: "Continue studying"

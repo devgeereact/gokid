@@ -6,5 +6,29 @@ name: 12 - Download a set and verify via UI + filesystem
 - tapOn: "Jacob K, Year 4"
 - openLink: "gokid://download/y4-fronted-adverbials"
 - takeScreenshot: 12a-download-screen-render
+# The CTA sits below "What's included" / "Preview" / the reassurance row, so it is off-screen on
+# first render and Maestro will not tap what it cannot see.
+- scrollUntilVisible:
+    element:
+      text: "Download this set|Remove this download"
+    direction: DOWN
+    visibilityPercentage: 60
+# Once a set has been downloaded the screen correctly shows "Saved for offline use" + "Remove
+# download" and the download CTA is gone (download/[id].tsx:235-270) -- so a flow that only ever
+# taps "Download this set" passes once and fails every run after. Clear the state first when it is
+# already there, so this flow always exercises a real download.
+- runFlow:
+    when:
+      visible: "Remove this download"
+    commands:
+      - tapOn: "Remove this download"
+      - assertVisible: "Download this set"
+- scrollUntilVisible:
+    element:
+      text: "Download this set"
+    direction: DOWN
+    visibilityPercentage: 60
 - tapOn: "Download this set"
 - takeScreenshot: 12b-download-in-progress
+- assertVisible: "Saved for offline use"
+- takeScreenshot: 12c-download-complete

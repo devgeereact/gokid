@@ -1,20 +1,36 @@
 appId: com.gokid.app
 name: "14 - Regression: the answer recorded equals the answer tapped (P0-5 fix)"
-# Companion to 03. Flow 03 hardcoded option text, which cannot survive the 12-hour no-repeat rule —
-# a second run is served DIFFERENT questions by design, so hardcoded answers go stale. This flow
-# tests the invariant that actually broke instead: whatever option the child taps must be the option
-# the app records. Before the fix, api/quiz re-shuffled the options on every re-fire of the serving
-# effect (Clerk's getToken was in its dependency array), so the tapped index pointed at a different
-# option by the time it was read: "Yesterday" tapped, "Happily" recorded.
+# The invariant: whatever option the child taps must be the option the app grades and records.
 #
-# Assumes the quiz is open on "What is 56 / 8?" — a Multiplication and Division draw. If a different
-# question is served, update the two option strings below to that question's correct answer.
+# Before the fix, api/quiz re-shuffled the options on every re-fire of the serving effect (Clerk's
+# getToken sat in its dependency array), so the tapped index pointed at a different option by the
+# time it was read: "Yesterday" tapped, "Happily" recorded.
+#
+# This flow never names a question or an answer. It reads the first option's label off the screen,
+# taps that row, grades it, and asserts the same row still carries the same label -- which is
+# exactly what a re-shuffle would break, whatever question the 12-hour no-repeat rule serves today.
 ---
-- assertVisible: "Question 1 of 5"
-- tapOn: "7"
+- launchApp:
+    clearState: false
+- tapOn: "Jacob K, Year 4"
+- openLink: "gokid://quiz/instructions/y4-mult-div"
+- assertVisible: "Start quiz"
+- tapOn: "Start quiz"
+# The options arrive from /api/quiz over the network, after the screen itself renders.
+- extendedWaitUntil:
+    visible:
+      id: "quiz-option-0"
+    timeout: 30000
+- takeScreenshot: 14a-quiz-q1-before
+- copyTextFrom:
+    id: "quiz-option-0"
+- tapOn:
+    id: "quiz-option-0"
 - tapOn: "Check answer"
-- takeScreenshot: 14a-answer-recorded
-# The quiz screen grades in place — the chosen row turns green and the CTA becomes "Next". There is
-# no "Correct!" banner here (that wording belongs to the answer-result screen in study-session mode).
+- takeScreenshot: 14b-answer-recorded
+# The quiz grades in place -- the row turns green or red and the CTA becomes "Next". There is no
+# "Correct!" banner here; that wording belongs to the answer-result screen in study-session mode.
 - assertVisible: "Next"
-- assertVisible: "7"
+- assertVisible:
+    id: "quiz-option-0"
+    text: "${maestro.copiedText}"

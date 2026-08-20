@@ -47,10 +47,34 @@ example
 # Local design audit screenshots (38MB of simulator captures)
 design/.audit/
 
-# Reusable QA security harness (throwaway identities, live tokens at runtime) — never committed.
-# Promote to scripts/ if it earns a permanent home; see docs/qa/2026-08-15/workers/security-close.md
-.qa-sec-scratch/
+# QA device-run screenshots. 87 captures / 35MB from the 15 Aug Tier 2/3 run — kept on disk as
+# local evidence for docs/qa/2026-08-15/REPORT.md, but not in git, for the same reason as
+# design/.audit/ above. shots-verify/ IS committed: those six are the proof for two P0 fixes.
+docs/qa/*/shots/
 
-# Tool scratch dirs (impeccable, codex) — local artefacts, not project files.
+# QA harness runtime artefacts (scripts/qa/). The scripts themselves are committed; these are not:
+# fixture.json holds throwaway Clerk user ids, .transcripts/ holds captured request/response bodies.
+scripts/qa/fixture.json
+scripts/qa/.transcripts/
+
+# JetBrains IDE. The shared half is tracked deliberately — code style, inspection profile,
+# module and VCS mapping — so everyone lints and formats identically. The per-developer half is
+# not: workspace.xml alone holds window layout, open tabs and recent files, and rewrites itself
+# on every IDE action, so it conflicts on every branch.
+#
+# dataSources.local.xml is listed for a second reason: WebStorm stores database credentials there,
+# and this project connects to Neon Postgres.
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/httpRequests/
+.idea/dataSources.local.xml
+.idea/dataSources/
+.idea/sonarlint/
+.idea/**/sonarIssues.xml
+
+# Tool scratch dirs — local artefacts, not project files.
 .impeccable/
 .codex/
