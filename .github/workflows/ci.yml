@@ -41,6 +41,18 @@ jobs:
 
       - run: npm ci
 
+      # expo-env.d.ts is in .gitignore (Expo's own template puts it there and the file says
+      # "should be in your git ignore"), but tsconfig.json `include`s it, and it carries the
+      # `expo/types` reference that declares CSS side-effect imports like global.css. A fresh
+      # clone therefore fails typecheck with TS2882 while a developer machine passes, because
+      # theirs was written by a local Expo run. No `expo` subcommand regenerates it on demand,
+      # so write it here. Content is verbatim what Expo emits.
+      - name: Generate expo-env.d.ts
+        run: |
+          if [ ! -f expo-env.d.ts ]; then
+            printf '/// <reference types="expo/types" />\n\n// NOTE: This file should not be edited and should be in your git ignore' > expo-env.d.ts
+          fi
+
       # AGENTS.md §5: both of these must pass before any task is "done".
       - name: Typecheck
         run: npx tsc --noEmit
@@ -66,6 +78,18 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # expo-env.d.ts is in .gitignore (Expo's own template puts it there and the file says
+      # "should be in your git ignore"), but tsconfig.json `include`s it, and it carries the
+      # `expo/types` reference that declares CSS side-effect imports like global.css. A fresh
+      # clone therefore fails typecheck with TS2882 while a developer machine passes, because
+      # theirs was written by a local Expo run. No `expo` subcommand regenerates it on demand,
+      # so write it here. Content is verbatim what Expo emits.
+      - name: Generate expo-env.d.ts
+        run: |
+          if [ ! -f expo-env.d.ts ]; then
+            printf '/// <reference types="expo/types" />\n\n// NOTE: This file should not be edited and should be in your git ignore' > expo-env.d.ts
+          fi
 
       # The gate PLAN.md argues for, and the reason this job exists separately.
       #
