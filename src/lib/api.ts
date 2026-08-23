@@ -2,7 +2,16 @@ import Constants from "expo-constants"
 import * as Sentry from "@sentry/react-native"
 import { useCallback, useEffect, useState } from "react"
 
-import type { MixedQuestion } from "@/lib/study"
+import type { MixedQuestion } from "@/lib/study-types"
+
+/**
+ * The wire contract lives in a leaf module so the curriculum (and therefore `api/admin/seed+api.ts`)
+ * can reach it without pulling this file's `@sentry/react-native` import into the Cloudflare Worker
+ * bundle, where a module-scope `setInterval` is illegal. Re-exported here so client code is unchanged.
+ */
+import { type ApiSet, type ServedQuiz, servedToMixed } from "./api-contract"
+
+export { type ApiSet, type ServedQuiz, servedToMixed }
 
 /**
  * Client → API layer. The app never touches Postgres directly (AGENTS.md); it calls the Expo Router
@@ -146,20 +155,6 @@ export async function apiPostAuthed<T>(path: string, token: string, body: unknow
   })
 }
 
-/** What `GET /api/sets` returns per set. Content only — a child's progress is layered on separately. */
-export type ApiSet = {
-  id: string
-  title: string
-  subject: string
-  topic: string
-  yearCode: string
-  description: string
-  minutes: number
-  /** Derived server-side from the real row count, so it can never drift from the cards that exist. */
-  cardsTotal: number
-  quizCount: number
-}
-
 type Query<T> = {
   data: T | null
   loading: boolean
@@ -223,47 +218,6 @@ function useQuery<T>(path: string, enabled = true): Query<T> {
     errorKind: fresh ? result.errorKind : null,
     reload,
   }
-}
-
-/**
- * A no-repeat quiz served for a specific child — `GET /api/quiz` (see api/quiz+api.ts).
- *
- * Unlike `getStudySet`, which returns a set's fixed question list identical for everyone, this asks
- * the server for questions this child has NOT seen in the last 12 hours, already shuffled and with
- * option positions re-randomised. The server owns the no-repeat rule; the client just renders what it
- * is handed. `repeated > 0` means the pool was exhausted inside the window and some questions were
- * re-served — the signal to grow the pool with the generator.
- */
-export type ServedQuiz = {
-  ok: boolean
-  setId: string
-  count: number
-  repeated: number
-  poolSize: number
-  questions: {
-    id: string
-    kind: MixedQuestion["kind"]
-    prompt: string
-    explanation: string | null
-    topic: string | null
-    difficulty: number
-    payload: Record<string, unknown>
-  }[]
-}
-
-/**
- * Reassemble a served row into the flat `MixedQuestion` the quiz runner consumes. The server stores
- * the kind-specific fields under `payload` (options/answer, accept, items, pairs …); the client union
- * carries them at the top level, so this is the inverse of the server's `toStoredColumns` split.
- */
-export function servedToMixed(row: ServedQuiz["questions"][number]): MixedQuestion {
-  const base = {
-    id: row.id,
-    prompt: row.prompt,
-    ...(row.explanation ? { explanation: row.explanation } : {}),
-    ...(row.topic ? { topic: row.topic } : {}),
-  }
-  return { ...base, kind: row.kind, ...row.payload } as MixedQuestion
 }
 
 /**

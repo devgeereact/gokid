@@ -14,14 +14,14 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-ME.example.com"
+        "EXPO_PUBLIC_API_URL": "https://gokid.expo.app"
       }
     },
     "production": {
       "autoIncrement": true,
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REPLACE-ME.example.com"
+        "EXPO_PUBLIC_API_URL": "https://gokid.expo.app"
       }
     }
   },
