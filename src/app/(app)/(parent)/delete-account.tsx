@@ -2,7 +2,7 @@ import { useAuth, useUser } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useState } from "react"
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native"
 
@@ -11,10 +11,11 @@ import { BackButton } from "@/components/primitives"
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { apiDeleteAuthed } from "@/lib/api"
-import { useChildren } from "@/lib/children"
 import { clearAllBookmarks } from "@/lib/bookmarks"
+import { useChildren } from "@/lib/children"
 import { clearAllDownloads } from "@/lib/downloads"
 import { clearAllProgress } from "@/lib/reviews"
+import { forgetSession } from "@/lib/session-cache"
 
 /**
  * Delete Account (design/gokid-screens.md §16 → Privacy → "Delete Account"). Until now the only exit
@@ -81,6 +82,10 @@ export default function DeleteAccount() {
       await clearAllProgress()
       await clearAllBookmarks()
       clearAllDownloads()
+      // The offline copy of the child roster too. It is the one store that exists precisely because
+      // Clerk cannot always be asked, so it is also the one that would survive a deletion carried
+      // out by asking Clerk. See lib/session-cache.ts.
+      forgetSession()
     } catch (error) {
       Sentry.captureException(error, { tags: { flow: "delete-account" } })
       setFailed(true)

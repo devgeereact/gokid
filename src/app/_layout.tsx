@@ -13,6 +13,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context"
 import { EmptyState } from "@/components/empty-state"
 import { SafeAreaView } from "@/components/styled"
 import { REMINDER_NOTIFICATION_ID } from "@/lib/reminders"
+import { hydrateDownloads } from "@/lib/downloads"
+import { hydrateSessionCache } from "@/lib/session-cache"
 
 // Time-to-display and native frame tracking need native modules Expo Go doesn't ship.
 const navigationIntegration = Sentry.reactNavigationIntegration({
@@ -76,6 +78,15 @@ function RootLayout() {
   // the entry fork (src/app/index.tsx) or the last screen happened to be — a real entry point into
   // the app that led nowhere in particular.
   const notificationResponse = Notifications.useLastNotificationResponse()
+
+  // Downloaded sets are content the app already has; installing it is a startup concern, not
+  // something that should wait for the parent to open the Storage screen. See lib/downloads.
+  useEffect(() => {
+    void hydrateDownloads()
+    // Read before the entry gate needs it: with no network Clerk never answers, and this is what
+    // decides whether the app opens or shows the sign-in screen. See lib/session-cache.ts.
+    hydrateSessionCache()
+  }, [])
 
   useEffect(() => {
     if (navigationRef?.current) {

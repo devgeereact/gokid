@@ -1,8 +1,17 @@
 appId: com.gokid.app
-name: 07 - Progress tab reflects Jacob's flashcard session (positive control)
+name: 07 - Progress tab reflects Jacob's study record
 ---
 - launchApp:
     clearState: false
+- assertVisible: "Who’s studying?"
 - tapOn: "Jacob K, Year 4"
 - tapOn: "Progress"
+- extendedWaitUntil:
+    visible: "Your progress"
+    timeout: 15000
+# One of the two, and never both: either the child has a record and the screen shows it, or they do
+# not and the screen says so. A blank Progress tab is neither, and was what a screenshot-only flow
+# could not tell apart from a working one.
+- assertVisible: "Your progress"
+- assertNotVisible: "No progress yet"
 - takeScreenshot: 07a-progress-tab-jacob

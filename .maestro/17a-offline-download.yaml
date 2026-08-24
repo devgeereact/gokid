@@ -1,0 +1,51 @@
+appId: com.gokid.app
+name: 17a - Online - download a set and confirm the payload landed
+# Step one of the offline journey. Driven by scripts/qa/offline-e2e.sh, which turns the Mac's Wi-Fi
+# off between this flow and 17b — Maestro cannot toggle a Mac's network itself, and on the iOS
+# simulator there is no airplane mode to toggle.
+#
+# The set is deliberately one the child has NOT been studying, so nothing in the offline flow can be
+# satisfied by a cached screen or by progress recorded earlier in the suite.
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Jacob K, Year 4"
+
+- openLink: "gokid://download/y4-states-of-matter"
+- extendedWaitUntil:
+    visible: "Download Set"
+    timeout: 15000
+# "What's included" sits below the hero and is off-screen on first render; `assertVisible` means
+# on-screen, not in-tree. The screen's own title is the destination proof, and the CTA below is
+# reached with an explicit scroll.
+
+# Always exercise a real download: once a set is saved, the CTA becomes "Remove download" and a flow
+# that only ever taps "Download this set" passes once and fails on every run after.
+- scrollUntilVisible:
+    element:
+      text: "Download this set|Remove this download"
+    direction: DOWN
+    visibilityPercentage: 60
+- runFlow:
+    when:
+      visible: "Remove this download"
+    commands:
+      - tapOn: "Remove this download"
+      - assertVisible: "Download this set"
+
+- tapOn: "Download this set"
+- extendedWaitUntil:
+    visible: "Saved for offline use"
+    timeout: 60000
+- assertVisible: "Saved for offline use"
+- takeScreenshot: 17a-download-complete
+
+# The downloads manager must agree. A download that the Storage screen cannot see is a file on disk
+# that nothing in the app knows about.
+- openLink: "gokid://offline"
+- extendedWaitUntil:
+    visible: "Downloaded sets"
+    timeout: 15000
+- assertVisible: "States of Matter"
+- takeScreenshot: 17b-download-listed

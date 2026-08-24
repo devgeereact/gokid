@@ -1,7 +1,8 @@
 import { useAuth } from "@clerk/expo"
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Alert, Pressable, ScrollView, Text, View } from "react-native"
 
 import { ChildAvatar } from "@/components/child-avatar"

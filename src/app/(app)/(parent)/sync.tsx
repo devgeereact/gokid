@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { ScrollView, Text, View } from "react-native"
 
 import { AlertBanner } from "@/components/alert-banner"

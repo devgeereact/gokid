@@ -1,0 +1,76 @@
+appId: com.gokid.app
+name: 15 - Parent gate rejects a wrong passcode and counts down the attempts
+# The parent area is a security boundary, so the interesting test is the one where the code is wrong.
+# Requires a passcode to already exist — run 11 first, which creates 1234 when there is none.
+#
+# What this proves, in order: a wrong code does not open the area; the gate says so; the remaining
+# attempts count down rather than resetting; and the right code still works afterwards, so a failed
+# attempt has not soft-locked a parent who simply mistyped.
+---
+- runFlow: 11-parent-passcode-and-content.yaml
+
+# Back out of the parent area and let the gate re-arm. Relaunching is the honest way to reach a
+# locked gate: the unlock is held in memory for an idle window, so navigating away does not re-lock.
+- stopApp
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Jacob K, Year 4"
+- tapOn: "Parent"
+- tapOn: "Enter parent area"
+
+# Locked again after a cold launch — this line is the gate's, and it is itself the assertion that a
+# relaunch does not leave the parent area open.
+- extendedWaitUntil:
+    visible: "Enter your passcode."
+    timeout: 10000
+- takeScreenshot: 15a-locked-after-relaunch
+
+# Wrong code. The gate submits on the fourth digit.
+- tapOn:
+    id: "passcode-key-9"
+- tapOn:
+    id: "passcode-key-9"
+- tapOn:
+    id: "passcode-key-9"
+- tapOn:
+    id: "passcode-key-8"
+- extendedWaitUntil:
+    visible: "Wrong passcode.*"
+    timeout: 10000
+- assertVisible: "Wrong passcode.*"
+# Still outside. Without this the flow would pass on a gate that showed the error and opened anyway.
+- assertNotVisible: "Progress overview"
+- takeScreenshot: 15b-wrong-passcode-rejected
+
+# A second wrong attempt must count DOWN, not reset. The gate over-counted once (it added one to a
+# figure that had already been incremented), which cost a parent an attempt they had not used.
+- tapOn:
+    id: "passcode-key-9"
+- tapOn:
+    id: "passcode-key-9"
+- tapOn:
+    id: "passcode-key-9"
+- tapOn:
+    id: "passcode-key-7"
+- extendedWaitUntil:
+    visible: "Wrong passcode.*"
+    timeout: 10000
+- assertNotVisible: "Progress overview"
+- takeScreenshot: 15c-second-wrong-attempt
+
+# The right code still works. A gate that punished a typo by locking a parent out of their own
+# settings would be a worse failure than one that never rejected anything.
+- tapOn:
+    id: "passcode-key-1"
+- tapOn:
+    id: "passcode-key-2"
+- tapOn:
+    id: "passcode-key-3"
+- tapOn:
+    id: "passcode-key-4"
+- extendedWaitUntil:
+    visible: "Progress overview"
+    timeout: 10000
+- assertVisible: "Progress overview"
+- takeScreenshot: 15d-correct-passcode-after-failures

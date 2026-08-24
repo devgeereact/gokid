@@ -52,7 +52,21 @@ export async function GET(request: Request, { id }: { id: string }): Promise<Res
         quizCount: setQuestions.length,
       },
       cards: setCards.map((c) => ({ id: c.id, question: c.question, answer: c.answer })),
-      quiz: setQuestions.map((q) => ({ id: q.id, kind: q.kind, payload: q.payload })),
+      // `prompt` is the question itself, and it used to be left out of this response entirely: a
+      // download was written to disk holding option lists and an answer index with nothing to ask the
+      // child. `explanation` and `topic` follow it because the review screens read them, and `mixed`
+      // because the client keeps plain session MCQs and the richer quiz in two separate arrays — the
+      // study session must never be handed a non-MCQ question. Same field set as `GET /api/quiz`, so
+      // an offline quiz and an online one are assembled from identical data.
+      quiz: setQuestions.map((q) => ({
+        id: q.id,
+        kind: q.kind,
+        prompt: q.prompt,
+        explanation: q.explanation,
+        topic: q.topic,
+        mixed: q.mixed,
+        payload: q.payload,
+      })),
     })
   } catch (error) {
     // Log server-side; return generic copy — this is public content with no per-user secrets in it,

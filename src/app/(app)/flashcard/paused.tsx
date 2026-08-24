@@ -1,6 +1,6 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
 
@@ -8,7 +8,7 @@ import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useStudyingChildId } from "@/lib/children"
 import { useProgress } from "@/lib/reviews"
-import { getStudySet } from "@/lib/study"
+import { useStudySet } from "@/lib/study"
 
 /**
  * Session Paused (design/gokid-screens.md §6). No mockup was ever drawn for it — the surface,
@@ -52,7 +52,7 @@ export default function SessionPaused() {
     tricky: string
     seconds: string
   }>()
-  const set = getStudySet(params.id)
+  const set = useStudySet(params.id)
   // As in the runner: bank the session against the real active child, never a demo profile.
   const childId = useStudyingChildId()
   const { recordSession } = useProgress(childId ?? "")

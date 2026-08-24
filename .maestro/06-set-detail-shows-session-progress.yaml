@@ -1,0 +1,20 @@
+appId: com.gokid.app
+name: 06 - The set detail reflects a finished study session
+# Was "verify session mode does NOT persist" — a flow written to demonstrate a bug (study-session
+# ratings never reached the spaced-repetition record) that took one screenshot and asserted nothing.
+# The bug is fixed and 13 guards the fix, so this now checks the other place the record surfaces:
+# the set's own Mastery block, which is derived from the child's real review rows rather than from
+# an authored percentage.
+---
+- runFlow: 13-verify-session-persisted.yaml
+- openLink: "gokid://lesson/y4-mult-div"
+- extendedWaitUntil:
+    visible: "Multiplication and Division"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      text: "Mastery"
+    direction: DOWN
+    visibilityPercentage: 60
+- assertVisible: "Mastery"
+- takeScreenshot: 06a-lesson-mastery-after-session

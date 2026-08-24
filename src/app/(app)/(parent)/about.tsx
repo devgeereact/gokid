@@ -1,7 +1,7 @@
 import Constants from "expo-constants"
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import * as WebBrowser from "expo-web-browser"
 import { ScrollView, Text, View } from "react-native"
 

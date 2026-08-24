@@ -1,6 +1,6 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useMemo } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
@@ -11,7 +11,7 @@ import { resolveItems } from "@/lib/served-quiz"
 import {
   decodeAnswers,
   encodeAnswers,
-  getStudySet,
+  useStudySet,
   isResponseCorrect,
   type MixedQuestion,
   type QuizResponse,
@@ -95,7 +95,7 @@ function ReviewRow({
 
 export default function FinalReview() {
   const { id, answers } = useLocalSearchParams<{ id: string; answers?: string }>()
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   // The exact questions the runner served this child (from the store), else the local set.
   const items = useMemo(() => (set ? resolveItems(set.id, quizItems(set)) : []), [set])
   const responses = useMemo(() => decodeAnswers(answers), [answers])

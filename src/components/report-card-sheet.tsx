@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/react-native"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useState } from "react"
 import { ActivityIndicator, Modal, Pressable, Text, View } from "react-native"
 

@@ -1,12 +1,12 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { resolveItems } from "@/lib/served-quiz"
-import { decodeAnswers, getStudySet, quizAttempt, quizItems, type QuizReviewRow } from "@/lib/study"
+import { decodeAnswers, useStudySet, quizAttempt, quizItems, type QuizReviewRow } from "@/lib/study"
 
 /**
  * Incorrect Answers (design/gokid-screens.md §7). Replays the questions the child got wrong after a
@@ -86,7 +86,7 @@ function ReviewCard({ row }: { row: QuizReviewRow }) {
 
 export default function QuizReview() {
   const { id, answers } = useLocalSearchParams<{ id: string; answers?: string }>()
-  const set = getStudySet(id)
+  const set = useStudySet(id)
 
   if (!set) return <Redirect href="/home" />
 

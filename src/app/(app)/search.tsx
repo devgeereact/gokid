@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useEffect, useMemo, useState } from "react"
 import { Keyboard, Pressable, ScrollView, Text, TextInput, View } from "react-native"
 

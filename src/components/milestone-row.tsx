@@ -1,4 +1,4 @@
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Text, View } from "react-native"
 
 import { colors } from "@/design/tokens"

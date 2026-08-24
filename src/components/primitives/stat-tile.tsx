@@ -1,4 +1,5 @@
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Text, View } from "react-native"
 
 /**

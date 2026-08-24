@@ -1,6 +1,7 @@
 # Launching GoKid
 
-**Last verified against the codebase:** 20 August 2026, HEAD `21c2d5a`.
+**Last verified against the codebase:** 24 August 2026, HEAD `1246721` plus the uncommitted
+production-readiness work described below.
 
 This is the single launch document. It replaces the four that used to cover the same ground and
 disagreed with each other (`Report.md`, `DEPLOY.md`, `ENV.md`, `HANDOFF.md`). The July diagnostic
@@ -11,8 +12,10 @@ most of what it flagged is now fixed, so do not act on it directly.
 
 ## 1. Where the project actually stands
 
-**Not shippable yet, and the reason is deployment, not the app.** The client is built, audited and
-proven on a simulator. Nothing server-side has ever run outside the Metro dev server.
+**One blocker left, and it is an administrative one.** The API is deployed and serving; the client is
+built, audited and proven on a simulator against that production API. What has never happened is a
+**release build** — everything to date has run a Debug bundle from Metro — and that cannot happen
+until Apple Developer Program enrolment completes.
 
 ### Done and verified
 
@@ -23,8 +26,14 @@ proven on a simulator. Nothing server-side has ever run outside the Metro dev se
 | `ITSAppUsesNonExemptEncryption` | Declared `false` in `ios.infoPlist` — stops every submission prompting manually |
 | Unused `RECORD_AUDIO` permission | Removed. `android.permissions` is `[]` |
 | Tab-bar clipping | Fixed across all 12 pushed screens (`4e1d9bf`) |
-| Interaction testing | 14 Maestro flows in `.maestro/`, 14/14 passing twice consecutively |
-| Security regression suite | 7 scripts in `scripts/qa/` — IDOR, 12-hour no-repeat, published-only, sync replay, DB verify, cleanup |
+| **API deployed** | `https://gokid.expo.app` — `/api/sets` 200, `/api/health` reachable, `/api/progress` 401 without a token |
+| **`eas.json` hostnames** | `preview` and `production` both carry `EXPO_PUBLIC_API_URL=https://gokid.expo.app`. No `REPLACE-ME` remains outside this document's history |
+| Interaction testing | 20 Maestro flows in `.maestro/`, every critical interaction asserted rather than screenshotted. See `docs/QA.md` |
+| Unit tests | 49 tests, ~250ms — the spaced-repetition ladder (`src/lib/review-schedule.ts`) and quiz grading (`src/lib/quiz-scoring.ts`), both extracted into leaf modules so they can be loaded outside a running app |
+| Security regression suite | 8 scripts in `scripts/qa/` — IDOR, 12-hour no-repeat, published-only, sync replay, DB verify, unauthenticated/expired/cross-user verb probing, cleanup. **Run against production**, all assertions pass |
+| Content audit | `npm run check:content` — 27 sets / 160 cards / 140 questions, 0 structural problems. `npm run check:content:db` additionally diffs the live database against the catalogue field by field |
+| Offline downloads | A downloaded set is genuinely consumed by study, flashcards and quiz — hydrated at app start, not on visiting Storage. Proven with the Mac's Wi-Fi off via `scripts/qa/offline-e2e.sh` |
+| Offline cold start | **Fixed 24 Aug 2026.** Clerk's `isLoaded` never becomes true with no network — its bootstrap call hangs rather than failing — so both auth gates held the splash indefinitely and a relaunch offline never reached a single screen. The whole offline feature was unreachable behind it. `lib/session-cache.ts` + `lib/clerk-offline.ts` bound the wait and fall back to the roster this device already has |
 | Server-side erasure | `DELETE /api/children/:clientId` and `DELETE /api/account`; cascade verified 1/1/1 → 0/0/0 |
 | Rule enforcement | 4 hooks in `scripts/hooks/`, wired in `.claude/settings.json` |
 
@@ -32,9 +41,10 @@ proven on a simulator. Nothing server-side has ever run outside the Metro dev se
 
 | # | Blocker | Why it is fatal |
 | --- | --- | --- |
-| **P0-1** | API server never deployed; `EXPO_PUBLIC_API_URL` unset | `src/lib/api.ts:21` throws `"No API base URL"` in any release build. In dev the base URL falls back to Metro's `hostUri`, which is exactly why this has stayed invisible. In TestFlight every content, sync and progress screen dies immediately after the splash — a Guideline 2.1 rejection a reviewer hits within two minutes |
-| **P0-2** | `eas.json` still carries `https://REPLACE-ME.example.com` in both `preview` and `production` | Deliberately obvious placeholder; a build made today points at nothing |
-| **P0-3** | Apple Developer Program not enrolled | Blocks device builds, TestFlight and any future billing. ~24–48h to approve, $99/yr — start it early even if the deploy is not ready |
+| ~~**P0-1**~~ | ~~API server never deployed~~ **Resolved.** Deployed to `https://gokid.expo.app`; the full security suite passes against it | |
+| ~~**P0-2**~~ | ~~`REPLACE-ME` in `eas.json`~~ **Resolved.** Both profiles carry the real origin | |
+| **P0-3** | Apple Developer Program not enrolled | Blocks device builds, TestFlight and any future billing. ~24–48h to approve, $99/yr — **this is now the only thing standing between the app and a TestFlight build** |
+| **P0-4** | No release build has ever been produced or run | Every result to date is from a Debug bundle served by Metro. A release build embeds the bundle, reads `EXPO_PUBLIC_API_URL` instead of Metro's `hostUri`, strips dev-only code and runs the React Compiler's production output. Any of those can differ. It is a separate test target and it is untested. Depends on P0-3 for a device; a Release-configuration **simulator** build can be made without enrolment and is the interim proof |
 
 `ADMIN_TOKEN` **is now set locally** (it appears in Expo's exported variable list) and must be set on
 the deploy host too. `src/db/admin-auth.ts` opens the admin routes when `ADMIN_TOKEN` is unset *and*
@@ -48,8 +58,8 @@ billable hole as well as a data risk.
 | # | Item | Note |
 | --- | --- | --- |
 | **P1-1** | ~~No CI~~ **Done** | `.github/workflows/ci.yml` runs typecheck, lint, content checks and `expo export -p web` on every PR and every push to `main`. The export gate is the important one: it builds the actual workerd bundle EAS Hosting runs, so a dependency that breaks the deploy fails the PR instead of the deploy |
-| **P1-2** | No unit tests | Zero `*.test.*` files. The spaced-repetition fold (`src/lib/reviews.ts`) and quiz scoring are pure functions and are the highest-value things to test — quiz scoring already shipped a P0 that reported 1/5 for a perfect run |
-| **P1-3** | In-app child delete unproven | The server cascade is proven at API and database level. The in-app path has never been driven by a real tap. See §5 |
+| **P1-2** | ~~No unit tests~~ **Done** | 49 tests via Node's built-in runner (`npm test`). The two modules were extracted into leaf files (`review-schedule.ts`, `quiz-scoring.ts`) precisely so they load without native imports; keep new logic of that kind there for the same reason |
+| **P1-3** | ~~In-app child delete unproven~~ **Done** | `.maestro/16-child-crud.yaml` creates a child, reads it back across a relaunch, renames it and deletes it — asserting that deletion lands on the children list rather than on the deleted child's own "Child not found" profile, which is what it used to do |
 | **P1-4** | Sentry tracing vs the privacy copy | `src/app/_layout.tsx:30` sets `tracesSampleRate: 0.2` in production. `src/app/data-usage.tsx` tells parents there is no third-party analytics or tracking. Every Sentry *call site* is error-scoped, and `sendDefaultPii` is `false`, so the claim holds in spirit — but tracing does send navigation and timing telemetry. Either add a line to the copy or turn tracing off. Small now, large if a regulator reads it closely |
 
 ---
@@ -122,11 +132,11 @@ npx eas deploy
 
 ### Step 2 — set the hostname in three places
 
-| Where | Key |
-| --- | --- |
-| `.env` | `EXPO_PUBLIC_API_URL=https://<host>` |
-| `eas.json` → `build.preview.env` | replace `https://REPLACE-ME.example.com` |
-| `eas.json` → `build.production.env` | replace `https://REPLACE-ME.example.com` |
+| Where | Key | State |
+| --- | --- | --- |
+| `.env` | `EXPO_PUBLIC_API_URL=https://gokid.expo.app` | set it if you want a *local* build to behave like production; dev otherwise falls back to Metro's `hostUri` |
+| `eas.json` → `build.preview.env` | `https://gokid.expo.app` | ✅ set |
+| `eas.json` → `build.production.env` | `https://gokid.expo.app` | ✅ set |
 
 ### Step 3 — set the server-side secrets on the host
 
@@ -162,6 +172,15 @@ curl -s  https://<host>/api/health              # {"ok":true,"db":"connected","t
 curl -s  https://<host>/api/sets | head -c 200  # non-empty catalogue
 curl -si https://<host>/api/progress            # MUST be 401
 curl -si -X POST https://<host>/api/admin/seed  # MUST be 401 without the token
+```
+
+Then run the real thing, which probes every verb rather than four of them — unauthenticated,
+malformed-token, expired-token, admin, and one parent's session trying to delete another's child:
+
+```bash
+QA_API=https://<host> npm run qa:mint && QA_API=https://<host> npm run qa:sec
+npm run qa:cleanup                                   # ALWAYS — it deletes the throwaway Clerk users
+QA_API=https://<host> npm run check:content:db       # the served content still matches the catalogue
 ```
 
 The last two are the ones worth being fussy about. A deployment that serves child progress openly, or
@@ -213,9 +232,8 @@ updated; `scripts/hooks/privacy-claim.mjs` already does this locally.
 
 | What | Why it needs you |
 | --- | --- |
-| **Type a child's name in Add a child** | Maestro could not get text into that field. The input is wired correctly (`add-child.tsx:422-427`, `value` + `onChangeText`), so this is very likely a simulator keyboard-focus quirk — but if text genuinely does not enter on a device it is a P1: a parent who cannot type a name cannot onboard. Two minutes to settle |
-| **Delete a child, end to end** | Server-side erasure is proven at the API and database level. The in-app path has never been driven by a real tap. Add a throwaway child, delete it, confirm it disappears |
-| **VoiceOver pass** | Label *coverage* is complete (31/31 images, ~20 newly-named controls). Focus order and announcement quality need a human ear, especially on the quiz |
+| **VoiceOver pass** | Label *coverage* is complete, and `npm run check:symbols` now makes it structural: every SF Symbol goes through `@/components/symbol`, which removes decorative icons from the accessibility tree, so a button can no longer be announced as "apple dot logo, Continue with Apple". A build-time guard cannot tell you whether a label is *meaningful*, whether the focus order makes sense, or whether a control can be reached at all. Those need a human ear — especially on the quiz. Procedure in `docs/QA.md` §5 |
+| **Sign-in** | Apple and Google SSO open a system sheet Maestro cannot drive, so first-run authentication has no automated coverage at all |
 | **Dynamic Type at large sizes** | Tile labels now wrap instead of truncating; worth eyeballing at the largest accessibility sizes |
 | **Android, and a physical device** | Neither has ever been run. `app.json` pins portrait, so landscape is out of scope by design |
 

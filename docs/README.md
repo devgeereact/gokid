@@ -5,6 +5,7 @@
 | File | What it is | Trust |
 | --- | --- | --- |
 | [`LAUNCH.md`](LAUNCH.md) | **Production readiness.** Current blockers, environment variables, the deploy sequence, and the manual QA still needing a human | ✅ Verified 20 Aug 2026 against HEAD `21c2d5a` |
+| [`QA.md`](QA.md) | **How to test this app so the result means something.** The clean-start procedure (a stale Metro bundle has already cost this project a QA cycle), the four gates that run without a device, the Maestro suite, the offline journey, API/authorisation probing, accessibility, and what a device pass cannot cover | ✅ Written and exercised 24 Aug 2026 |
 | [`HOOKS.md`](HOOKS.md) | The four rule-enforcement hooks in `scripts/hooks/`, why each exists, and how they differ from the proposal | ✅ Installed and verified |
 
 Repo-root documents that outrank anything here:

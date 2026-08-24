@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useState } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
 

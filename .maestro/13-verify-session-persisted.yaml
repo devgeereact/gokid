@@ -1,20 +1,20 @@
 appId: com.gokid.app
 name: "13 - Regression: study-session mode DOES persist (P0-6 fix)"
-# Companion to 06, which proved the bug. Run this after finishing a session in study-session mode:
-# the summary must report the real card count, not "Cards studied 0".
+# The summary must report the real card count. Before the fix it read "Cards studied 0" to a child
+# who had just answered every question in the set, because the session was never banked.
 ---
 # Runs 04 first rather than assuming its final screen is still on the device. Without this the flow
 # passes only when invoked immediately after 04 by hand, and fails in any suite run.
 - runFlow: 04-study-session-summary.yaml
-- scrollUntilVisible:
-    element:
-      text: "Next card"
-    direction: DOWN
+- assertVisible: "Next card"
 - tapOn: "Next card"
-- takeScreenshot: 13a-session-summary-after-fix
-- assertVisible: "Session Summary"
+- extendedWaitUntil:
+    visible: "Session Summary"
+    timeout: 15000
 - assertVisible: "Cards studied"
 # Do NOT assert that no "0" appears anywhere. "0 cards learned" in the header is CORRECT on a first
 # pass: "learned" means box >= 2, which needs two successful recalls across widening gaps. The stat
 # that proves this fix is "Cards studied", which must equal the set's card count (6 for this set) and
-# was 0 before the fix. Read 13a-session-summary-after-fix to confirm the number.
+# was 0 before the fix.
+- assertVisible: "6"
+- takeScreenshot: 13a-session-summary-after-fix

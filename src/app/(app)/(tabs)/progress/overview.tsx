@@ -1,7 +1,8 @@
 import { router } from "expo-router"
 import { Fragment, type ReactNode } from "react"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Line, Polygon, Polyline, Rect, Text as SvgText } from "react-native-svg"
 

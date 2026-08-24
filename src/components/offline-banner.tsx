@@ -1,5 +1,5 @@
 import { router } from "expo-router"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { addNetworkStateListener, getNetworkStateAsync } from "expo-network"
 import { useEffect, useRef, useState } from "react"
 import { Pressable, Text, View } from "react-native"

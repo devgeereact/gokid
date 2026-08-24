@@ -2,7 +2,7 @@ import { useAuth } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native"
 import { useEffect, useMemo, useRef, useState } from "react"
 
@@ -10,12 +10,13 @@ import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { fetchServedQuiz } from "@/lib/api"
 import { useStudyingChildId } from "@/lib/children"
+import { tokenWithin } from "@/lib/clerk-offline"
 import { clearServedQuiz, getServedQuiz, setServedQuiz } from "@/lib/served-quiz"
 import {
   blankResponse,
   decodeAnswers,
   encodeAnswers,
-  getStudySet,
+  useStudySet,
   isResponseCorrect,
   type MixedQuestion,
   type QuizResponse,
@@ -378,7 +379,7 @@ export default function Quiz() {
     /** Answers carried back from the Final Review, so nothing the child typed is lost. */
     answers?: string
   }>()
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   // §7 "Final Review". In test mode nothing is marked until the child has answered everything and
   // looked back over it — which is the whole point of a review pass, and impossible while each
   // question is scored the instant it is answered. Practice keeps the instant feedback.
@@ -430,8 +431,11 @@ export default function Quiz() {
     let active = true
     ;(async () => {
       try {
-        const token = await getTokenRef.current()
-        if (!token) throw new Error("Not signed in.")
+        // Bounded: offline, `getToken()` never resolves, so an unbounded await here left the quiz
+        // on its spinner indefinitely rather than falling back to the local questions. See
+        // lib/clerk-offline.ts.
+        const token = await tokenWithin(getTokenRef.current)
+        if (!token) throw new Error("No session token — using the local questions.")
         const questions = await fetchServedQuiz(
           { setId: set.id, clientId: childId, count: localItems.length || 8 },
           token

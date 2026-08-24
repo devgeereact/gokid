@@ -1,4 +1,4 @@
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Modal, Pressable, Text, View } from "react-native"
 
 import { Image, SafeAreaView } from "@/components/styled"

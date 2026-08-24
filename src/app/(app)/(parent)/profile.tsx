@@ -2,7 +2,7 @@ import { useUser } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useState } from "react"
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native"
 

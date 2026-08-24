@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useEffect, useState } from "react"
 import { ScrollView, Text, View } from "react-native"
 

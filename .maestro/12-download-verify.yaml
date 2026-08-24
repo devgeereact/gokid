@@ -1,11 +1,21 @@
 appId: com.gokid.app
-name: 12 - Download a set and verify via UI + filesystem
+name: 12 - Download a set and verify it through the UI
+# The download half of the offline story, run online and on its own. 17a/17b are the full journey
+# with the network genuinely down; this one belongs in the everyday suite.
 ---
 - launchApp:
     clearState: false
+- assertVisible: "Who’s studying?"
 - tapOn: "Jacob K, Year 4"
 - openLink: "gokid://download/y4-fronted-adverbials"
+- extendedWaitUntil:
+    visible: "Download Set"
+    timeout: 15000
+# "What's included" sits below the hero and is off-screen on first render; `assertVisible` means
+# on-screen, not in-tree. The screen's own title is the destination proof, and the CTA below is
+# reached with an explicit scroll.
 - takeScreenshot: 12a-download-screen-render
+
 # The CTA sits below "What's included" / "Preview" / the reassurance row, so it is off-screen on
 # first render and Maestro will not tap what it cannot see.
 - scrollUntilVisible:
@@ -13,22 +23,29 @@ name: 12 - Download a set and verify via UI + filesystem
       text: "Download this set|Remove this download"
     direction: DOWN
     visibilityPercentage: 60
-# Once a set has been downloaded the screen correctly shows "Saved for offline use" + "Remove
-# download" and the download CTA is gone (download/[id].tsx:235-270) -- so a flow that only ever
-# taps "Download this set" passes once and fails every run after. Clear the state first when it is
-# already there, so this flow always exercises a real download.
+# Once a set has been downloaded the screen shows "Saved for offline use" + "Remove download" and the
+# download CTA is gone (download/[id].tsx:235-270) -- so a flow that only ever taps "Download this
+# set" passes once and fails every run after. Clear the state first when it is already there, so this
+# flow always exercises a real download.
 - runFlow:
     when:
       visible: "Remove this download"
     commands:
       - tapOn: "Remove this download"
       - assertVisible: "Download this set"
-- scrollUntilVisible:
-    element:
-      text: "Download this set"
-    direction: DOWN
-    visibilityPercentage: 60
+
 - tapOn: "Download this set"
-- takeScreenshot: 12b-download-in-progress
+- extendedWaitUntil:
+    visible: "Saved for offline use"
+    timeout: 60000
 - assertVisible: "Saved for offline use"
-- takeScreenshot: 12c-download-complete
+- assertVisible: "Remove this download"
+- takeScreenshot: 12b-download-complete
+
+# The downloads manager must list it. A file on disk that no screen can see is not a download.
+- openLink: "gokid://offline"
+- extendedWaitUntil:
+    visible: "Downloaded sets"
+    timeout: 15000
+- assertVisible: "Fronted Adverbials and Punctuation"
+- takeScreenshot: 12c-download-listed

@@ -1,6 +1,6 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useEffect, useState } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
@@ -10,7 +10,7 @@ import { useBookmarks } from "@/lib/bookmarks"
 import { useStudyingChildId } from "@/lib/children"
 import { hintFor } from "@/lib/hints"
 import { useProgress } from "@/lib/reviews"
-import { getStudySet } from "@/lib/study"
+import { useStudySet } from "@/lib/study"
 import { beginSession } from "@/lib/study-session"
 
 /**
@@ -73,7 +73,7 @@ export default function StudySession() {
   // five screens, and leave no trace in the spaced-repetition record. Only the flashcard runner ever
   // called it, which is why ceoaudit.md could describe that runner as "the one honest data path".
   const { cards, rateCard } = useProgress(childId)
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   const [selected, setSelected] = useState<number | null>(null)
   const [showAnswer, setShowAnswer] = useState(false)
 
@@ -273,9 +273,15 @@ export default function StudySession() {
               <Text className="ml-1.5 font-text text-body font-semibold text-text-secondary">Skip</Text>
             </Pressable>
 
+            {/*
+              "See result", not "Next card". This button submits the answer and opens Answer Result,
+              where a *different* button labelled "Next card" moves to the following card. Both
+              carried the same label, so a screen reader announced two different actions identically
+              and any automation matching "Next card" could resolve to either screen's control.
+            */}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Next card"
+              accessibilityLabel="See result"
               className="h-12 flex-row items-center justify-center rounded-full bg-study-teal px-6 active:opacity-90"
               onPress={() => {
                 // Rate the card this question tested before leaving the screen. A right answer is a

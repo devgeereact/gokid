@@ -4,7 +4,7 @@
 # docs/LAUNCH.md tracks as P1-1. The repository is public, so Actions minutes are
 # unlimited and there is no cost argument for leaving this out.
 #
-# Three gates, in two parallel jobs so the slow one does not delay the fast feedback.
+# Four gates, in two parallel jobs so the slow one does not delay the fast feedback.
 
 name: CI
 
@@ -60,8 +60,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Curriculum strand coverage and quiz answer-position bias. Pure source scans —
-      # no database, no network — so they are safe to run on every PR.
+      # Pure business logic: the spaced-repetition ladder and quiz grading. No device, no
+      # network, ~250ms. Both modules were split out of files that import native code so that
+      # this step can exist at all.
+      - name: Unit tests
+        run: npm test
+
+      # Curriculum strand coverage, quiz answer-position bias, symbol-import discipline, and the
+      # full structural audit of all 27 sets. No database and no network — the `--db` variant of
+      # the audit (`npm run check:content:db`) is a release step, not a PR gate, because it needs
+      # DATABASE_URL and describes the live server rather than this commit.
       - name: Content integrity
         run: npm run check:content
 

@@ -1,4 +1,4 @@
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, Text, View } from "react-native"
 
 import { colors } from "@/design/tokens"
@@ -53,6 +53,12 @@ export function PasscodeKeypad({ disabled, onKey }: { disabled?: boolean; onKey:
             key={key}
             accessibilityRole="button"
             accessibilityLabel={key === "del" ? "Delete" : key}
+            // The passcode gate is a security boundary and the Maestro flows that exercise it must
+            // hit the keypad and nothing else. A digit is a one-character label — matching "1" by
+            // text also matches the "1 tries left" line the gate renders directly above the pad, so
+            // a wrong-passcode flow could tap the warning and report a pass. This is the only handle
+            // on a key that cannot collide with the screen's own copy.
+            testID={`passcode-key-${key}`}
             disabled={disabled}
             className={`mb-3 h-16 w-[30%] items-center justify-center rounded-lg border border-border bg-white active:bg-background ${
               disabled ? "opacity-40" : ""

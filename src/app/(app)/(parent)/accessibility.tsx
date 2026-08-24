@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Linking, Pressable, ScrollView, Switch, Text, View } from "react-native"
 
 import { BackButton, Section } from "@/components/primitives"

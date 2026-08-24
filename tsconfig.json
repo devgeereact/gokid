@@ -2,6 +2,12 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // The unit tests under src/lib/__tests__ run on Node's built-in test runner, so `node:test` and
+    // `node:assert` have to resolve. Expo's base config sets `customConditions: ["react-native"]`,
+    // under which @types/node is not picked up automatically; naming it here is what includes it.
+    // The cost is that `process` and friends now typecheck inside app code too — the client/server
+    // boundary is enforced by what Metro bundles and by AGENTS.md, not by this list.
+    "types": ["node"],
     "paths": {
       "@/*": [
         "./src/*"
