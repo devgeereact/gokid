@@ -1,0 +1,187 @@
+appId: com.gokid.app
+name: 16 - Child CRUD - create, read back after relaunch, update, delete
+# Child management crosses Clerk metadata, the API, Postgres, the on-device progress store and the
+# UI, and it is the one journey where a partial success looks exactly like a whole one. The old suite
+# never created or deleted a child at all; it assumed Jacob and Isaac were already there, so a broken
+# add-child would not have failed a single flow.
+#
+# The child created here is named QA Testchild and is deleted at the end, so the flow leaves the
+# device as it found it and can be run repeatedly.
+#
+# Deletion is the step that regressed: it succeeded at the data level and then popped back to the
+# deleted child's own profile, which correctly rendered "Child not found — That profile has been
+# removed". A successful operation looked like an error. The assertion at the end is therefore about
+# the DESTINATION, not just about the child being gone.
+---
+- runFlow: 11-parent-passcode-and-content.yaml
+
+# ---------------------------------------------------------------- CREATE
+# 11 ends on the children manager, so there is nothing to tap to get here.
+- extendedWaitUntil:
+    visible: "Add a child"
+    timeout: 10000
+# A leftover from an interrupted run would make the create step ambiguous and the delete step
+# delete the wrong row. Clear it first.
+- runFlow:
+    when:
+      visible: "QA Testchild, Year 3\\. Open profile\\."
+    commands:
+      - tapOn: "QA Testchild, Year 3\\. Open profile\\."
+      - scrollUntilVisible:
+          element:
+            text: "Edit QA Testchild’s details"
+          direction: DOWN
+          visibilityPercentage: 60
+      - tapOn: "Edit QA Testchild’s details"
+      - tapOn: "Delete QA Testchild"
+      - tapOn: "Delete"
+      - extendedWaitUntil:
+          notVisible: "QA Testchild, Year 3\\. Open profile\\."
+          timeout: 15000
+
+- tapOn: "Add a child"
+- assertVisible: "Child’s first name"
+- tapOn: "Child’s first name"
+- inputText: "QA Testchild"
+# The keyboard covers the lower half of the form, and a tap that lands on it is reported as a
+# successful tap on nothing. The form is not inside a ScrollView, so there is nothing to drag and
+# `hideKeyboard` has no standard dismiss action to call; the field's own "done" return key is what a
+# parent uses here too.
+- pressKey: Enter
+- tapOn: "Year 3"
+# The pickers are tapped by what they announce, not by the placeholder text inside them — the
+# Pressable carries an accessibilityLabel, so "Month" is not in the hierarchy at all.
+# Each picker is a modal sheet that animates in. Wait for its options, tap one, then assert the
+# picker itself now announces the value — a tap dispatched during the slide-in lands on whatever is
+# underneath and Maestro reports it as a successful tap.
+- tapOn: "Birth month, not chosen"
+- extendedWaitUntil:
+    visible: "March"
+    timeout: 10000
+- tapOn: "March"
+- extendedWaitUntil:
+    visible: "Birth month, March"
+    timeout: 10000
+
+# 2018, not an earlier year: the sheet lists the most recent first and only five fit on screen, and
+# a row below that fold is still in the hierarchy — `assertVisible` passes on it and the tap then
+# lands on the sheet edge. A Year 3 child born in 2018 is also the right age, so nothing here is
+# chosen only to suit the test.
+- tapOn: "Birth year, not chosen"
+- extendedWaitUntil:
+    visible: "2018"
+    timeout: 10000
+- tapOn: "2018"
+- extendedWaitUntil:
+    visible: "Birth year, 2018"
+    timeout: 10000
+
+- assertVisible: "Add child"
+- tapOn: "Add child"
+
+# The child must be on the list immediately — not after a pull-to-refresh, not after a relaunch.
+- extendedWaitUntil:
+    visible: "QA Testchild, Year 3\\. Open profile\\."
+    timeout: 15000
+- takeScreenshot: 16a-child-created
+
+# ---------------------------------------------------------------- READ (across a relaunch)
+# Children live in Clerk's `unsafeMetadata`, so this is really asking whether the write reached
+# Clerk or only ever existed in this process's memory.
+- stopApp
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- assertVisible: "QA Testchild, Year 3"
+- takeScreenshot: 16b-child-survives-relaunch
+
+# ---------------------------------------------------------------- UPDATE
+- tapOn: "Jacob K, Year 4"
+- tapOn: "Parent"
+- tapOn: "Enter parent area"
+- runFlow:
+    when:
+      visible: "Enter your passcode."
+    commands:
+      - tapOn:
+          id: "passcode-key-1"
+      - tapOn:
+          id: "passcode-key-2"
+      - tapOn:
+          id: "passcode-key-3"
+      - tapOn:
+          id: "passcode-key-4"
+- extendedWaitUntil:
+    visible: "Progress overview"
+    timeout: 10000
+- tapOn: "Children"
+- extendedWaitUntil:
+    visible: "QA Testchild, Year 3\\. Open profile\\."
+    timeout: 10000
+- tapOn: "QA Testchild, Year 3\\. Open profile\\."
+# The edit link sits under the profile's mastery and "Working towards" blocks, below the fold.
+- scrollUntilVisible:
+    element:
+      text: "Edit QA Testchild’s details"
+    direction: DOWN
+    visibilityPercentage: 60
+- tapOn: "Edit QA Testchild’s details"
+- assertVisible: "Save changes"
+- tapOn: "Child’s first name"
+- eraseText
+- inputText: "QA Renamed"
+- pressKey: Enter
+- tapOn: "Save changes"
+# Saving pops back to the profile the form was opened from — not to the list — so the new name has
+# to show up there first.
+- extendedWaitUntil:
+    visible: "Edit QA Renamed’s details"
+    timeout: 15000
+- assertNotVisible: "Edit QA Testchild’s details"
+- takeScreenshot: 16c-child-renamed
+
+# …and on the list behind it.
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: "QA Renamed, Year 3\\. Open profile\\."
+    timeout: 15000
+- assertNotVisible: "QA Testchild, Year 3\\. Open profile\\."
+- takeScreenshot: 16c2-renamed-on-list
+
+# ---------------------------------------------------------------- DELETE
+- tapOn: "QA Renamed, Year 3\\. Open profile\\."
+# The edit link sits under the profile's mastery and "Working towards" blocks, below the fold.
+- scrollUntilVisible:
+    element:
+      text: "Edit QA Renamed’s details"
+    direction: DOWN
+    visibilityPercentage: 60
+- tapOn: "Edit QA Renamed’s details"
+# The button reads "Delete child" but is exposed as "Delete <name>": the Pressable carries
+# accessibilityRole + accessibilityLabel, so iOS merges its child Text away. The form is not inside
+# a ScrollView, so there is nothing to scroll — the control is on screen or it is not there.
+- assertVisible: "Delete QA Renamed"
+- tapOn: "Delete QA Renamed"
+- assertVisible: "Remove QA Renamed?"
+- tapOn: "Delete"
+
+# The three things a successful delete must be true of, and the app got the third wrong:
+#   1. the child is gone from the list
+#   2. the parent is looking at the LIST, not at the dead profile
+#   3. no error copy is on screen
+- extendedWaitUntil:
+    notVisible: "QA Renamed, Year 3\\. Open profile\\."
+    timeout: 20000
+- assertVisible: "Add a child"
+- assertNotVisible: "Child not found"
+- assertNotVisible: "That profile has been removed"
+- assertVisible: "Jacob K, Year 4\\. Open profile\\."
+- takeScreenshot: 16d-child-deleted-lands-on-list
+
+# And it stays deleted — a delete that only removed the row from this render would come back.
+- stopApp
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- assertNotVisible: "QA Renamed, Year 3"
+- takeScreenshot: 16e-child-still-deleted-after-relaunch

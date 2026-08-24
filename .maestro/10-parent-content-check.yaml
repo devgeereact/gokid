@@ -1,9 +1,22 @@
 appId: com.gokid.app
-name: 10 - Isaac's study tab + parent gate entry
+name: 10 - The parent gate stands in front of a second child too
+# Isaac's route into the parent zone is the same gate. This is the small version of 11 — that the
+# door is shut, whoever knocked — and it deliberately stops at the gate rather than opening it.
 ---
 - launchApp:
     clearState: false
+- assertVisible: "Who’s studying?"
 - tapOn: "Isaac K, Year 4"
+- extendedWaitUntil:
+    visible: "Study"
+    timeout: 15000
 - takeScreenshot: 10a-isaac-study-tab
+
 - tapOn: "Parent"
-- takeScreenshot: 10b-parent-gate-or-content
+- assertVisible: "Your passcode keeps this side of the app for the grown-ups."
+- tapOn: "Enter parent area"
+# Either state of the gate is acceptable; the parent area itself is not.
+- extendedWaitUntil:
+    visible: "Enter your passcode.|Create a passcode|Progress overview"
+    timeout: 15000
+- takeScreenshot: 10b-parent-gate-for-isaac

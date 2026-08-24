@@ -1,0 +1,71 @@
+appId: com.gokid.app
+name: 17e - Offline - a save that cannot happen says so, and keeps what was typed
+# Also runs with the Wi-Fi off. Children are stored in Clerk metadata, so adding one is a network
+# write — and a network write is exactly the operation that used to reject into nothing: the promise
+# failed, the screen sat there unchanged, and a failed save was indistinguishable from a save that
+# had worked. A parent would have walked away believing their child's profile existed.
+#
+# Two things are asserted, and the second matters as much as the first: the failure is stated, AND
+# the form still holds what was typed. An error message that also clears the form is its own defect.
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Jacob K, Year 4"
+- extendedWaitUntil:
+    visible: "You are offline. Open downloaded sets."
+    timeout: 30000
+
+- tapOn: "Parent"
+- tapOn: "Enter parent area"
+- runFlow:
+    when:
+      visible: "Enter your passcode."
+    commands:
+      - tapOn:
+          id: "passcode-key-1"
+      - tapOn:
+          id: "passcode-key-2"
+      - tapOn:
+          id: "passcode-key-3"
+      - tapOn:
+          id: "passcode-key-4"
+- extendedWaitUntil:
+    visible: "Progress overview"
+    timeout: 15000
+- tapOn: "Children"
+- extendedWaitUntil:
+    visible: "Add a child"
+    timeout: 10000
+- tapOn: "Add a child"
+
+- assertVisible: "Child’s first name"
+- tapOn: "Child’s first name"
+- inputText: "QA Offline"
+- pressKey: Enter
+- tapOn: "Year 2"
+- tapOn: "Birth month, not chosen"
+- extendedWaitUntil:
+    visible: "May"
+    timeout: 10000
+- tapOn: "May"
+- tapOn: "Birth year, not chosen"
+- extendedWaitUntil:
+    visible: "2019"
+    timeout: 10000
+- tapOn: "2019"
+- tapOn: "Add child"
+
+# The failure is stated in the parent's language, and it says what state things are in.
+- extendedWaitUntil:
+    visible: "Couldn’t add that child"
+    timeout: 60000
+- assertVisible: "Nothing has been changed.*"
+- takeScreenshot: 17s-failed-save-explained
+- tapOn: "OK"
+
+# Still on the form, with the work intact — not thrown away, and not silently "saved".
+- assertVisible: "Add child"
+- assertVisible: "QA Offline"
+- assertVisible: "Birth month, May"
+- takeScreenshot: 17t-failed-save-keeps-input

@@ -1,0 +1,88 @@
+appId: com.gokid.app
+name: 11 - Parent gate - create or enter the passcode, then prove the parent area opened
+# Replaces the old 11, which tapped Parent -> Enter parent area -> 1 -> 2 -> 3 -> 4 and then took a
+# screenshot. It asserted nothing after the taps, so it passed while sitting on the gate: if the
+# parent had no passcode yet, those four digits were the FIRST half of a create-and-confirm pair and
+# the flow ended on "Confirm your passcode" having entered nothing. A green run meant the taps were
+# dispatched, not that the parent area had opened.
+#
+# The gate has three reachable states and the flow handles all three:
+#   - no passcode yet          -> "Create a passcode",  then "Confirm your passcode"
+#   - passcode set, locked     -> "Enter your passcode."
+#   - unlocked within the idle window -> no gate at all
+#
+# The keypad is tapped by testID, never by the digit's text: "1" as a text match also matches the
+# "1 tries left" line the gate renders above the pad.
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Jacob K, Year 4"
+
+- tapOn: "Parent"
+# The Parent TAB, not the gate and not the parent area — all three carry the words "Parent area".
+# This line is the tab's alone.
+- assertVisible: "Your passcode keeps this side of the app for the grown-ups."
+- tapOn: "Enter parent area"
+
+# First run on a clean device: create 1234, then confirm it.
+- runFlow:
+    when:
+      visible: "Create a passcode"
+    commands:
+      - tapOn:
+          id: "passcode-key-1"
+      - tapOn:
+          id: "passcode-key-2"
+      - tapOn:
+          id: "passcode-key-3"
+      - tapOn:
+          id: "passcode-key-4"
+      - assertVisible: "Confirm your passcode"
+      - tapOn:
+          id: "passcode-key-1"
+      - tapOn:
+          id: "passcode-key-2"
+      - tapOn:
+          id: "passcode-key-3"
+      - tapOn:
+          id: "passcode-key-4"
+
+# Already has one and the gate is locked.
+- runFlow:
+    when:
+      visible: "Enter your passcode."
+    commands:
+      - tapOn:
+          id: "passcode-key-1"
+      - tapOn:
+          id: "passcode-key-2"
+      - tapOn:
+          id: "passcode-key-3"
+      - tapOn:
+          id: "passcode-key-4"
+
+# The proof. "Progress overview" is rendered only by parent-content.tsx — it appears on neither the
+# tab nor the gate, so it cannot be satisfied by the screen the flow started on.
+- extendedWaitUntil:
+    visible: "Progress overview"
+    timeout: 10000
+- assertVisible: "Progress overview"
+- assertVisible: "Subscription"
+- takeScreenshot: 11a-parent-area-open
+
+# The parent-content screen's own job: the real child roster, and links that go somewhere.
+- assertVisible: "Jacob K"
+- tapOn: "Children"
+# Landed on the children manager, and left parent-content behind. Asserting the destination alone
+# would pass on the source too — "Children" is also the label of the row that was just tapped.
+- extendedWaitUntil:
+    visible: "Add a child"
+    timeout: 10000
+- assertNotVisible: "Progress overview"
+# The children manager exposes each row as one control — "Jacob K, Year 4. Open profile." — because
+# the Pressable carries an accessibilityLabel and iOS merges its child Text away. Maestro matches a
+# selector against the WHOLE label as a regex, so a bare "Jacob K" matches nothing here even though
+# it matches on parent-content, where the name is its own Text node.
+- assertVisible: "Jacob K, Year 4\\. Open profile\\."
+- takeScreenshot: 11b-children-manager

@@ -1,61 +1,98 @@
 appId: com.gokid.app
 name: 04 - Study session (MCQ) -> answer-result -> session-summary -> set-result -> congratulations
+# Two buttons in this chain used to carry the SAME accessibility label, "Next card": the one on the
+# session screen that submits an answer, and the one on the answer-result screen that moves to the
+# following card. A screen reader announced two different actions identically, and a flow matching
+# "Next card" could resolve to either screen's control — so the suite could not tell a working chain
+# from one that had stalled and re-tapped the same button. The session control is now "See result".
+#
+# Every step here is wait -> assert -> tap -> assert the result. A tap whose effect is never asserted
+# proves only that Maestro dispatched it.
 ---
 - launchApp:
     clearState: false
+- assertVisible: "Who’s studying?"
 - tapOn: "Jacob K, Year 4"
 # Deep link rather than tapping the set title on Study home. When this set is the child's Continue
 # set, that title renders inside the Continue card -- which is a plain View; only its "Carry on"
 # button navigates (study/index.tsx:344-353). The tap therefore "succeeded" on the text node and went
 # nowhere, and every later step failed on a screen that had never changed.
 - openLink: "gokid://lesson/y4-mult-div"
-- assertVisible: "Study cards"
+- extendedWaitUntil:
+    visible: "Study cards"
+    timeout: 15000
 # "Start a study session" is the accessibilityLabel; the button's visible text is "Study session".
 # The Pressable carries accessibilityRole="button" + accessibilityLabel (lesson/[id].tsx:176-183),
 # so iOS merges the child Text away and the hierarchy exposes only the label. Match the label.
 - tapOn: "Start a study session"
+
+- extendedWaitUntil:
+    visible: "See result"
+    timeout: 15000
 - takeScreenshot: 04b-session-q1
 - tapOn: "42"
-- tapOn: "Next card"
+- tapOn: "See result"
+# The answer-result screen, reached. Its CTA is pinned below the scroll view, so no scroll is needed
+# to reach it — it used to sit two sections down inside the scroll, which made it a moving target
+# while the list decelerated and is how this flow lost a tap intermittently.
+- extendedWaitUntil:
+    visible: "Answer Result"
+    timeout: 15000
+- assertVisible: "Next card"
 - takeScreenshot: 04c-answer-result-1
-- scrollUntilVisible:
-    element:
-      text: "Next card"
-    direction: DOWN
 - tapOn: "Next card"
+
+- extendedWaitUntil:
+    visible: "See result"
+    timeout: 15000
 - takeScreenshot: 04d-session-q2
 - tapOn: "32"
+- tapOn: "See result"
+- extendedWaitUntil:
+    visible: "Answer Result"
+    timeout: 15000
 - tapOn: "Next card"
-- scrollUntilVisible:
-    element:
-      text: "Next card"
-    direction: DOWN
-- tapOn: "Next card"
+
+- extendedWaitUntil:
+    visible: "See result"
+    timeout: 15000
 - takeScreenshot: 04e-session-q3
 - tapOn: "7"
+- tapOn: "See result"
+- extendedWaitUntil:
+    visible: "Answer Result"
+    timeout: 15000
 - tapOn: "Next card"
-- scrollUntilVisible:
-    element:
-      text: "Next card"
-    direction: DOWN
-- tapOn: "Next card"
+
+- extendedWaitUntil:
+    visible: "See result"
+    timeout: 15000
 - takeScreenshot: 04f-session-q4
 - tapOn: "36"
+- tapOn: "See result"
+- extendedWaitUntil:
+    visible: "Answer Result"
+    timeout: 15000
 - tapOn: "Next card"
-- scrollUntilVisible:
-    element:
-      text: "Next card"
-    direction: DOWN
-- tapOn: "Next card"
+
+- extendedWaitUntil:
+    visible: "See result"
+    timeout: 15000
 - takeScreenshot: 04g-session-q5
 - tapOn: "8"
+- tapOn: "See result"
+- extendedWaitUntil:
+    visible: "Answer Result"
+    timeout: 15000
 - tapOn: "Next card"
-- scrollUntilVisible:
-    element:
-      text: "Next card"
-    direction: DOWN
-- tapOn: "Next card"
+
+- extendedWaitUntil:
+    visible: "See result"
+    timeout: 15000
 - takeScreenshot: 04h-session-q6
 - tapOn: "42"
-- tapOn: "Next card"
+- tapOn: "See result"
+- extendedWaitUntil:
+    visible: "Answer Result"
+    timeout: 15000
 - takeScreenshot: 04i-after-card6

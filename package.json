@@ -41,6 +41,7 @@
     "react-native-worklets": "0.10.0"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "@types/react": "~19.2.2",
     "babel-preset-expo": "^57.0.2",
     "dotenv": "^17.4.2",
@@ -49,6 +50,7 @@
     "eslint-config-expo": "~57.0.0",
     "prettier-plugin-tailwindcss": "^0.5.14",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.23.12",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -64,10 +66,14 @@
     "keys:check": "node scripts/keys-check.mjs",
     "check:strands": "node scripts/check-strands.mjs",
     "check:bias": "node scripts/check-answer-bias.mjs",
-    "check:content": "npm run check:strands && npm run check:bias",
+    "check:symbols": "node scripts/check-symbols.mjs",
+    "check:content": "npm run check:strands && npm run check:bias && npm run check:symbols && npm run check:audit",
     "qa:mint": "node scripts/qa/00-mint-users.mjs",
-    "qa:sec": "node scripts/qa/01-idor.mjs && node scripts/qa/02-quiz-no-repeat.mjs && node scripts/qa/04-sync.mjs && node scripts/qa/05-verify-db.mjs",
-    "qa:cleanup": "node scripts/qa/99-cleanup.mjs"
+    "qa:sec": "node scripts/qa/01-idor.mjs && node scripts/qa/02-quiz-no-repeat.mjs && node scripts/qa/04-sync.mjs && node scripts/qa/05-verify-db.mjs && node scripts/qa/06-unauth-methods.mjs",
+    "qa:cleanup": "node scripts/qa/99-cleanup.mjs",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "check:audit": "node --import tsx --import ./scripts/asset-hook.mjs scripts/content-audit.mjs",
+    "check:content:db": "node --import tsx --import ./scripts/asset-hook.mjs scripts/content-audit.mjs --db"
   },
   "private": true
 }

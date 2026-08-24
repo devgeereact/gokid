@@ -1,0 +1,97 @@
+appId: com.gokid.app
+name: 17b - Offline - study, flashcards and quiz run on the downloaded payload
+# Runs with the Mac's Wi-Fi OFF (scripts/qa/offline-e2e.sh does the toggling). The app is launched
+# cold first, so this also proves the download is hydrated at startup rather than when someone
+# happens to open the Storage screen.
+#
+# The set is y4-states-of-matter, downloaded by 17a. Every assertion below names content that comes
+# out of that payload.
+#
+# WHAT THIS CANNOT PROVE ON ITS OWN: the app bundles the same 27 sets as demo material, so cards
+# rendering offline is not by itself evidence that the DOWNLOAD is being read — the bundle would look
+# identical. scripts/qa/offline-e2e.sh closes that hole by diffing the stored payload against the
+# bundled catalogue before the network goes down, and by asserting the download file exists on disk.
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Jacob K, Year 4"
+
+# The connectivity banner is the app noticing for itself that it is offline. If this never appears,
+# the network was not actually down and everything below is meaningless.
+- extendedWaitUntil:
+    visible: "You are offline. Open downloaded sets."
+    timeout: 30000
+- takeScreenshot: 17c-offline-banner
+
+# ------------------------------------------------------------------ the set opens
+- openLink: "gokid://lesson/y4-states-of-matter"
+- extendedWaitUntil:
+    visible: "States of Matter"
+    timeout: 15000
+- assertVisible: "Study cards"
+- takeScreenshot: 17d-set-detail-offline
+
+# ------------------------------------------------------------------ flashcards
+- tapOn: "Study cards"
+- extendedWaitUntil:
+    visible: "Show answer"
+    timeout: 15000
+- tapOn: "Show answer"
+- takeScreenshot: 17e-flashcard-offline
+- tapOn: "Got it"
+- assertVisible: "Show answer"
+- tapOn: "Show answer"
+- tapOn: "Tricky"
+- assertVisible: "Show answer"
+- takeScreenshot: 17f-flashcards-advance-offline
+
+# ------------------------------------------------------------------ study session
+- openLink: "gokid://lesson/y4-states-of-matter"
+- extendedWaitUntil:
+    visible: "Start a study session"
+    timeout: 15000
+- tapOn: "Start a study session"
+# A card with no question is the failure mode a legacy download produces. The session screen has to
+# be showing a real prompt, so assert the answer pills are there to tap.
+- extendedWaitUntil:
+    visible: "See result"
+    timeout: 15000
+- takeScreenshot: 17g-session-offline
+- tapOn: "Skip card"
+- assertVisible: "See result"
+- takeScreenshot: 17h-session-advances-offline
+
+# ------------------------------------------------------------------ quiz
+# The quiz normally draws from /api/quiz. Offline that fetch fails and the runner must fall back to
+# the set's own questions — which, for a downloaded set, are the downloaded ones. A quiz that hangs
+# on a spinner here is the bug: an infinite loading state instead of the content the app promised.
+- openLink: "gokid://quiz/instructions/y4-states-of-matter"
+- extendedWaitUntil:
+    visible: "Start quiz"
+    timeout: 15000
+- tapOn: "Start quiz"
+- extendedWaitUntil:
+    visible:
+      id: "quiz-option-0"
+    timeout: 45000
+- assertVisible: "Question 1 of.*"
+- takeScreenshot: 17i-quiz-offline-q1
+
+# Answer it and confirm it is graded — scoring must work with no connection, not just rendering.
+- copyTextFrom:
+    id: "quiz-option-0"
+- tapOn:
+    id: "quiz-option-0"
+- tapOn: "Check answer"
+- assertVisible: "Next"
+# The same row still carries the same label: nothing re-shuffled underneath the child.
+- assertVisible:
+    id: "quiz-option-0"
+    text: "${maestro.copiedText}"
+- takeScreenshot: 17j-quiz-offline-graded
+- tapOn: "Next"
+- extendedWaitUntil:
+    visible: "Question 2 of.*"
+    timeout: 15000
+- takeScreenshot: 17k-quiz-offline-q2

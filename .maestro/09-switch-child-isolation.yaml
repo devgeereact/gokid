@@ -1,10 +1,33 @@
 appId: com.gokid.app
-name: 09 - Switch to Isaac and check for Jacob's data leaking
+name: 09 - Switching child switches the record with it
+# Two children on one account share every store; they are separated only by the child id the write
+# was keyed under. A leak here shows one child another child's progress, which is both a privacy
+# failure and a corrupted schedule.
 ---
 - launchApp:
     clearState: false
 - assertVisible: "Who’s studying?"
 - tapOn: "Isaac K, Year 4"
+- extendedWaitUntil:
+    visible: "Study"
+    timeout: 15000
 - takeScreenshot: 09a-isaac-study-home
+
 - tapOn: "Progress"
+- extendedWaitUntil:
+    visible: "Your progress"
+    timeout: 15000
 - takeScreenshot: 09b-isaac-progress
+
+# Back to Jacob, and his record must come back with him. A switcher that showed the same numbers for
+# both children would pass a one-child flow and fail every real family.
+- openLink: "gokid://"
+- extendedWaitUntil:
+    visible: "Who’s studying?"
+    timeout: 15000
+- tapOn: "Jacob K, Year 4"
+- tapOn: "Progress"
+- extendedWaitUntil:
+    visible: "Your progress"
+    timeout: 15000
+- takeScreenshot: 09c-jacob-progress-after-switch

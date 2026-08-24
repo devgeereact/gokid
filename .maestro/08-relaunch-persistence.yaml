@@ -1,8 +1,33 @@
 appId: com.gokid.app
-name: 08 - Relaunch persistence check (after cold terminate+launch done via simctl)
+name: 08 - A cold relaunch keeps the child, their progress and the parent lock
+# Persistence is three separate stores — Clerk metadata (children), SecureStore (progress and the
+# passcode) and the downloads folder — and a relaunch is the only thing that tests any of them.
 ---
+- stopApp
 - launchApp:
     clearState: false
+
+# Signed in: the app went to who's-studying, not to sign-in.
+- extendedWaitUntil:
+    visible: "Who’s studying?"
+    timeout: 30000
+- assertVisible: "Jacob K, Year 4"
+- takeScreenshot: 08a-signed-in-after-relaunch
+
 - tapOn: "Jacob K, Year 4"
 - tapOn: "Progress"
-- takeScreenshot: 08a-progress-after-relaunch
+- extendedWaitUntil:
+    visible: "Your progress"
+    timeout: 15000
+- assertNotVisible: "No progress yet"
+- takeScreenshot: 08b-progress-after-relaunch
+
+# The parent area must be locked again. This is the security half of persistence: state that
+# survives a relaunch is a feature for progress and a defect for an unlocked gate.
+- tapOn: "Parent"
+- tapOn: "Enter parent area"
+- extendedWaitUntil:
+    visible: "Enter your passcode.|Create a passcode"
+    timeout: 15000
+- assertNotVisible: "Progress overview"
+- takeScreenshot: 08c-parent-locked-after-relaunch

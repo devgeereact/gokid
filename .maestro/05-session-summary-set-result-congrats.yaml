@@ -4,14 +4,17 @@ name: 05 - Session summary -> set-result -> congratulations (continues from 04)
 # Runs 04 first rather than assuming its final screen is still on the device. Without this the flow
 # passes only when invoked immediately after 04 by hand, and fails in any suite run.
 - runFlow: 04-study-session-summary.yaml
-# Continues directly from 04's last screen (Answer Result for the 6th/last card). If the app was
-# closed since, this flow cannot resume it - run 04 immediately before this one in the same session.
-- scrollUntilVisible:
-    element:
-      text: "Next card"
-    direction: DOWN
+
+# 04 ends on the Answer Result for the last card, where "Next card" banks the session and opens the
+# summary instead of advancing.
+- assertVisible: "Next card"
 - tapOn: "Next card"
+- extendedWaitUntil:
+    visible: "Session Summary"
+    timeout: 15000
+- assertVisible: "Cards studied"
 - takeScreenshot: 05a-session-summary
+
 # Both CTAs sit under the stats block (session-summary/[id].tsx:250-268) and are off-screen on a
 # summary with a full set of stats. Scroll before asserting -- Maestro's assertVisible means
 # on-screen, not present-in-tree.
@@ -23,4 +26,7 @@ name: 05 - Session summary -> set-result -> congratulations (continues from 04)
 - assertVisible: "Continue studying"
 - assertVisible: "Take a break"
 - tapOn: "Continue studying"
+- extendedWaitUntil:
+    notVisible: "Session Summary"
+    timeout: 15000
 - takeScreenshot: 05b-set-result

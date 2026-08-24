@@ -1,0 +1,63 @@
+appId: com.gokid.app
+name: 17c - Reconnect - the banner recovers and the offline work syncs
+# Runs with the Wi-Fi back ON. Closes the offline lifecycle: the ratings recorded in 17b were written
+# to the on-device store with no connection, and they have to reach the server exactly once.
+#
+# "Exactly once" is the part that is easy to get wrong and impossible to see: a duplicate push
+# inflates every study-time figure in the Progress section, and nothing on screen says so.
+# scripts/qa/offline-e2e.sh checks the row counts either side of this flow; the flow itself checks
+# what a parent can see.
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Jacob K, Year 4"
+
+# The banner must clear itself. A stale "You are offline" over a working connection is its own bug —
+# it tells a child to go to Downloads when the whole catalogue is available.
+- extendedWaitUntil:
+    notVisible: "You are offline. Open downloaded sets."
+    timeout: 45000
+- takeScreenshot: 17l-banner-cleared
+
+# The offline ratings are in the child's record. Boxes only move when a card is rated, so a set that
+# shows recall progress is a set whose offline answers survived.
+- openLink: "gokid://lesson/y4-states-of-matter"
+- extendedWaitUntil:
+    visible: "States of Matter"
+    timeout: 15000
+- takeScreenshot: 17m-set-detail-after-reconnect
+
+# The sync screen is behind the parent gate, so reach it the way a parent does.
+- tapOn: "Parent"
+- tapOn: "Enter parent area"
+- runFlow:
+    when:
+      visible: "Enter your passcode."
+    commands:
+      - tapOn:
+          id: "passcode-key-1"
+      - tapOn:
+          id: "passcode-key-2"
+      - tapOn:
+          id: "passcode-key-3"
+      - tapOn:
+          id: "passcode-key-4"
+- extendedWaitUntil:
+    visible: "Progress overview"
+    timeout: 15000
+- openLink: "gokid://sync"
+- extendedWaitUntil:
+    visible: "Back up now"
+    timeout: 15000
+# Connectivity has returned, so the offline empty state must be gone before the button is tapped.
+- assertNotVisible: "You’re offline"
+- takeScreenshot: 17n-sync-screen
+- tapOn: "Back up now"
+# Whatever it reports, it must report something. A backup button that changes nothing on screen is
+# indistinguishable from one that silently failed — that is the honesty rule, applied to sync.
+- extendedWaitUntil:
+    visible: "Backed up|Backup didn’t finish"
+    timeout: 60000
+- assertNotVisible: "Backing up…"
+- takeScreenshot: 17o-sync-result

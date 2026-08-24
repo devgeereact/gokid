@@ -1,0 +1,75 @@
+appId: com.gokid.app
+name: 17d - Offline - the things that CANNOT work say so, and none of them lie
+# Also runs with the Wi-Fi off. The offline flows above check that what was promised still works;
+# this one checks the other half of the honesty rule — that what cannot work is not dressed up as
+# though it did.
+#
+# A note on scope, because it changes how the offline result should be read: all 27 sets ship inside
+# the app as demo material, so a set that was never downloaded still opens with no connection. That
+# is not the download layer working; it is the bundle. Once content is server-only that stops being
+# true, which is exactly why the download has to be genuinely consumed rather than merely stored —
+# and why 17b's set is one whose payload was diffed against the bundle before the network went down.
+---
+- launchApp:
+    clearState: false
+- assertVisible: "Who’s studying?"
+- tapOn: "Jacob K, Year 4"
+- extendedWaitUntil:
+    visible: "You are offline. Open downloaded sets."
+    timeout: 30000
+
+# ---------------------------------------------------------------- backup cannot run
+- tapOn: "Parent"
+- tapOn: "Enter parent area"
+- runFlow:
+    when:
+      visible: "Enter your passcode."
+    commands:
+      - tapOn:
+          id: "passcode-key-1"
+      - tapOn:
+          id: "passcode-key-2"
+      - tapOn:
+          id: "passcode-key-3"
+      - tapOn:
+          id: "passcode-key-4"
+- extendedWaitUntil:
+    visible: "Progress overview"
+    timeout: 15000
+- openLink: "gokid://sync"
+- extendedWaitUntil:
+    visible: "You’re offline"
+    timeout: 20000
+# The screen must say what it will do with the work instead of implying it is lost or that it went up.
+- assertVisible: "Backing up needs a connection.*"
+- assertNotVisible: "Backed up"
+- takeScreenshot: 17p-sync-offline-honest
+
+# ---------------------------------------------------------------- a new download cannot start
+- openLink: "gokid://download/y5-earth-space"
+- extendedWaitUntil:
+    visible: "Download Set"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: "Download this set"
+    direction: DOWN
+    visibilityPercentage: 60
+- tapOn: "Download this set"
+# Either it refuses up front or it fails and says so. What it must NOT do is claim the set is saved,
+# because a parent who reads "Saved for offline use" will rely on it on a train tomorrow.
+- extendedWaitUntil:
+    visible: "That didn’t save"
+    timeout: 60000
+- assertVisible: "Nothing was downloaded.*"
+- assertNotVisible: "Saved for offline use"
+- takeScreenshot: 17q-download-offline-fails-honestly
+
+# ---------------------------------------------------------------- the downloads list still works
+- openLink: "gokid://offline"
+- extendedWaitUntil:
+    visible: "Downloads"
+    timeout: 15000
+- assertVisible: "States of Matter"
+- assertNotVisible: "Earth and Space"
+- takeScreenshot: 17r-downloads-list-offline
