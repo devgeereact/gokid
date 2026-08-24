@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/expo"
 import { router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { ChildAvatar } from "@/components/child-avatar"

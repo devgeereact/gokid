@@ -1,14 +1,14 @@
 import { useUser } from "@clerk/expo"
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useChildren, useStudyingChildId } from "@/lib/children"
 import { resolveItems } from "@/lib/served-quiz"
-import { getStudySet, nextSetId, quizItems } from "@/lib/study"
+import { useStudySet, nextSetId, quizItems } from "@/lib/study"
 
 /**
  * Quiz results (design/GoKid-result-screen.png, screen 9). Celebrating child, a score ring, then two
@@ -38,7 +38,7 @@ export default function Result() {
   const { user } = useUser()
   const { children } = useChildren()
   const childId = useStudyingChildId() ?? ""
-  const set = getStudySet(id)
+  const set = useStudySet(id)
 
   if (!set) return <Redirect href="/home" />
 

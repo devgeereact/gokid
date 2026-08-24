@@ -1,6 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
@@ -9,7 +10,7 @@ import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useStudyingChildId } from "@/lib/children"
 import { useProgress } from "@/lib/reviews"
-import { getStudySet } from "@/lib/study"
+import { useStudySet } from "@/lib/study"
 
 /**
  * Set results (design/GoKid-setresult-screen.png, screen 18). Post-quiz breakdown: an accuracy ring
@@ -94,7 +95,7 @@ export default function SetResult() {
   const { id, score } = useLocalSearchParams<{ id: string; score?: string }>()
   const childId = useStudyingChildId() ?? ""
   const { cards } = useProgress(childId)
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   if (!set) return <Redirect href="/home" />
 
   // Box 2+ — recalled correctly at least twice across widening gaps. Real, from the SRS record.

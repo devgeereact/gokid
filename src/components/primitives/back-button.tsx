@@ -1,5 +1,5 @@
 import { router } from "expo-router"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable } from "react-native"
 
 import { colors } from "@/design/tokens"

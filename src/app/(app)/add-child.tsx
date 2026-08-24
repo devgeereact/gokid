@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/react-native"
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import * as ImagePicker from "expo-image-picker"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useCallback, useMemo, useState } from "react"
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native"
 
@@ -60,12 +60,21 @@ function FieldLabel({ children }: { children: string }) {
   return <Text className="font-text text-body font-medium text-ink">{children}</Text>
 }
 
-/** Picker face — the value (or a muted placeholder) on the left, a chevron on the right. */
+/**
+ * Picker face — the value (or a muted placeholder) on the left, a chevron on the right.
+ *
+ * `field` is what the picker is *for* ("Birth month"); the visible text is only its current value.
+ * Without it the control announced itself as "Month" or, once chosen, "March" — a bare value with no
+ * hint of which question it answers, and the two pickers sit side by side. The field name is spoken
+ * first so the pair is distinguishable, and the visible label above stays for sighted users.
+ */
 function Select({
+  field,
   value,
   placeholder,
   onPress,
 }: {
+  field: string
   value: string | null
   placeholder: string
   onPress: () => void
@@ -73,6 +82,10 @@ function Select({
   return (
     <Pressable
       accessibilityRole="button"
+      // Same reasoning as the name field: with no value chosen this used to announce exactly the
+      // caption above it ("Birth month"), so the control was indistinguishable from its own heading.
+      accessibilityLabel={value ? `${field}, ${value}` : `${field}, not chosen`}
+      accessibilityHint="Opens a list to choose from"
       className="mt-2 h-12 flex-row items-center justify-between rounded-md border border-border bg-white px-4 active:opacity-70"
       onPress={onPress}
     >
@@ -329,9 +342,16 @@ export default function AddChild() {
       // Return to who's-studying. Pushed from there → back to it (re-renders with the change);
       // reached as onboarding (no history) → replace into it.
       goBack()
+    } catch {
+      // Staying on the form was already right — losing what they typed would be worse — but it was
+      // all the parent got: the promise rejected into nothing and the screen simply sat there, so a
+      // failed save was indistinguishable from a save that worked. `useChildren` has already reported
+      // the detail to Sentry; this is the part the parent needs.
+      Alert.alert(
+        editing ? "Couldn’t save those changes" : "Couldn’t add that child",
+        "Nothing has been changed. Check your connection and try again — what you typed is still here."
+      )
     } finally {
-      // On failure stay on the form (useChildren already reported to Sentry) so the parent
-      // can retry rather than losing what they typed.
       setSaving(false)
     }
   }
@@ -350,7 +370,22 @@ export default function AddChild() {
             setDeleting(true)
             try {
               await removeChild(existing!.id)
-              goBack()
+              // NOT `goBack()`. This form is reached as children → profile → edit, so popping one
+              // screen landed the parent back on the profile of the child they had just deleted —
+              // which correctly rendered "Child not found", making a successful deletion look like an
+              // error. `dismissTo` unwinds past the dead profile to the list, which is both the right
+              // destination and the one place that can show the deletion actually happened. It also
+              // leaves nothing behind for the back gesture to return to. When the form was deep-linked
+              // and no list is in the stack, `dismissTo` replaces instead, so there is no dead end
+              // either way.
+              router.dismissTo("/children")
+            } catch {
+              // Same reasoning as the save path: a delete that failed used to reject into nothing,
+              // leaving the child on screen with no explanation of why they were still there.
+              Alert.alert(
+                "Couldn’t remove that child",
+                `${existing!.name} is still here. Check your connection and try again.`
+              )
             } finally {
               setDeleting(false)
             }
@@ -457,6 +492,12 @@ export default function AddChild() {
       <View className="mt-3">
         <FieldLabel>First name</FieldLabel>
         <TextInput
+          // Not "First name": that is the caption directly above, so the two announced identically
+          // and a VoiceOver user swiping through heard the same three words twice with no way to
+          // tell the heading from the field. It also made "First name" ambiguous to automation —
+          // .maestro/16-child-crud.yaml types into this control by name.
+          accessibilityLabel="Child’s first name"
+          testID="child-first-name"
           className="mt-3 h-13 rounded-md border border-border bg-white px-4 font-text text-field text-ink"
           placeholder="First name"
           placeholderTextColor={colors["text-secondary"]}
@@ -503,11 +544,11 @@ export default function AddChild() {
       <View className="mt-8 flex-row gap-4">
         <View className="flex-1">
           <FieldLabel>Birth month</FieldLabel>
-          <Select value={birthMonth} placeholder="Month" onPress={() => setSheet("month")} />
+          <Select field="Birth month" value={birthMonth} placeholder="Month" onPress={() => setSheet("month")} />
         </View>
         <View className="flex-1">
           <FieldLabel>Birth year</FieldLabel>
-          <Select value={birthYear} placeholder="Year" onPress={() => setSheet("year")} />
+          <Select field="Birth year" value={birthYear} placeholder="Year" onPress={() => setSheet("year")} />
         </View>
       </View>
 

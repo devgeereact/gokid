@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Fragment, type ReactNode, useState } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from "react-native-svg"

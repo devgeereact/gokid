@@ -1,6 +1,6 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useEffect, useRef, useState } from "react"
 import { Alert, Pressable, Text, View } from "react-native"
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
@@ -15,7 +15,7 @@ import { useHaptics } from "@/lib/haptics"
 import { hintFor } from "@/lib/hints"
 import { useReadingClasses, useReduceMotion } from "@/lib/preferences"
 import { elapsedMinutes, elapsedSeconds, type Rating, useProgress } from "@/lib/reviews"
-import { getStudySet } from "@/lib/study"
+import { useStudySet } from "@/lib/study"
 
 /**
  * Flashcard runner (design/GoKid-flashcard-screen.png, screen 7). Walks the set's cards: tap for a
@@ -29,7 +29,7 @@ const FLIP_MS = 420
 
 export default function FlashcardRunner() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   const reduceMotion = useReduceMotion()
   // §19 "Dyslexia Reading Mode" — applied on the card faces, which is where the reading is.
   const reading = useReadingClasses()

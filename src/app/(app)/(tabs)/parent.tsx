@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Text, View } from "react-native"
 
 import { Button } from "@/components/primitives"

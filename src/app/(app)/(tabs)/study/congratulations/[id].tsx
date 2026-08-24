@@ -1,6 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { Image, SafeAreaView } from "@/components/styled"
@@ -9,7 +10,7 @@ import { useParentGate } from "@/lib/parent-gate"
 import { useChildren, useStudyingChildId } from "@/lib/children"
 import { dueLabel, useProgress } from "@/lib/reviews"
 import { shareAboutChild } from "@/lib/share"
-import { getStudySet, nextSetId } from "@/lib/study"
+import { useStudySet, nextSetId } from "@/lib/study"
 
 /**
  * Congratulations / All Done (design/GoKid-congratulations-screen.png, screen 23). Completion
@@ -75,7 +76,7 @@ function StatTile({ stat }: { stat: Stat }) {
 export default function Congratulations() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const childId = useStudyingChildId() ?? ""
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   const { children } = useChildren()
   const { cards } = useProgress(childId)
   const { unlocked } = useParentGate()

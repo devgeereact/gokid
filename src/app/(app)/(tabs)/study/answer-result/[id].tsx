@@ -1,6 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 import Svg, { Circle } from "react-native-svg"
 
@@ -9,7 +10,7 @@ import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useChildren, useStudyingChildId } from "@/lib/children"
 import { nextDueLabel, useProgress } from "@/lib/reviews"
-import { getStudySet } from "@/lib/study"
+import { useStudySet } from "@/lib/study"
 import { endSession, minutesFor } from "@/lib/study-session"
 
 /**
@@ -159,7 +160,7 @@ export default function AnswerResult() {
   const childId = useStudyingChildId() ?? ""
   const { children } = useChildren()
   const { cards, recordSession } = useProgress(childId)
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   if (!set) return <Redirect href="/home" />
 
   const name = (children.find((c) => c.id === childId) ?? children[0])?.name ?? "there"
@@ -221,7 +222,7 @@ export default function AnswerResult() {
         </View>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="pb-35 pt-2" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerClassName="pb-4 pt-2" showsVerticalScrollIndicator={false}>
         {/* Result + reward */}
         <View className="mt-2 overflow-hidden rounded-2xl border border-border bg-white p-5">
           <View className="flex-row items-start">
@@ -338,7 +339,14 @@ export default function AnswerResult() {
         <View className="rounded-2xl border border-border bg-white p-4">
           <View className="flex-row items-center">
             <View className="h-16 w-16 items-center justify-center rounded-lg bg-gamify-purple-wash">
-              <SymbolView name="chart.bar.fill" size={30} tintColor={colors.gamify.purple} weight="semibold" />
+              <SymbolView
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+                name="chart.bar.fill"
+                size={30}
+                tintColor={colors.gamify.purple}
+                weight="semibold"
+              />
             </View>
             <View className="ml-3 flex-1">
               <Text className="font-text text-body-lg font-bold text-ink">Keep going!</Text>
@@ -347,23 +355,6 @@ export default function AnswerResult() {
               </Text>
             </View>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Next card"
-            className="mt-4 h-14 flex-row items-center justify-center rounded-full bg-study-teal active:opacity-90"
-            onPress={onNext}
-          >
-            <Text className="font-text text-body-lg font-bold text-white">Next card</Text>
-            <SymbolView name="arrow.right" size={18} tintColor={colors.white} weight="bold" className="ml-2.5" />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back to set"
-            className="mt-3 h-11 items-center justify-center active:opacity-60"
-            onPress={() => router.replace({ pathname: "/lesson/[id]", params: { id: set.id } })}
-          >
-            <Text className="font-text text-body-lg font-bold text-study-teal underline">Back to set</Text>
-          </Pressable>
         </View>
 
         {/* Progress in this set */}
@@ -377,6 +368,42 @@ export default function AnswerResult() {
           <View className={`h-full rounded-full bg-study-teal ${BAR[filled]}`} />
         </View>
       </ScrollView>
+
+      {/*
+        Pinned outside the ScrollView, the same way welcome.tsx, quiz/instructions and
+        congratulations pin theirs. This is the one action the screen exists to offer, and it used to
+        sit two sections down inside the scroll: a child had to scroll past "What's next?" and
+        "Progress in this set" to continue, on every single card. It also made the button a moving
+        target — a tap landing while the scroll was still decelerating never reached it, which is
+        exactly how the study-session flow lost a "Next card" tap intermittently.
+      */}
+      <View className="mb-24 pt-2">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Next card"
+          className="h-14 flex-row items-center justify-center rounded-full bg-study-teal active:opacity-90"
+          onPress={onNext}
+        >
+          <Text className="font-text text-body-lg font-bold text-white">Next card</Text>
+          <SymbolView
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+            className="ml-2.5"
+            name="arrow.right"
+            size={18}
+            tintColor={colors.white}
+            weight="bold"
+          />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to set"
+          className="mt-2 h-11 items-center justify-center active:opacity-60"
+          onPress={() => router.replace({ pathname: "/lesson/[id]", params: { id: set.id } })}
+        >
+          <Text className="font-text text-body-lg font-bold text-study-teal underline">Back to set</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   )
 }

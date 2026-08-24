@@ -1,6 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useState } from "react"
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native"
 
@@ -8,7 +9,7 @@ import { AlertBanner } from "@/components/alert-banner"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useDownloads } from "@/lib/downloads"
-import { getStudySet } from "@/lib/study"
+import { useStudySet } from "@/lib/study"
 
 /**
  * Download Set (design/GoKid-downloadset-screen.png, screen 15). A pushed stack screen: set summary,
@@ -68,7 +69,7 @@ function IncludedTile({
 
 export default function DownloadSet() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   const [target, setTarget] = useState<DownloadTarget>("device")
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)

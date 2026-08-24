@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/react-native"
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import * as Print from "expo-print"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Alert, Pressable, ScrollView, Text, View } from "react-native"
 
 import { BackButton } from "@/components/primitives"
@@ -13,7 +13,7 @@ import { shareAboutChild } from "@/lib/share"
 import { useChildren, useStudyingChildId } from "@/lib/children"
 import { useParentGate } from "@/lib/parent-gate"
 import { getCertificate } from "@/lib/rewards"
-import { getStudySet } from "@/lib/study"
+import { useStudySet } from "@/lib/study"
 
 /**
  * Certificate Earned (design/gokid-screens.md §9, Rewards). The award a child receives for
@@ -34,7 +34,7 @@ import { getStudySet } from "@/lib/study"
 
 export default function CertificateEarned() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   const cert = getCertificate(id)
   const { children } = useChildren()
   const childId = useStudyingChildId() ?? ""

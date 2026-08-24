@@ -1,15 +1,17 @@
-import { Redirect, router, useLocalSearchParams } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
+import { EmptyState } from "@/components/empty-state"
 import { BackButton } from "@/components/primitives"
 import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useStudyingChildId } from "@/lib/children"
 import { BAR, barPct } from "@/lib/milestones"
 import { masterySplit, useProgress } from "@/lib/reviews"
-import { getStudySet, relatedSets, type StudySet } from "@/lib/study"
+import { relatedSets, type StudySet, useResolvedStudySet } from "@/lib/study"
 
 /**
  * Set detail (design/GoKid-lessondetails-screen.png, screen 6). Hero illustration, blurb, card /
@@ -72,8 +74,38 @@ export default function LessonDetail() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const childId = useStudyingChildId() ?? ""
   const { cards } = useProgress(childId)
-  const set = getStudySet(id)
-  if (!set) return <Redirect href="/home" />
+  // Resolves in three steps: what the device holds (bundle or download), then the API, then failure.
+  // A silent `<Redirect href="/home" />` used to stand here, which threw away the difference between
+  // "still fetching", "not on this device but downloadable" and "no such set".
+  const { set, loading, failed } = useResolvedStudySet(id)
+
+  if (!set) {
+    return (
+      <SafeAreaView edges={["top"]} className="flex-1 bg-background px-5">
+        <StatusBar style="dark" />
+        <View className="mt-2 h-11 justify-center">
+          <BackButton />
+        </View>
+        <View className="flex-1 justify-center">
+          {loading ? (
+            <EmptyState symbol="arrow.down.circle" title="Getting this set…" body="Fetching the cards and questions." />
+          ) : (
+            <EmptyState
+              symbol="questionmark.circle"
+              title="This set isn’t available"
+              body={
+                failed
+                  ? "It isn’t saved on this device, and we couldn’t reach the internet to fetch it. Try again when you’re back online."
+                  : "We couldn’t find this set."
+              }
+              actionLabel="Back to Home"
+              onAction={() => router.replace("/home")}
+            />
+          )}
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   const setCards = cards.filter((c) => c.setId === set.id)
 

@@ -1,6 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { useState } from "react"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
@@ -9,7 +10,7 @@ import { Image, SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { useStudyingChildId } from "@/lib/children"
 import { masterySplit, useProgress } from "@/lib/reviews"
-import { getStudySet, quizBrief } from "@/lib/study"
+import { useStudySet, quizBrief } from "@/lib/study"
 
 /**
  * Quiz Instructions (design/gokid-screens.md §7). The gate between set detail / the flashcard deck
@@ -72,7 +73,7 @@ export default function QuizInstructions() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const childId = useStudyingChildId() ?? ""
   const { cards } = useProgress(childId)
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   // §7 "Quiz Difficulty" — a real, selectable control rather than a read-only label. Practice keeps
   // the instant feedback the runner has always had; Test defers it so the child answers everything,
   // reviews, then scores. Practice leads because it is the right default for learning.

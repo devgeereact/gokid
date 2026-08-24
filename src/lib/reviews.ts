@@ -2,6 +2,20 @@ import * as Sentry from "@sentry/react-native"
 import * as SecureStore from "expo-secure-store"
 import { useCallback, useSyncExternalStore } from "react"
 
+import {
+  dueCardCountAt,
+  dueDateFor,
+  dueLabelAt,
+  mergeProgress,
+  minutesTodayAt,
+  nextDueLabelAt,
+  recentActivityAt,
+  type Rating,
+  type ReviewCard,
+  schedule,
+  type SessionRecord,
+} from "./review-schedule"
+
 /**
  * Spaced-repetition engine + study history (design/flow-wireframe.md → "SPACED REPETITION ENGINE",
  * MVP → "Per-card feedback", "Spaced repetition scheduling", "Upcoming review cards", "Basic study
@@ -12,41 +26,20 @@ import { useCallback, useSyncExternalStore } from "react"
  * lands (AGENTS.md) — screens depend on the hook, not on where the rows live.
  */
 
-/** Per-card feedback from the flashcard runner. */
-export type Rating = "tricky" | "gotit"
-
-/** Days until a card comes back, indexed by box. Box 0 is the wireframe's "Tomorrow"; the first
- *  "Got it" moves to box 1 = "+5 Days". Beyond that the interval widens as recall holds. */
-const INTERVALS_DAYS = [1, 5, 12, 30, 90]
-
-const MAX_BOX = INTERVALS_DAYS.length - 1
-const DAY_MS = 86_400_000
-
-export type ReviewCard = {
-  setId: string
-  cardId: string
-  /** Index into INTERVALS_DAYS — higher means better retained. */
-  box: number
-  /** Epoch ms the card is next due. */
-  dueAt: number
-  lastRating: Rating
-  lastReviewedAt: number
-}
-
-/** One finished study or quiz session — the rows behind the study-history screen. */
-export type SessionRecord = {
-  id: string
-  setId: string
-  setTitle: string
-  subject: string
-  /** Epoch ms the session finished. */
-  at: number
-  cardsReviewed: number
-  minutes: number
-  /** Quiz score, when the session ended in a quiz. */
-  score?: number
-  scoreTotal?: number
-}
+/**
+ * The scheduling arithmetic itself lives in `./review-schedule`, a leaf module with no native
+ * imports so it can be unit tested. Everything there takes `now` as an argument; this file is where
+ * the clock is read and where the on-device store lives. Re-exported so `from "@/lib/reviews"` keeps
+ * working at every call site.
+ */
+export {
+  dueDateFor,
+  masterySplit,
+  schedule,
+  type Rating,
+  type ReviewCard,
+  type SessionRecord,
+} from "./review-schedule"
 
 type ChildProgress = {
   cards: Record<string, ReviewCard>
@@ -175,27 +168,13 @@ function progressFor(childId: string): ChildProgress {
   return store[childId] ?? EMPTY
 }
 
-/** Next box for a rating. "Tricky" drops the card back to box 0 (tomorrow); "Got it" promotes. */
-export function schedule(card: ReviewCard | undefined, rating: Rating): ReviewCard["box"] {
-  const box = card?.box ?? 0
-  if (rating === "tricky") return 0
-  return Math.min(box + 1, MAX_BOX)
-}
-
-export function dueDateFor(box: number, now: number) {
-  return now + INTERVALS_DAYS[box] * DAY_MS
-}
-
 /**
  * Human label for a due date — "Tomorrow", "In 5 days", "Ready now". Reads the clock itself: the
  * React Compiler (on for this project) rejects a Date.now() call in a component body, and a label
  * this coarse does not need the caller to pin a render-stable "now".
  */
 export function dueLabel(dueAt: number) {
-  const days = Math.ceil((dueAt - Date.now()) / DAY_MS)
-  if (days <= 0) return "Ready now"
-  if (days === 1) return "Tomorrow"
-  return `In ${days} days`
+  return dueLabelAt(dueAt, Date.now())
 }
 
 /**
@@ -205,7 +184,7 @@ export function dueLabel(dueAt: number) {
  * `dueLabel` above).
  */
 export function nextDueLabel(card: ReviewCard | undefined, rating: Rating) {
-  return dueLabel(dueDateFor(schedule(card, rating), Date.now()))
+  return nextDueLabelAt(card, rating, Date.now())
 }
 
 /** Whole minutes since `since`, floored at 1 — a finished session is never "0 min". Reads the clock
@@ -221,61 +200,22 @@ export function elapsedSeconds(since: number) {
 }
 
 /**
- * How a child's rated cards split across the mastery ladder. `box` is the Leitner position, so this
- * is the engine's own view of retention rather than an authored percentage: 0–1 is still being
- * learned, 2–3 is coming good, 4+ has survived the widest intervals.
- */
-export function masterySplit(cards: ReviewCard[]) {
-  const learning = cards.filter((c) => c.box <= 1).length
-  const getting = cards.filter((c) => c.box === 2 || c.box === 3).length
-  const mastered = cards.filter((c) => c.box >= 4).length
-  const total = cards.length
-  const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100))
-  return { learning, getting, mastered, total, pctLearning: pct(learning), pctGetting: pct(getting), pctMastered: pct(mastered) }
-}
-
-/**
- * The last `count` days, oldest first, flagged with whether the child studied that day. The clock is
- * read here, inside an imported helper, rather than in a screen body — the React Compiler treats a
- * render-time `new Date()` as impure (same rule as `dueLabel` / `elapsedMinutes`).
- */
-/**
- * Minutes studied today (design/gokid-screens.md §10 → "Daily Study Goal").
- *
- * The clock is read here rather than in a component body — the React Compiler treats `Date.now()`
- * during render as impure, and it is the rule the rest of the app follows.
- */
-/**
  * How many cards are due right now. Reads the clock here rather than in a component body, which the
  * React Compiler treats as impure — the same rule `dueLabel` follows.
  */
 export function dueCardCount(cards: ReviewCard[]): number {
-  const now = Date.now()
-  return cards.filter((c) => c.dueAt <= now).length
+  return dueCardCountAt(cards, Date.now())
 }
 
+/** Minutes studied today (design/gokid-screens.md §10 → "Daily Study Goal"). Same clock rule. */
 export function minutesToday(sessions: SessionRecord[]): number {
-  const start = new Date()
-  start.setHours(0, 0, 0, 0)
-  const from = start.getTime()
-  return sessions.filter((s) => s.at >= from).reduce((sum, s) => sum + s.minutes, 0)
+  return minutesTodayAt(sessions, Date.now())
 }
 
+/** The last `count` days, oldest first, flagged with whether the child studied that day. Same rule:
+ *  the `new Date()` happens here, not in a screen body. */
 export function recentActivity(sessions: SessionRecord[], count = 7) {
-  const dayKey = (ms: number) => {
-    const d = new Date(ms)
-    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-  }
-  const studied = new Set(sessions.map((s) => dayKey(s.at)))
-  const labels = ["S", "M", "T", "W", "T", "F", "S"]
-  const now = new Date()
-  const out: { key: string; label: string; done: boolean; isToday: boolean }[] = []
-  for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i)
-    const key = dayKey(d.getTime())
-    out.push({ key, label: labels[d.getDay()], done: studied.has(key), isToday: i === 0 })
-  }
-  return out
+  return recentActivityAt(sessions, Date.now(), count)
 }
 
 /**
@@ -300,20 +240,9 @@ export function snapshotFor(childId: string): { cards: ReviewCard[]; sessions: S
  * the Progress section.
  */
 export function mergeRemoteProgress(childId: string, remoteCards: ReviewCard[], remoteSessions: SessionRecord[]) {
-  const local = progressFor(childId)
+  const merged = mergeProgress(progressFor(childId), remoteCards, remoteSessions)
 
-  const cards: Record<string, ReviewCard> = { ...local.cards }
-  for (const remote of remoteCards) {
-    const key = `${remote.setId}:${remote.cardId}`
-    const mine = cards[key]
-    if (!mine || remote.lastReviewedAt > mine.lastReviewedAt) cards[key] = remote
-  }
-
-  const byId = new Map(local.sessions.map((s) => [s.id, s]))
-  for (const remote of remoteSessions) if (!byId.has(remote.id)) byId.set(remote.id, remote)
-  const sessions = [...byId.values()].sort((a, b) => b.at - a.at)
-
-  store = { ...store, [childId]: { cards, sessions } }
+  store = { ...store, [childId]: merged }
   emit()
   void persist()
 }

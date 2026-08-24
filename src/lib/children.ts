@@ -1,10 +1,12 @@
 import { useAuth, useUser } from "@clerk/expo"
 import * as Sentry from "@sentry/react-native"
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo } from "react"
 
 import { useActiveChildId } from "./active-child"
 import { apiDeleteAuthed } from "./api"
+import { tokenWithin } from "./clerk-offline"
 import { clearChildProgress } from "./reviews"
+import { rememberSession, useCachedSession } from "./session-cache"
 
 // Children are stored on the parent's Clerk user under `unsafeMetadata`. It is the only
 // user-writable store the client is allowed to touch (AGENTS.md: the app never talks to
@@ -102,12 +104,35 @@ type ChildrenMetadata = {
 }
 
 export function useChildren() {
-  const { user } = useUser()
+  const { user, isLoaded: userLoaded } = useUser()
   const { getToken } = useAuth()
-  const children = useMemo(
+  const cached = useCachedSession()
+
+  const live = useMemo(
     () => (user?.unsafeMetadata as ChildrenMetadata | undefined)?.children ?? [],
     [user?.unsafeMetadata]
   )
+
+  /**
+   * Clerk when Clerk can answer, the on-device cache when it cannot.
+   *
+   * `useUser().isLoaded` never becomes true with no network — Clerk's bootstrap call hangs rather
+   * than failing — so without this every screen that reads children saw an empty roster offline,
+   * and a cold start never got past the splash at all. See lib/session-cache.ts.
+   *
+   * The cache is only ever a fallback: the moment Clerk loads, the live roster wins, so an edit made
+   * on another device is never masked by a stale local copy.
+   */
+  const children = useMemo(
+    () => (userLoaded ? live : (cached.session?.children ?? [])),
+    [userLoaded, live, cached.session]
+  )
+
+  // Keep the cache current whenever Clerk is answering. Cheap: `rememberSession` no-ops unless the
+  // roster actually changed.
+  useEffect(() => {
+    if (userLoaded) rememberSession({ signedIn: !!user, children: live })
+  }, [userLoaded, user, live])
 
   const addChild = useCallback(
     async (child: Omit<Child, "id">) => {
@@ -153,7 +178,13 @@ export function useChildren() {
         // Before this call existed, deleting a child removed the Clerk entry and left the Postgres
         // row, its reviews, sessions and certificates standing indefinitely. A parent was told the
         // child's record was deleted; it was not.
-        const token = await getToken()
+        // Bounded for the same reason the quiz runner's is: offline, `getToken()` hangs rather than
+        // failing, and an unbounded await here left the delete spinner turning with no alert and no
+        // deletion. A null token means "nothing was ever synced from this device, or we cannot reach
+        // the server", and the local removal below is then the honest whole of what can be done —
+        // the server row, if there is one, is cleaned up by the next successful delete or by
+        // account deletion. See lib/clerk-offline.ts.
+        const token = await tokenWithin(getToken)
         if (token) {
           await apiDeleteAuthed(`/api/children/${encodeURIComponent(id)}`, token)
         }

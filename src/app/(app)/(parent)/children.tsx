@@ -1,6 +1,6 @@
 import { router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { SymbolView } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { ChildAvatar } from "@/components/child-avatar"
@@ -41,7 +41,9 @@ function ChildRow({
       // Opens the per-child profile (§2 "Child Achievement Profile") rather than jumping straight
       // into the edit form. The profile is the richer destination and links on to editing, so the
       // form is one tap further rather than unreachable.
-      onPress={() => router.push({ pathname: "/child/[id]", params: { id: child.id } })}
+      onPress={() => {
+        router.push({ pathname: "/child/[id]", params: { id: child.id } })
+      }}
     >
       {/* Children added before the avatar field existed have no `avatar` — same fallback as home. */}
       <ChildAvatar avatar={child.avatar ?? DEFAULT_AVATAR} className="h-11 w-11" wash={washFor(child)} />

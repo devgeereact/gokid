@@ -3,6 +3,7 @@ import { Directory, File, Paths } from "expo-file-system"
 import { useCallback, useSyncExternalStore } from "react"
 
 import { apiGet, type ApiSet } from "./api"
+import { clearSetContent, installSetContent, removeSetContent, type SetContentQuizRow } from "./set-content"
 
 /**
  * Offline downloads (design/gokid-screens.md §14 → "Download Manager", "Download Progress",
@@ -38,7 +39,14 @@ export type DownloadState = "idle" | "downloading" | "done" | "error"
 export type DownloadedSet = {
   set: ApiSet
   cards: { id: string; question: string; answer: string }[]
-  quiz: { id: string; kind: string; payload: unknown }[]
+  /**
+   * The set's questions, exactly as `GET /api/sets/:id` returns them — `prompt` included.
+   *
+   * It used to be `{ id, kind, payload }`, which stored a list of options and an index of the right
+   * one with no question to ask: a downloaded quiz was unplayable by construction, and the type said
+   * so without anyone noticing because nothing read it back.
+   */
+  quiz: SetContentQuizRow[]
   /** Epoch ms the download finished. */
   at: number
 }
@@ -95,6 +103,12 @@ async function hydrate() {
         // and the catalogue that would otherwise supply the title needs a connection.
         const body = JSON.parse(await item.text()) as DownloadedSet
         meta = { title: body.set?.title, subject: body.set?.subject, topic: body.set?.topic, at: body.at ?? 0 }
+        // The file is open and parsed here anyway, so this is where its content enters the app: after
+        // hydrate, every screen that reads this set reads what is on disk. Doing it lazily per screen
+        // would mean the first render of a downloaded set showed bundled content and then swapped.
+        if (body.set && Array.isArray(body.cards)) {
+          installSetContent(setId, { set: body.set, cards: body.cards, quiz: body.quiz ?? [], origin: "download" })
+        }
       } catch {
         // A file we cannot parse is still on disk taking up space, so it is listed — but without a
         // title, rather than with a guessed one. The manager offers to remove it.
@@ -115,6 +129,21 @@ function subscribe(listener: () => void) {
   listeners.add(listener)
   if (!hydrated && !hydrating) hydrating = hydrate()
   return () => listeners.delete(listener)
+}
+
+/**
+ * Read the downloads folder at app start, so downloaded content is installed before any screen asks
+ * for a set.
+ *
+ * Hydration used to happen only when something subscribed to `useDownloads`, which is to say only on
+ * the two storage screens. Every study, flashcard and quiz screen therefore rendered the bundled copy
+ * of a set until the parent happened to visit Storage — the download was on disk, complete and
+ * correct, and invisible. Whether a set is available offline is a fact about the app, not about which
+ * screen you last opened, so the root layout calls this once.
+ */
+export function hydrateDownloads() {
+  if (!hydrated && !hydrating) hydrating = hydrate()
+  return hydrating ?? Promise.resolve()
 }
 
 function getSnapshot() {
@@ -148,6 +177,7 @@ export async function downloadSet(setId: string): Promise<boolean> {
     const file = fileFor(setId)
     file.create({ overwrite: true })
     file.write(json)
+    installSetContent(setId, { set: payload.set, cards: payload.cards, quiz: payload.quiz, origin: "download" })
     set(setId, {
       state: "done",
       bytes: file.size ?? json.length,
@@ -179,6 +209,9 @@ export function removeDownload(setId: string) {
   } catch (error) {
     Sentry.captureException(error, { tags: { flow: "downloads-delete", setId } })
   }
+  // The file and the content it fed have to go together: leaving the override installed would keep
+  // serving a set the child just deleted, right up until the next launch.
+  removeSetContent(setId)
   const next = { ...index }
   delete next[setId]
   index = next
@@ -205,6 +238,7 @@ export function clearAllDownloads() {
   } catch (error) {
     Sentry.captureException(error, { tags: { flow: "downloads-clear" } })
   }
+  clearSetContent()
   index = {}
   hydrated = true
   emit()

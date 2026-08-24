@@ -1,6 +1,7 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { type SFSymbol, SymbolView } from "expo-symbols"
+import { type SFSymbol } from "expo-symbols"
+import { SymbolView } from "@/components/symbol"
 import { Pressable, ScrollView, Text, View } from "react-native"
 
 import { ChildAvatar } from "@/components/child-avatar"
@@ -9,7 +10,7 @@ import { SafeAreaView } from "@/components/styled"
 import { colors } from "@/design/tokens"
 import { DEFAULT_AVATAR, useChildren, useStudyingChildId, washFor} from "@/lib/children"
 import { dueLabel, useProgress } from "@/lib/reviews"
-import { getStudySet } from "@/lib/study"
+import { getStudySet, useStudySet } from "@/lib/study"
 
 /**
  * Session Summary (design/GoKid-sectionsummary-screen.png, screen 21). End-of-session recap: a hero
@@ -79,7 +80,7 @@ function BarList({ rows, title }: { rows: BarRow[]; title: string }) {
 export default function SessionSummary() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const childId = useStudyingChildId() ?? ""
-  const set = getStudySet(id)
+  const set = useStudySet(id)
   const { children } = useChildren()
   const { cards, sessions } = useProgress(childId)
 
