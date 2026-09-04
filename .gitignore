@@ -85,5 +85,6 @@ scripts/qa/.transcripts/
 .idea/**/sonarIssues.xml
 
 # Tool scratch dirs — local artefacts, not project files.
+.ai/
 .impeccable/
 .codex/
