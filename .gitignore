@@ -88,3 +88,8 @@ scripts/qa/.transcripts/
 .ai/
 .impeccable/
 .codex/
+
+# Local environment files may contain credentials. Keep only the example public.
+.env
+.env.*
+!.env.example
