@@ -1,0 +1,59 @@
+name: CodeQL
+
+# Free on public repositories, and unused here until now. ci.yml keeps tsc and
+# lint green; neither of those is a security check.
+#
+# GoKid is an Expo/React Native app with expo-router API routes, so this repo
+# holds both client and server code in one tree. The API routes handle auth and
+# talk to Supabase and Inngest — tainted input reaching a query or a redirect is
+# the realistic failure here, and it is server-side, not cosmetic.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so newly published queries reach an unchanged codebase too. Most
+    # findings arrive from updated rules, not from new commits.
+    - cron: '41 5 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      # Required to upload results to the Security tab.
+      security-events: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript-typescript']
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v4.37.7
+        with:
+          languages: ${{ matrix.language }}
+          # security-extended adds lower-severity security queries; the default
+          # pack alone is thin for a tree that contains server-side API routes.
+          queries: security-extended
+
+      # No build step: Metro/Expo output adds nothing CodeQL cannot read from
+      # source, and a native build here would cost minutes for no extra coverage.
+      - name: Analyse
+        uses: github/codeql-action/analyze@v4.37.7
+        with:
+          category: '/language:${{ matrix.language }}'
